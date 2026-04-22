@@ -1,10 +1,10 @@
-enum TileType {
+export enum TileType {
   Grass = 0,
   Hill = 1,
   Water = 2,
 }
 
-class WorldMap {
+export class WorldMap {
   private readonly width: number = 500;
   private readonly height: number = 500;
   private data: Uint8Array;
@@ -18,6 +18,11 @@ class WorldMap {
       return -1;
     }
     return y * this.width + x;
+  }
+
+  public getTile(x: number, y: number): TileType {
+    const index = this.getIndex(x, y);
+    return index !== -1 ? this.data[index] : TileType.Water;
   }
 
   public setTile(x: number, y: number, type: TileType): void {
