@@ -5,6 +5,8 @@ export enum TileType {
   Hill = 1,
   Water = 2,
   Sand = 3,
+  PreHill = 4,
+  DeepWater = 5,
 }
 
 export class WorldMap {
@@ -53,12 +55,17 @@ export class WorldMap {
 
         let type = TileType.Grass;
 
-        if (val < 0.25) {
+        if (val < 0.18) {
+          type = TileType.DeepWater;
+        } else if (val < 0.25) {
           type = TileType.Water;
         } else if (val < 0.28) {
           type = TileType.Sand;
         } else if (val > 0.63) {
-          type = TileType.Hill;
+          type = TileType.PreHill;
+          if (val > 0.68) {
+            type = TileType.Hill;
+          }
         }
 
         this.setTile(x, y, type);

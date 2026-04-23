@@ -2,22 +2,26 @@ import { useEffect, useRef, useState } from "react";
 import { TileType, WorldMap } from "../../engine/WorldMap.ts";
 
 const PALETTE = {
-  [TileType.Grass]: "#76DC7A",
-  [TileType.Hill]: "#02C009",
-  [TileType.Water]: "#00E1E9",
-  [TileType.Sand]: "#E4ED32",
+  [TileType.Grass]: "#9EEAA1",
+  [TileType.Hill]: "#57C35B",
+  [TileType.Water]: "#76F2F7",
+  [TileType.Sand]: "#F9FE90",
+  [TileType.PreHill]: "#76DC7A",
+  [TileType.DeepWater]: "#00E1E9",
 };
 
 const TILE_SIZE = 25;
 const MAP_DIMENSION = 500;
 
-export default function MapViewer() {
+export default function MapCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const cameraRef = useRef({ x: -2000, y: -2000, zoom: 1 });
   const isPanningRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
+  const hoveredTileRef = useRef<{ col: number; row: number } | null>(null);
 
   const [world] = useState(() => {
     const w = new WorldMap();
@@ -45,6 +49,12 @@ export default function MapViewer() {
     }
     console.timeEnd("Отрисовка всей карты");
 
+    const overlay = overlayCanvasRef.current;
+    if (overlay) {
+      overlay.width = size;
+      overlay.height = size;
+    }
+
     updateTransform();
   }, []);
 
@@ -52,7 +62,29 @@ export default function MapViewer() {
     if (mapCanvasRef.current) {
       const { x, y, zoom } = cameraRef.current;
       mapCanvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
+      overlayCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
     }
+  };
+
+  const drawOverlay = () => {
+    const overlay = overlayCanvasRef.current;
+    if (!overlay) return;
+    const ctx = overlay.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+    const hovered = hoveredTileRef.current;
+    if (!hovered) return;
+
+    ctx.strokeStyle = "#acacac";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      hovered.col * TILE_SIZE + 1,
+      hovered.row * TILE_SIZE + 1,
+      TILE_SIZE - 2,
+      TILE_SIZE - 2,
+    );
   };
 
   useEffect(() => {
@@ -82,13 +114,53 @@ export default function MapViewer() {
   }, []);
 
   const onMouseMove = (e: React.MouseEvent) => {
-    if (!isPanningRef.current) return;
+    if (isPanningRef.current) {
+      cameraRef.current.x += e.clientX - lastMousePosRef.current.x;
+      cameraRef.current.y += e.clientY - lastMousePosRef.current.y;
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+      updateTransform();
+      return;
+    }
 
-    cameraRef.current.x += e.clientX - lastMousePosRef.current.x;
-    cameraRef.current.y += e.clientY - lastMousePosRef.current.y;
-    lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+    const container = containerRef.current;
+    if (!container) return;
 
-    updateTransform();
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const worldX = mouseX - cameraRef.current.x;
+    const worldY = mouseY - cameraRef.current.y;
+
+    const col = Math.floor(worldX / TILE_SIZE);
+    const row = Math.floor(worldY / TILE_SIZE);
+
+    if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
+      hoveredTileRef.current = { col, row };
+    } else {
+      hoveredTileRef.current = null;
+    }
+
+    drawOverlay();
+  };
+
+  const onClick = (e: React.MouseEvent) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const worldX = mouseX - cameraRef.current.x;
+    const worldY = mouseY - cameraRef.current.y;
+
+    const col = Math.floor(worldX / TILE_SIZE);
+    const row = Math.floor(worldY / TILE_SIZE);
+
+    if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
+      alert(`x=${col}, y=${row}`);
+    }
   };
 
   return (
@@ -97,18 +169,27 @@ export default function MapViewer() {
       style={{
         width: "100vw",
         height: "100vh",
-        backgroundColor: "#111",
+        backgroundColor: PALETTE[TileType.Water],
         overflow: "hidden",
         position: "relative",
-        cursor: "grab",
       }}
       onMouseDown={(e) => {
+        if (e.button !== 1) return;
+        e.preventDefault();
         isPanningRef.current = true;
         lastMousePosRef.current = { x: e.clientX, y: e.clientY };
       }}
-      onMouseUp={() => (isPanningRef.current = false)}
-      onMouseLeave={() => (isPanningRef.current = false)}
+      onMouseUp={(e) => {
+        if (e.button !== 1) return;
+        isPanningRef.current = false;
+      }}
+      onMouseLeave={() => {
+        isPanningRef.current = false;
+        hoveredTileRef.current = null;
+        drawOverlay();
+      }}
       onMouseMove={onMouseMove}
+      onClick={onClick}
     >
       <canvas
         ref={mapCanvasRef}
@@ -119,6 +200,17 @@ export default function MapViewer() {
           transformOrigin: "0 0",
           willChange: "transform",
           imageRendering: "pixelated",
+        }}
+      />
+      <canvas
+        ref={overlayCanvasRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transformOrigin: "0 0",
+          willChange: "transform",
+          pointerEvents: "none",
         }}
       />
     </div>
