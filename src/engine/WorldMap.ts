@@ -1,7 +1,10 @@
+import { createNoise2D } from "simplex-noise";
+
 export enum TileType {
   Grass = 0,
   Hill = 1,
   Water = 2,
+  Sand = 3,
 }
 
 export class WorldMap {
@@ -33,13 +36,34 @@ export class WorldMap {
   }
 
   public generate(): void {
+    const noise2D = createNoise2D();
+
+    const scale = 0.015;
+
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        const type = x < 5 || x > 495 ? TileType.Water : TileType.Grass;
+        const n1 = noise2D(x * scale, y * scale);
+        const n2 = 0.5 * noise2D(x * scale * 2, y * scale * 2);
+        const n3 = 0.25 * noise2D(x * scale * 4, y * scale * 4);
+
+        let val = (n1 + n2 + n3) / 1.75;
+        val = (val + 1) / 2;
+
+        val = Math.pow(val, 1.1);
+
+        let type = TileType.Grass;
+
+        if (val < 0.25) {
+          type = TileType.Water;
+        } else if (val < 0.28) {
+          type = TileType.Sand;
+        } else if (val > 0.63) {
+          type = TileType.Hill;
+        }
+
         this.setTile(x, y, type);
       }
     }
-
-    console.log("генерация окончена");
+    console.log("Симплекс-генерация завершена!");
   }
 }
