@@ -13,10 +13,15 @@ const PALETTE = {
 const TILE_SIZE = 25;
 const MAP_DIMENSION = 500;
 
-export default function MapCanvas() {
+export default function MapCanvas({
+  isBackground = false,
+}: {
+  isBackground?: boolean;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number | null>(null);
 
   const cameraRef = useRef({ x: -2000, y: -2000, zoom: 1 });
   const isPanningRef = useRef(false);
@@ -90,6 +95,7 @@ export default function MapCanvas() {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    if (isBackground) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -113,7 +119,25 @@ export default function MapCanvas() {
     return () => container.removeEventListener("wheel", handleWheel);
   }, []);
 
+  useEffect(() => {
+    if (!isBackground) return;
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      cameraRef.current.x += dt * 12;
+      cameraRef.current.y += dt * 6;
+      updateTransform();
+      animRef.current = requestAnimationFrame(step);
+    };
+    animRef.current = requestAnimationFrame(step);
+    return () => {
+      if (animRef.current != null) cancelAnimationFrame(animRef.current);
+    };
+  }, [isBackground]);
+
   const onMouseMove = (e: React.MouseEvent) => {
+    if (isBackground) return;
     if (isPanningRef.current) {
       cameraRef.current.x += e.clientX - lastMousePosRef.current.x;
       cameraRef.current.y += e.clientY - lastMousePosRef.current.y;
@@ -145,6 +169,7 @@ export default function MapCanvas() {
   };
 
   const onClick = (e: React.MouseEvent) => {
+    if (isBackground) return;
     const container = containerRef.current;
     if (!container) return;
 
