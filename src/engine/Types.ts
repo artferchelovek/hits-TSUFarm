@@ -166,17 +166,6 @@ export interface GameState {
     gold: number;
     totalPopulation: number;
   };
-  buildings: Array<
-    | Garden
-    | Greenhouse
-    | House
-    | Main
-    | Granary
-    | Market
-    | Well
-    | Bridge
-    | Graveyard
-    | Road
-  >;
+  buildings: Record<string, BuildingType>;
   residents: Resident[];
 }
