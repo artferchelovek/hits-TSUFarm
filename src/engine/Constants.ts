@@ -1,4 +1,10 @@
-import { BuildingType, type CropType, type Plant, ResourceType } from "./Types";
+import {
+  BuildingType,
+  type CropType,
+  type GameState,
+  type Plant,
+  ResourceType,
+} from "./Types";
 
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: { width: 4, length: 4, initialCapacity: 10 },
@@ -6,8 +12,13 @@ export const BUILDING_CONFIG = {
   [BuildingType.Granary]: { width: 5, length: 4, maxCapacity: 200 },
   [BuildingType.Well]: { width: 2, length: 2, maxCapacity: 200, refillRate: 2 },
   [BuildingType.Market]: { width: 3, length: 3 },
-  [BuildingType.Garden]: { width: 1, length: 1 },
-  [BuildingType.Greenhouse]: { width: 3, length: 2, waterMax: 150 },
+  [BuildingType.Garden]: { width: 1, length: 1, growthCoefficient: 1.0 },
+  [BuildingType.Greenhouse]: {
+    width: 3,
+    length: 2,
+    waterMax: 150,
+    growthCoefficient: 1.5,
+  },
   [BuildingType.Road]: { width: 1, length: 1, speed: 1.5 },
   [BuildingType.Bridge]: { width: 1, length: 1, speed: 1.2 },
   [BuildingType.Graveyard]: { width: 3, length: 3, maxCapacity: 50 },
@@ -78,4 +89,26 @@ export const VILLAGER_CONFIG = {
   agePerTick: 1 / 600,
   maxInventCapacity: 10,
   moveSpeed: 1,
+};
+export const initialGameState: GameState = {
+  meta: {
+    version: "0.0.1",
+    lastSaved: Date.now(),
+    gameTick: 0,
+  },
+  economy: {
+    gold: 100,
+    totalPopulation: 0,
+  },
+  buildings: [
+    {
+      id: crypto.randomUUID(),
+      type: BuildingType.Main,
+      position: { x: 0, y: 0 },
+      width: BUILDING_CONFIG[BuildingType.Main].width,
+      length: BUILDING_CONFIG[BuildingType.Main].length,
+      populationStats: { maxCapacity: 0, currentAmount: 0 },
+    },
+  ],
+  residents: [],
 };
