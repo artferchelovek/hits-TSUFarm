@@ -10,6 +10,28 @@ export enum BuildingType {
   Garden = "GARDEN",
   Graveyard = "GRAVEYARD",
 }
+export enum VillagerStatus {
+  Idle = "Idle",
+  Moving = "Moving",
+  Working = "Working",
+  Sleeping = "Sleeping",
+  Eating = "Eating",
+}
+
+export enum ResourceType {
+  Water = "Water",
+  Tomato = "Tomato",
+  Potato = "Potato",
+  Cucumber = "Cucumber",
+  Corn = "Corn",
+  Pumpkin = "Pumpkin",
+  Wheat = "Wheat",
+  Empty = "Empty",
+}
+export enum Gender {
+  Male = "Male",
+  Female = "Female",
+}
 export interface Position {
   x: number;
   y: number;
@@ -18,7 +40,7 @@ interface BaseBuilding {
   id: string;
   position: Position;
   width: number;
-  height: number;
+  length: number;
 }
 
 export type CropType =
@@ -44,29 +66,21 @@ export interface CropState {
   isReady: boolean;
 }
 
-export enum VillagerStatus {
-  Idle = "Idle",
-  Moving = "Moving",
-  Working = "Working",
-  Sleeping = "Sleeping",
-  Eating = "Eating",
-}
-
-export enum ResourceType {
-  Water = "Water",
-  Tomato = "Tomato",
-  Potato = "Potato",
-  Cucumber = "Cucumber",
-  Corn = "Corn",
-  Pumpkin = "Pumpkin",
-  Wheat = "Wheat",
-  Empty = "Empty",
+export interface Plant {
+  type: CropType;
+  name: string;
+  growthPerTick: number;
+  waterConsumptionPerTick: number;
+  sellPrice: number;
+  minYield: number;
+  maxYield: number;
 }
 
 export interface Resident {
   id: string;
   name: string;
   position: Position;
+  gender: Gender;
   age: number;
   homeId: string | null;
   workplaceId: string | null;
