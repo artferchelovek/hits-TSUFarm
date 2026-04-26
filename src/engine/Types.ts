@@ -10,6 +10,18 @@ export enum BuildingType {
   Garden = "GARDEN",
   Graveyard = "GRAVEYARD",
 }
+export type Buildings =
+  | Main
+  | House
+  | Granary
+  | Garden
+  | Greenhouse
+  | Well
+  | Market
+  | Bridge
+  | Road
+  | Graveyard;
+
 export enum VillagerStatus {
   Idle = "Idle",
   Moving = "Moving",
@@ -156,6 +168,7 @@ export interface Graveyard extends BaseBuilding {
 export interface Market extends BaseBuilding {
   type: BuildingType.Market;
 }
+
 export interface GameState {
   meta: {
     version: string;
@@ -163,9 +176,9 @@ export interface GameState {
     gameTick: number;
   };
   economy: {
-    gold: number;
+    money: number;
     totalPopulation: number;
   };
-  buildings: Record<string, BuildingType>;
+  buildings: Record<string, Buildings>;
   residents: Resident[];
 }

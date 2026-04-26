@@ -90,6 +90,7 @@ export const VILLAGER_CONFIG = {
   maxInventCapacity: 10,
   moveSpeed: 1,
 };
+const mainBuildingId = crypto.randomUUID();
 export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
@@ -97,18 +98,21 @@ export const initialGameState: GameState = {
     gameTick: 0,
   },
   economy: {
-    gold: 100,
-    totalPopulation: 0,
+    money: 100,
+    totalPopulation: 2,
   },
-  buildings: [
-    {
-      id: crypto.randomUUID(),
+  buildings: {
+    [mainBuildingId]: {
+      id: mainBuildingId,
       type: BuildingType.Main,
       position: { x: 0, y: 0 },
       width: BUILDING_CONFIG[BuildingType.Main].width,
       length: BUILDING_CONFIG[BuildingType.Main].length,
-      populationStats: { maxCapacity: 0, currentAmount: 0 },
+      populationStats: {
+        maxCapacity: BUILDING_CONFIG[BuildingType.Main].initialCapacity,
+        currentAmount: 0,
+      },
     },
-  ],
+  },
   residents: [],
 };
