@@ -33,7 +33,6 @@ export function BuildSelectionProvider({
 export function useBuildSelection() {
   const ctx = useContext(SelectionContext);
   if (!ctx) {
-    // Fallback to a noop selection when used outside provider (e.g. background MapCanvas)
     return {
       selected: null,
       setSelected: () => {},
