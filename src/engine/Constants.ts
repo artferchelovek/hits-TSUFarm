@@ -180,3 +180,16 @@ export const initialGameState: GameState = {
   residents: {},
   logs: [],
 };
+
+export const BUILDING_COLORS: Record<string, string> = {
+  MAIN: "#8B5A2B",
+  HOUSE: "#C68642",
+  GRANARY: "#7A4A24",
+  GREENHOUSE: "#6AA84F",
+  MARKET: "#B86B3A",
+  WELL: "#6C9FBF",
+  BRIDGE: "#7B5E3A",
+  ROAD: "#9E7B5A",
+  GARDEN: "#4CAF50",
+  GRAVEYARD: "#5D5D5D",
+};

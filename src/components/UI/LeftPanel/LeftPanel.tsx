@@ -20,6 +20,7 @@ export default function LeftPanel() {
         <option value="statistic">Статистика</option>
         <option value="vilagers">Жители</option>
         <option value="taxes">Налоги</option>
+        <option value="cultures">Культуры</option>
       </select>
       {picker === "buildings" ? <BuildingsPanel /> : null}
     </div>
@@ -49,7 +50,9 @@ function BuildingsPanel() {
       <div className={styles.buildingsList}>
         {buildingTypes.map((bt) => {
           const cfg = (BUILDING_CONFIG as any)[bt];
-          const desc = cfg ? `${cfg.width}x${cfg.length} клетки` : "-";
+          const desc = cfg
+            ? `${cfg.width}x${cfg.length} клетки. Цена: ${cfg.cost}`
+            : "-";
           const isSelected = selected === bt;
           return (
             <div
