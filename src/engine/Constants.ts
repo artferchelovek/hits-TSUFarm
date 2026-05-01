@@ -4,6 +4,8 @@ import {
   type GameState,
   type Plant,
   ResourceType,
+  Season,
+  Weather,
 } from "./Types";
 
 export const BUILDING_CONFIG = {
@@ -152,6 +154,11 @@ export const VILLAGER_CONFIG = {
   moveSpeed: 1,
 };
 
+export const WeatherEffects = {
+  NIGHT_GROWTH_COEFFICIENT: 0.5,
+  RAIN_MOISTURE_GAIN: 1.5,
+  WINTER_PLANT_DAMAGE: 0.05,
+};
 const mainBuildingId = crypto.randomUUID();
 export const initialGameState: GameState = {
   meta: {
@@ -159,6 +166,11 @@ export const initialGameState: GameState = {
     lastSaved: Date.now(),
     gameTick: 0,
     graveyardIds: [],
+    seasonDuration: 30 * 1000,
+    currentSeason: Season.Summer,
+    currentWeather: Weather.Clear,
+    dayDuration: 1000,
+    isNight: false,
   },
   economy: {
     money: 100,
