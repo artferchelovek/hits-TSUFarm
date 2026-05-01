@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TileType, WorldMap } from "../../engine/WorldMap.ts";
+import { useBuildSelection } from "../../contexts/BuildSelectionContext";
+import { BUILDING_CONFIG } from "../../engine/Constants";
 
 const PALETTE = {
   [TileType.Grass]: "#9EEAA1",
@@ -71,6 +73,12 @@ export default function MapCanvas({
     }
   };
 
+  const { selected } = useBuildSelection();
+  const buildSelectionRef = useRef<{ selected: any } | null>(null);
+  useEffect(() => {
+    buildSelectionRef.current = { selected };
+  }, [selected]);
+
   const drawOverlay = () => {
     const overlay = overlayCanvasRef.current;
     if (!overlay) return;
@@ -84,12 +92,35 @@ export default function MapCanvas({
 
     ctx.strokeStyle = "#acacac";
     ctx.lineWidth = 2;
-    ctx.strokeRect(
-      hovered.col * TILE_SIZE + 1,
-      hovered.row * TILE_SIZE + 1,
-      TILE_SIZE - 2,
-      TILE_SIZE - 2,
-    );
+
+    const { selected } = buildSelectionRef.current ?? { selected: null };
+    if (selected) {
+      const cfg = (BUILDING_CONFIG as any)[selected];
+      const w = cfg?.width ?? 1;
+      const h = cfg?.length ?? 1;
+      ctx.strokeStyle = "rgba(46, 44, 44, 1)";
+      ctx.lineWidth = 3;
+      ctx.fillStyle = "rgba(78,48,23,0.12)";
+      ctx.fillRect(
+        hovered.col * TILE_SIZE + 1,
+        hovered.row * TILE_SIZE + 1,
+        w * TILE_SIZE - 2,
+        h * TILE_SIZE - 2,
+      );
+      ctx.strokeRect(
+        hovered.col * TILE_SIZE + 1,
+        hovered.row * TILE_SIZE + 1,
+        w * TILE_SIZE - 2,
+        h * TILE_SIZE - 2,
+      );
+    } else {
+      ctx.strokeRect(
+        hovered.col * TILE_SIZE + 1,
+        hovered.row * TILE_SIZE + 1,
+        TILE_SIZE - 2,
+        TILE_SIZE - 2,
+      );
+    }
   };
 
   useEffect(() => {
@@ -184,7 +215,8 @@ export default function MapCanvas({
     const row = Math.floor(worldY / TILE_SIZE);
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
-      alert(`x=${col}, y=${row}`);
+      const sel = buildSelectionRef.current?.selected ?? null;
+      alert(`x=${col}, y=${row}` + (sel ? `, selected=${sel}` : ""));
     }
   };
 
