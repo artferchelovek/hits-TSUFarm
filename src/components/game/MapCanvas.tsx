@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { TileType, WorldMap } from "../../engine/WorldMap.ts";
 import { useBuildSelection } from "../../contexts/BuildSelectionContext";
-import { BUILDING_COLORS, BUILDING_CONFIG } from "../../engine/Constants";
+import { usePopup } from "../../contexts/PopupContext";
+import { BUILDING_CONFIG, BUILDING_NAMES } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import { BuildingType } from "../../engine/Types.ts";
+import { BuildingType } from "../../engine/Types";
 
 const PALETTE = {
   [TileType.Grass]: "#9EEAA1",
@@ -12,6 +13,19 @@ const PALETTE = {
   [TileType.Sand]: "#F9FE90",
   [TileType.PreHill]: "#76DC7A",
   [TileType.DeepWater]: "#00E1E9",
+};
+
+const BUILDING_COLORS: Record<string, string> = {
+  MAIN: "#8B5A2B",
+  HOUSE: "#C68642",
+  GRANARY: "#7A4A24",
+  GREENHOUSE: "#6AA84F",
+  MARKET: "#B86B3A",
+  WELL: "#6C9FBF",
+  BRIDGE: "#7B5E3A",
+  ROAD: "#9E7B5A",
+  GARDEN: "#4CAF50",
+  GRAVEYARD: "#5D5D5D",
 };
 
 const TILE_SIZE = 25;
@@ -104,6 +118,7 @@ export default function MapCanvas({
 
   const { selected } = useBuildSelection();
   const buildSelectionRef = useRef<{ selected: any } | null>(null);
+  const { showPopup } = usePopup();
   useEffect(() => {
     buildSelectionRef.current = { selected };
   }, [selected]);
@@ -223,8 +238,11 @@ export default function MapCanvas({
 
       if (found) {
         e.preventDefault();
-        alert(
-          `Здание: ${found.type}\nID: ${found.id}\nПозиция: (${found.position.x}, ${found.position.y})`,
+        const f: any = found;
+        showPopup(
+          `Здание: ${f.type}\nID: ${f.id}\nПозиция: (${f.position.x}, ${f.position.y})`,
+          "info",
+          5000,
         );
       }
     };
@@ -326,8 +344,65 @@ export default function MapCanvas({
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
       const sel: BuildingType = buildSelectionRef.current?.selected ?? null;
-      // alert(`x=${col}, y=${row}` + (sel ? `, selected=${sel}` : ""));
-      console.log(useGameStore.getState().addBuilding(sel, { x: col, y: row }));
+      if (!sel) return;
+
+      const cfg = (BUILDING_CONFIG as any)[sel];
+      const w = cfg?.width ?? 1;
+      const h = cfg?.length ?? 1;
+
+      const state = useGameStore.getState();
+      const existing = Object.values(state.gameState.buildings || {});
+
+      const overlap = existing.some((b: any) => {
+        const ax1 = col;
+        const ay1 = row;
+        const ax2 = col + w - 1;
+        const ay2 = row + h - 1;
+
+        const bx1 = b.position.x;
+        const by1 = b.position.y;
+        const bx2 = b.position.x + (b.width || 1) - 1;
+        const by2 = b.position.y + (b.length || 1) - 1;
+
+        return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+      });
+
+      if (overlap) {
+        showPopup("Нельзя разместить здание поверх другого здания", "error");
+        return;
+      }
+
+      const tiles = new Set<number>();
+      for (let yy = row; yy < row + h; yy++) {
+        for (let xx = col; xx < col + w; xx++) {
+          tiles.add(world.getTile(xx, yy));
+        }
+      }
+
+      if (
+        tiles.has(TileType.Sand) ||
+        tiles.has(TileType.Water) ||
+        tiles.has(TileType.DeepWater)
+      ) {
+        showPopup("Нельзя строить на воде или песке", "error");
+        return;
+      }
+
+      if (
+        tiles.has(TileType.Hill) &&
+        (tiles.has(TileType.Grass) || tiles.has(TileType.PreHill))
+      ) {
+        showPopup(
+          "Рельеф слишком нерoвный (холм + равнина) — найдите более ровное место",
+          "warning",
+        );
+        return;
+      }
+
+      const res = useGameStore.getState().addBuilding(sel, { x: col, y: row });
+      if (!res.success) {
+        showPopup(res.message, "warning");
+      }
     }
   };
 

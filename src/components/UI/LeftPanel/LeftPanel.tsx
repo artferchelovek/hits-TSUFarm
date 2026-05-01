@@ -3,6 +3,7 @@ import { useState } from "react";
 import { BuildingType } from "../../../engine/Types";
 import { BUILDING_CONFIG } from "../../../engine/Constants";
 import { useBuildSelection } from "../../../contexts/BuildSelectionContext";
+import { useGameStore } from "../../../Store/GameStore";
 
 export default function LeftPanel() {
   const [picker, setPicker] = useState("buildings");
@@ -29,6 +30,8 @@ export default function LeftPanel() {
 
 function BuildingsPanel() {
   const { selected, setSelected } = useBuildSelection();
+  const money = useGameStore((state) => state.gameState.economy.money);
+  const buildings = useGameStore((state) => state.gameState.buildings);
 
   const BUILDING_NAMES: Record<BuildingType, string> = {
     [BuildingType.Main]: "Главное здание",
@@ -45,32 +48,55 @@ function BuildingsPanel() {
 
   const buildingTypes = Object.values(BuildingType) as BuildingType[];
 
+  function ShowPalette() {
+    function PaletteComponent(bt: BuildingType) {
+      const cfg = BUILDING_CONFIG[bt];
+      const isBuy = cfg.cost > money;
+      const desc = cfg
+        ? `${cfg.width}x${cfg.length} клетки. Цена: ${cfg.cost}`
+        : "-";
+      const isSelected = selected === bt;
+      return (
+        <div
+          key={bt}
+          className={
+            isSelected
+              ? `${styles.buildingItem} ${styles.buildingItem__selected}`
+              : isBuy
+                ? `${styles.buildingItem} ${styles.buildingItem__disabled}`
+                : styles.buildingItem
+          }
+          onClick={() => {
+            if (!isBuy) setSelected(isSelected ? null : bt);
+          }}
+        >
+          <div className={styles.buildingItem__title}>{BUILDING_NAMES[bt]}</div>
+          <div className={styles.buildingItem__desc}>{desc}</div>
+        </div>
+      );
+    }
+
+    if (
+      !Object.values(buildings || {}).some(
+        (b: any) => b.type === BuildingType.Main,
+      )
+    ) {
+      return PaletteComponent(BuildingType.Main);
+    }
+
+    return (
+      <>
+        {buildingTypes.map((bt) => {
+          return PaletteComponent(bt);
+        })}
+      </>
+    );
+  }
+
   return (
     <div className={styles.leftPanel__body}>
       <div className={styles.buildingsList}>
-        {buildingTypes.map((bt) => {
-          const cfg = (BUILDING_CONFIG as any)[bt];
-          const desc = cfg
-            ? `${cfg.width}x${cfg.length} клетки. Цена: ${cfg.cost}`
-            : "-";
-          const isSelected = selected === bt;
-          return (
-            <div
-              key={bt}
-              className={
-                isSelected
-                  ? `${styles.buildingItem} ${styles.buildingItem__selected}`
-                  : styles.buildingItem
-              }
-              onClick={() => setSelected(isSelected ? null : bt)}
-            >
-              <div className={styles.buildingItem__title}>
-                {BUILDING_NAMES[bt]}
-              </div>
-              <div className={styles.buildingItem__desc}>{desc}</div>
-            </div>
-          );
-        })}
+        <ShowPalette />
       </div>
     </div>
   );
