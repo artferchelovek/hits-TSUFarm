@@ -7,23 +7,82 @@ import {
 } from "./Types";
 
 export const BUILDING_CONFIG = {
-  [BuildingType.Main]: { width: 4, length: 4, initialCapacity: 10 },
-  [BuildingType.House]: { width: 2, length: 2, capacity: 3 },
-  [BuildingType.Granary]: { width: 5, length: 4, maxCapacity: 200 },
-  [BuildingType.Well]: { width: 2, length: 2, maxCapacity: 200, refillRate: 2 },
-  [BuildingType.Market]: { width: 3, length: 3 },
-  [BuildingType.Garden]: { width: 1, length: 1, growthCoefficient: 1.0 },
+  [BuildingType.Main]: {
+    width: 4,
+    length: 4,
+    initialCapacity: 2,
+    cost: 0,
+  },
+  [BuildingType.House]: {
+    width: 2,
+    length: 2,
+    capacity: 3,
+    cost: 50,
+  },
+  [BuildingType.Granary]: {
+    width: 5,
+    length: 4,
+    maxCapacity: 200,
+    cost: 120,
+  },
+  [BuildingType.Well]: {
+    width: 2,
+    length: 2,
+    maxCapacity: 200,
+    refillRate: 2,
+    cost: 40,
+  },
+  [BuildingType.Market]: {
+    width: 3,
+    length: 3,
+    cost: 250,
+  },
+  [BuildingType.Garden]: {
+    width: 1,
+    length: 1,
+    moisture: 100,
+    growthCoefficient: 1.0,
+    cost: 10,
+  },
   [BuildingType.Greenhouse]: {
     width: 3,
     length: 2,
     waterMax: 150,
+    moisture: 100,
     growthCoefficient: 1.5,
+    cost: 200,
   },
-  [BuildingType.Road]: { width: 1, length: 1, speed: 1.5 },
-  [BuildingType.Bridge]: { width: 1, length: 1, speed: 1.2 },
-  [BuildingType.Graveyard]: { width: 3, length: 3, maxCapacity: 50 },
+  [BuildingType.Road]: {
+    width: 1,
+    length: 1,
+    speed: 1.5,
+    cost: 2,
+  },
+  [BuildingType.Bridge]: {
+    width: 1,
+    length: 1,
+    speed: 1.2,
+    cost: 15,
+  },
+  [BuildingType.Graveyard]: {
+    width: 3,
+    length: 3,
+    maxCapacity: 50,
+    cost: 80,
+  },
 };
-
+export const BUILDING_NAMES: Record<BuildingType, string> = {
+  [BuildingType.Main]: "Главное здание",
+  [BuildingType.Market]: "Рынок",
+  [BuildingType.Greenhouse]: "Теплица",
+  [BuildingType.Garden]: "Сад",
+  [BuildingType.Well]: "Колодец",
+  [BuildingType.Graveyard]: "Кладбище",
+  [BuildingType.Bridge]: "Мост",
+  [BuildingType.Road]: "Дорога",
+  [BuildingType.House]: "Дом для жителей",
+  [BuildingType.Granary]: "Амбар",
+};
 export const PLANT_CONFIG: Record<CropType, Plant> = {
   [ResourceType.Wheat]: {
     type: ResourceType.Wheat,
@@ -80,22 +139,26 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
     maxYield: 2,
   },
 };
+
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 0.1,
+  hungerPerTick: 0.5,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,
   agePerTick: 1 / 600,
+  baseDeathChance: 0.0001,
   maxInventCapacity: 10,
   moveSpeed: 1,
 };
+
 const mainBuildingId = crypto.randomUUID();
 export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
     lastSaved: Date.now(),
     gameTick: 0,
+    graveyardIds: [],
   },
   economy: {
     money: 100,
@@ -114,5 +177,6 @@ export const initialGameState: GameState = {
       },
     },
   },
-  residents: [],
+  residents: {},
+  logs: [],
 };
