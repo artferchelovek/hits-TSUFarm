@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { TileType, WorldMap } from "../../engine/WorldMap.ts";
 import { useBuildSelection } from "../../contexts/BuildSelectionContext";
 import { usePopup } from "../../contexts/PopupContext";
-import { BUILDING_CONFIG, BUILDING_NAMES } from "../../engine/Constants";
+import { BUILDING_CONFIG } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import { BuildingType } from "../../engine/Types";
+import type { BuildingType, Buildings, GameStore } from "../../engine/Types";
 
 const PALETTE = {
   [TileType.Grass]: "#9EEAA1",
@@ -52,6 +52,15 @@ export default function MapCanvas({
     w.generate();
     return w;
   });
+
+  const updateTransform = () => {
+    if (mapCanvasRef.current) {
+      const { x, y, zoom } = cameraRef.current;
+      mapCanvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
+      buildingsCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
+      overlayCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
+    }
+  };
 
   useEffect(() => {
     const canvas = mapCanvasRef.current;
@@ -105,19 +114,12 @@ export default function MapCanvas({
     }
 
     updateTransform();
-  }, []);
-
-  const updateTransform = () => {
-    if (mapCanvasRef.current) {
-      const { x, y, zoom } = cameraRef.current;
-      mapCanvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
-      buildingsCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
-      overlayCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
-    }
-  };
+  }, [world]);
 
   const { selected } = useBuildSelection();
-  const buildSelectionRef = useRef<{ selected: any } | null>(null);
+  const buildSelectionRef = useRef<{ selected: BuildingType | null } | null>(
+    null,
+  );
   const { showPopup } = usePopup();
   useEffect(() => {
     buildSelectionRef.current = { selected };
@@ -139,7 +141,12 @@ export default function MapCanvas({
 
     const { selected } = buildSelectionRef.current ?? { selected: null };
     if (selected) {
-      const cfg = (BUILDING_CONFIG as any)[selected];
+      const cfg = (
+        BUILDING_CONFIG as unknown as Record<
+          BuildingType,
+          { width?: number; length?: number; cost?: number }
+        >
+      )[selected as BuildingType];
       const w = cfg?.width ?? 1;
       const h = cfg?.length ?? 1;
       ctx.strokeStyle = "rgba(46, 44, 44, 1)";
@@ -167,7 +174,7 @@ export default function MapCanvas({
     }
   };
 
-  const drawBuildings = (buildings: Record<string, any> | null) => {
+  const drawBuildings = (buildings: Record<string, Buildings> | null) => {
     const canvas = buildingsCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -176,13 +183,13 @@ export default function MapCanvas({
 
     if (!buildings) return;
 
-    const list = Object.values(buildings).slice();
+    const list = Object.values(buildings).slice() as Buildings[];
     list.sort(
-      (a: any, b: any) =>
+      (a: Buildings, b: Buildings) =>
         a.position.y + (a.length || 1) - (b.position.y + (b.length || 1)),
     );
 
-    list.forEach((b: any) => {
+    list.forEach((b: Buildings) => {
       const x = b.position.x * TILE_SIZE;
       const y = b.position.y * TILE_SIZE;
       const w = (b.width || 1) * TILE_SIZE;
@@ -199,14 +206,16 @@ export default function MapCanvas({
   };
 
   useEffect(() => {
-    const unsub = useGameStore.subscribe((s: any) =>
+    const unsub = useGameStore.subscribe((s: GameStore) =>
       drawBuildings(s.gameState.buildings),
     );
 
     try {
       const state = useGameStore.getState();
       drawBuildings(state.gameState.buildings);
-    } catch (e) {}
+    } catch {
+      // ignore
+    }
 
     return () => unsub();
   }, []);
@@ -227,8 +236,10 @@ export default function MapCanvas({
       const row = Math.floor(worldY / TILE_SIZE);
 
       const state = useGameStore.getState();
-      const buildings = Object.values(state.gameState.buildings || {});
-      const found = buildings.find((b: any) => {
+      const buildings = Object.values(
+        state.gameState.buildings || ({} as Record<string, Buildings>),
+      ) as Buildings[];
+      const found = buildings.find((b: Buildings) => {
         const bx = b.position.x;
         const by = b.position.y;
         const bw = b.width || 1;
@@ -238,7 +249,7 @@ export default function MapCanvas({
 
       if (found) {
         e.preventDefault();
-        const f: any = found;
+        const f = found as Buildings;
         showPopup(
           `Здание: ${f.type}\nID: ${f.id}\nПозиция: (${f.position.x}, ${f.position.y})`,
           "info",
@@ -249,7 +260,7 @@ export default function MapCanvas({
 
     container.addEventListener("contextmenu", onContext);
     return () => container.removeEventListener("contextmenu", onContext);
-  }, []);
+  }, [showPopup]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -343,17 +354,24 @@ export default function MapCanvas({
     const row = Math.floor(worldY / TILE_SIZE);
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
-      const sel: BuildingType = buildSelectionRef.current?.selected ?? null;
+      const sel = buildSelectionRef.current?.selected ?? null;
       if (!sel) return;
 
-      const cfg = (BUILDING_CONFIG as any)[sel];
+      const cfg = (
+        BUILDING_CONFIG as unknown as Record<
+          BuildingType,
+          { width?: number; length?: number }
+        >
+      )[sel as BuildingType];
       const w = cfg?.width ?? 1;
       const h = cfg?.length ?? 1;
 
       const state = useGameStore.getState();
-      const existing = Object.values(state.gameState.buildings || {});
+      const existing = Object.values(
+        state.gameState.buildings || ({} as Record<string, Buildings>),
+      ) as Buildings[];
 
-      const overlap = existing.some((b: any) => {
+      const overlap = existing.some((b: Buildings) => {
         const ax1 = col;
         const ay1 = row;
         const ax2 = col + w - 1;

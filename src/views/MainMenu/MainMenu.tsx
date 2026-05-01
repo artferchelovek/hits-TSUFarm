@@ -17,12 +17,16 @@ export default function MainMenu() {
     const url = `https://api.github.com/repos/${USER}/${REPO}/commits?per_page=5`;
 
     let mounted = true;
+    type GhCommit = {
+      sha: string;
+      commit?: { message?: string; author?: { date?: string } };
+    };
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
         if (!mounted) return;
         if (!Array.isArray(data)) return;
-        const list = data.slice(0, 5).map((c: any) => ({
+        const list = (data as GhCommit[]).slice(0, 5).map((c) => ({
           sha: c.sha.slice(0, 7),
           message: c.commit?.message || "",
           date: c.commit?.author?.date || "",

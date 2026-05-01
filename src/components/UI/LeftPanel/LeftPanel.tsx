@@ -4,6 +4,7 @@ import { BuildingType } from "../../../engine/Types";
 import { BUILDING_CONFIG } from "../../../engine/Constants";
 import { useBuildSelection } from "../../../contexts/BuildSelectionContext";
 import { useGameStore } from "../../../Store/GameStore";
+import type { Buildings } from "../../../engine/Types";
 
 export default function LeftPanel() {
   const [picker, setPicker] = useState("buildings");
@@ -48,55 +49,43 @@ function BuildingsPanel() {
 
   const buildingTypes = Object.values(BuildingType) as BuildingType[];
 
-  function ShowPalette() {
-    function PaletteComponent(bt: BuildingType) {
-      const cfg = BUILDING_CONFIG[bt];
-      const isBuy = cfg.cost > money;
-      const desc = cfg
-        ? `${cfg.width}x${cfg.length} клетки. Цена: ${cfg.cost}`
-        : "-";
-      const isSelected = selected === bt;
-      return (
-        <div
-          key={bt}
-          className={
-            isSelected
-              ? `${styles.buildingItem} ${styles.buildingItem__selected}`
-              : isBuy
-                ? `${styles.buildingItem} ${styles.buildingItem__disabled}`
-                : styles.buildingItem
-          }
-          onClick={() => {
-            if (!isBuy) setSelected(isSelected ? null : bt);
-          }}
-        >
-          <div className={styles.buildingItem__title}>{BUILDING_NAMES[bt]}</div>
-          <div className={styles.buildingItem__desc}>{desc}</div>
-        </div>
-      );
-    }
-
-    if (
-      !Object.values(buildings || {}).some(
-        (b: any) => b.type === BuildingType.Main,
-      )
-    ) {
-      return PaletteComponent(BuildingType.Main);
-    }
-
+  const renderPaletteItem = (bt: BuildingType) => {
+    const cfg = BUILDING_CONFIG[bt];
+    const isBuy = cfg.cost > money;
+    const desc = cfg
+      ? `${cfg.width}x${cfg.length} клетки. Цена: ${cfg.cost}`
+      : "-";
+    const isSelected = selected === bt;
     return (
-      <>
-        {buildingTypes.map((bt) => {
-          return PaletteComponent(bt);
-        })}
-      </>
+      <div
+        key={bt}
+        className={
+          isSelected
+            ? `${styles.buildingItem} ${styles.buildingItem__selected}`
+            : isBuy
+              ? `${styles.buildingItem} ${styles.buildingItem__disabled}`
+              : styles.buildingItem
+        }
+        onClick={() => {
+          if (!isBuy) setSelected(isSelected ? null : bt);
+        }}
+      >
+        <div className={styles.buildingItem__title}>{BUILDING_NAMES[bt]}</div>
+        <div className={styles.buildingItem__desc}>{desc}</div>
+      </div>
     );
-  }
+  };
+
+  const hasMain = Object.values(
+    (buildings || {}) as Record<string, Buildings>,
+  ).some((b) => b.type === BuildingType.Main);
 
   return (
     <div className={styles.leftPanel__body}>
       <div className={styles.buildingsList}>
-        <ShowPalette />
+        {!hasMain
+          ? renderPaletteItem(BuildingType.Main)
+          : buildingTypes.map((bt) => renderPaletteItem(bt))}
       </div>
     </div>
   );
