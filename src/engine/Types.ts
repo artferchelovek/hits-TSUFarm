@@ -216,9 +216,11 @@ export interface GameState {
   };
   economy: {
     money: number;
+    level: number;
     totalPopulation: number;
   };
   buildings: Record<string, Buildings>;
+  buildingCounts: Record<BuildingType, number>;
   residents: Record<string, Resident>;
   logs: GameLog[];
 }

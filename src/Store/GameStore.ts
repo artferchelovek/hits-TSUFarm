@@ -19,6 +19,7 @@ import {
   processWell,
 } from "./Processor.ts";
 import { createBuilding } from "./BuildingFactory.ts";
+import { getBuildingLimit } from "./BuildLimit.ts";
 
 export const appendLog = (
   state: WritableDraft<GameStore>,
@@ -68,11 +69,41 @@ const useGameStore = create<GameStore>()(
 
         if (cost <= state.gameState.economy.money) {
           state.gameState.economy.money -= cost;
+          if (
+            getBuildingLimit(type, state.gameState.economy.level) <=
+              state.gameState.buildingCounts[type] &&
+            type != BuildingType.Main
+          ) {
+            report = {
+              success: false,
+              message:
+                "Текущий уровень не позволяет поставить больше зданий этого типа",
+            };
+            appendLog(
+              state,
+              `Уровень не позволяет поставить больше зданий типа ${type}`,
+              "warning",
+            );
+            return;
+          }
           const newBuild = createBuilding(type, pos);
           state.gameState.buildings[newBuild.id] = newBuild;
-
+          state.gameState.buildingCounts[type] += 1;
           if (type === BuildingType.Graveyard) {
             state.gameState.meta.graveyardIds.push(newBuild.id);
+          }
+          if (
+            type === BuildingType.Main &&
+            Object.values(state.gameState.buildings).find(
+              (build) => build.type === BuildingType.Main,
+            )
+          ) {
+            report = {
+              success: false,
+              message: "Главное здание уже существует",
+            };
+            appendLog(state, "Главное здание уже существует", "warning");
+            return;
           }
           report = {
             success: true,

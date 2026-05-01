@@ -7,7 +7,6 @@ import {
   Season,
   Weather,
 } from "./Types";
-
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 4,
@@ -174,6 +173,7 @@ export const initialGameState: GameState = {
   },
   economy: {
     money: 100,
+    level: 1,
     totalPopulation: 2,
   },
   buildings: {
@@ -188,6 +188,18 @@ export const initialGameState: GameState = {
         currentAmount: 0,
       },
     },
+  },
+  buildingCounts: {
+    [BuildingType.Main]: 1,
+    [BuildingType.Market]: 0,
+    [BuildingType.Greenhouse]: 0,
+    [BuildingType.Garden]: 0,
+    [BuildingType.Well]: 0,
+    [BuildingType.Graveyard]: 0,
+    [BuildingType.Bridge]: 0,
+    [BuildingType.Road]: 0,
+    [BuildingType.House]: 0,
+    [BuildingType.Granary]: 0,
   },
   residents: {},
   logs: [],
