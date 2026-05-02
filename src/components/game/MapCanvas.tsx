@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { TileType, WorldMap } from "../../engine/WorldMap.ts";
 import { useBuildSelection } from "../../contexts/BuildSelectionContext";
-import { BUILDING_CONFIG } from "../../engine/Constants";
+import { usePopup } from "../../contexts/PopupContext";
+import { BUILDING_COLORS, BUILDING_CONFIG } from "../../engine/Constants";
+import { useGameStore } from "../../Store/GameStore";
+import type { BuildingType, Buildings, GameStore } from "../../engine/Types";
 
 const PALETTE = {
   [TileType.Grass]: "#9EEAA1",
@@ -22,6 +25,7 @@ export default function MapCanvas({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
+  const buildingsCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number | null>(null);
 
@@ -36,15 +40,29 @@ export default function MapCanvas({
     return w;
   });
 
+  const updateTransform = () => {
+    if (mapCanvasRef.current) {
+      const { x, y, zoom } = cameraRef.current;
+      mapCanvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
+      buildingsCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
+      overlayCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
+    }
+  };
+
   useEffect(() => {
     const canvas = mapCanvasRef.current;
     if (!canvas) return;
-
     const size = MAP_DIMENSION * TILE_SIZE;
-    canvas.width = size;
-    canvas.height = size;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    canvas.width = Math.floor(size * dpr);
+    canvas.height = Math.floor(size * dpr);
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
 
     console.time("Отрисовка всей карты");
     for (let row = 0; row < MAP_DIMENSION; row++) {
@@ -58,23 +76,38 @@ export default function MapCanvas({
 
     const overlay = overlayCanvasRef.current;
     if (overlay) {
-      overlay.width = size;
-      overlay.height = size;
+      overlay.style.width = `${size}px`;
+      overlay.style.height = `${size}px`;
+      overlay.width = Math.floor(size * dpr);
+      overlay.height = Math.floor(size * dpr);
+      const octx = overlay.getContext("2d");
+      if (octx) {
+        octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        octx.imageSmoothingEnabled = false;
+      }
+    }
+
+    const buildingsCanvas = buildingsCanvasRef.current;
+    if (buildingsCanvas) {
+      buildingsCanvas.style.width = `${size}px`;
+      buildingsCanvas.style.height = `${size}px`;
+      buildingsCanvas.width = Math.floor(size * dpr);
+      buildingsCanvas.height = Math.floor(size * dpr);
+      const bctx = buildingsCanvas.getContext("2d");
+      if (bctx) {
+        bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        bctx.imageSmoothingEnabled = false;
+      }
     }
 
     updateTransform();
-  }, []);
-
-  const updateTransform = () => {
-    if (mapCanvasRef.current) {
-      const { x, y, zoom } = cameraRef.current;
-      mapCanvasRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
-      overlayCanvasRef.current!.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
-    }
-  };
+  }, [world]);
 
   const { selected } = useBuildSelection();
-  const buildSelectionRef = useRef<{ selected: any } | null>(null);
+  const buildSelectionRef = useRef<{ selected: BuildingType | null } | null>(
+    null,
+  );
+  const { showPopup } = usePopup();
   useEffect(() => {
     buildSelectionRef.current = { selected };
   }, [selected]);
@@ -95,7 +128,12 @@ export default function MapCanvas({
 
     const { selected } = buildSelectionRef.current ?? { selected: null };
     if (selected) {
-      const cfg = (BUILDING_CONFIG as any)[selected];
+      const cfg = (
+        BUILDING_CONFIG as unknown as Record<
+          BuildingType,
+          { width?: number; length?: number; cost?: number }
+        >
+      )[selected as BuildingType];
       const w = cfg?.width ?? 1;
       const h = cfg?.length ?? 1;
       ctx.strokeStyle = "rgba(46, 44, 44, 1)";
@@ -122,6 +160,94 @@ export default function MapCanvas({
       );
     }
   };
+
+  const drawBuildings = (buildings: Record<string, Buildings> | null) => {
+    const canvas = buildingsCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!buildings) return;
+
+    const list = Object.values(buildings).slice() as Buildings[];
+    list.sort(
+      (a: Buildings, b: Buildings) =>
+        a.position.y + (a.length || 1) - (b.position.y + (b.length || 1)),
+    );
+
+    list.forEach((b: Buildings) => {
+      const x = b.position.x * TILE_SIZE;
+      const y = b.position.y * TILE_SIZE;
+      const w = (b.width || 1) * TILE_SIZE;
+      const h = (b.length || 1) * TILE_SIZE;
+
+      const color = BUILDING_COLORS[b.type] || "#6b4b3a";
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+
+      ctx.strokeStyle = "rgba(46,44,44,1)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    });
+  };
+
+  useEffect(() => {
+    const unsub = useGameStore.subscribe((s: GameStore) =>
+      drawBuildings(s.gameState.buildings),
+    );
+
+    try {
+      const state = useGameStore.getState();
+      drawBuildings(state.gameState.buildings);
+    } catch {
+      // ignore
+    }
+
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onContext = (e: MouseEvent) => {
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const worldX = mouseX - cameraRef.current.x;
+      const worldY = mouseY - cameraRef.current.y;
+
+      const col = Math.floor(worldX / TILE_SIZE);
+      const row = Math.floor(worldY / TILE_SIZE);
+
+      const state = useGameStore.getState();
+      const buildings = Object.values(
+        state.gameState.buildings || ({} as Record<string, Buildings>),
+      ) as Buildings[];
+      const found = buildings.find((b: Buildings) => {
+        const bx = b.position.x;
+        const by = b.position.y;
+        const bw = b.width || 1;
+        const bh = b.length || 1;
+        return col >= bx && col < bx + bw && row >= by && row < by + bh;
+      });
+
+      if (found) {
+        e.preventDefault();
+        const f = found as Buildings;
+        showPopup(
+          `Здание: ${f.type}\nID: ${f.id}\nПозиция: (${f.position.x}, ${f.position.y})`,
+          "info",
+          5000,
+        );
+      }
+    };
+
+    container.addEventListener("contextmenu", onContext);
+    return () => container.removeEventListener("contextmenu", onContext);
+  }, [showPopup]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -216,7 +342,72 @@ export default function MapCanvas({
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
       const sel = buildSelectionRef.current?.selected ?? null;
-      alert(`x=${col}, y=${row}` + (sel ? `, selected=${sel}` : ""));
+      if (!sel) return;
+
+      const cfg = (
+        BUILDING_CONFIG as unknown as Record<
+          BuildingType,
+          { width?: number; length?: number }
+        >
+      )[sel as BuildingType];
+      const w = cfg?.width ?? 1;
+      const h = cfg?.length ?? 1;
+
+      const state = useGameStore.getState();
+      const existing = Object.values(
+        state.gameState.buildings || ({} as Record<string, Buildings>),
+      ) as Buildings[];
+
+      const overlap = existing.some((b: Buildings) => {
+        const ax1 = col;
+        const ay1 = row;
+        const ax2 = col + w - 1;
+        const ay2 = row + h - 1;
+
+        const bx1 = b.position.x;
+        const by1 = b.position.y;
+        const bx2 = b.position.x + (b.width || 1) - 1;
+        const by2 = b.position.y + (b.length || 1) - 1;
+
+        return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+      });
+
+      if (overlap) {
+        showPopup("Нельзя разместить здание поверх другого здания", "error");
+        return;
+      }
+
+      const tiles = new Set<number>();
+      for (let yy = row; yy < row + h; yy++) {
+        for (let xx = col; xx < col + w; xx++) {
+          tiles.add(world.getTile(xx, yy));
+        }
+      }
+
+      if (
+        tiles.has(TileType.Sand) ||
+        tiles.has(TileType.Water) ||
+        tiles.has(TileType.DeepWater)
+      ) {
+        showPopup("Нельзя строить на воде или песке", "error");
+        return;
+      }
+
+      if (
+        tiles.has(TileType.Hill) &&
+        (tiles.has(TileType.Grass) || tiles.has(TileType.PreHill))
+      ) {
+        showPopup(
+          "Рельеф слишком нерoвный (холм + равнина) — найдите более ровное место",
+          "warning",
+        );
+        return;
+      }
+
+      const res = useGameStore.getState().addBuilding(sel, { x: col, y: row });
+      if (!res.success) {
+        showPopup(res.message, "warning");
+      }
     }
   };
 
@@ -257,6 +448,17 @@ export default function MapCanvas({
           transformOrigin: "0 0",
           willChange: "transform",
           imageRendering: "pixelated",
+        }}
+      />
+      <canvas
+        ref={buildingsCanvasRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transformOrigin: "0 0",
+          willChange: "transform",
+          pointerEvents: "none",
         }}
       />
       <canvas

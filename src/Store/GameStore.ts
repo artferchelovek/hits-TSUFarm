@@ -36,7 +36,7 @@ const appendLog = (
     state.gameState.logs.shift();
   }
 };
-const useGameStore = create<GameStore>()(
+export const useGameStore = create<GameStore>()(
   immer((set) => ({
     gameState: {
       meta: {
@@ -46,7 +46,7 @@ const useGameStore = create<GameStore>()(
         graveyardIds: [],
       },
       economy: {
-        money: 0,
+        money: 1000,
         totalPopulation: 2,
       },
       buildings: {},
