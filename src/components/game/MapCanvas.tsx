@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { TileType, WorldMap } from "../../engine/WorldMap.ts";
 import { useBuildSelection } from "../../contexts/BuildSelectionContext";
 import { usePopup } from "../../contexts/PopupContext";
-import { BUILDING_CONFIG } from "../../engine/Constants";
+import { BUILDING_COLORS, BUILDING_CONFIG } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
 import type { BuildingType, Buildings, GameStore } from "../../engine/Types";
 
@@ -13,19 +13,6 @@ const PALETTE = {
   [TileType.Sand]: "#F9FE90",
   [TileType.PreHill]: "#76DC7A",
   [TileType.DeepWater]: "#00E1E9",
-};
-
-const BUILDING_COLORS: Record<string, string> = {
-  MAIN: "#8B5A2B",
-  HOUSE: "#C68642",
-  GRANARY: "#7A4A24",
-  GREENHOUSE: "#6AA84F",
-  MARKET: "#B86B3A",
-  WELL: "#6C9FBF",
-  BRIDGE: "#7B5E3A",
-  ROAD: "#9E7B5A",
-  GARDEN: "#4CAF50",
-  GRAVEYARD: "#5D5D5D",
 };
 
 const TILE_SIZE = 25;

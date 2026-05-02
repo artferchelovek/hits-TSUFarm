@@ -72,7 +72,6 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [showPopup]);
 
-  // advance/auto-close for current popup
   useEffect(() => {
     if (!current) return;
     if (timerRef.current) {
@@ -80,7 +79,6 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
       timerRef.current = null;
     }
     timerRef.current = window.setTimeout(() => {
-      // clear current and show next if available
       setCurrent(null);
       const next = queueRef.current.shift();
       if (next) setCurrent(next);
