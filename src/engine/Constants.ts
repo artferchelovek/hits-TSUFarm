@@ -5,6 +5,7 @@ import {
   type Plant,
   ResourceType,
 } from "./Types";
+import { TileType } from "./WorldMap.ts";
 
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
@@ -193,3 +194,15 @@ export const BUILDING_COLORS: Record<string, string> = {
   GARDEN: "#4CAF50",
   GRAVEYARD: "#5D5D5D",
 };
+
+export const PALETTE = {
+  [TileType.Grass]: "#9EEAA1",
+  [TileType.Hill]: "#57C35B",
+  [TileType.Water]: "#76F2F7",
+  [TileType.Sand]: "#F9FE90",
+  [TileType.PreHill]: "#76DC7A",
+  [TileType.DeepWater]: "#00E1E9",
+};
+
+export const TILE_SIZE = 25;
+export const MAP_DIMENSION = 500;
