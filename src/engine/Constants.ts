@@ -7,6 +7,8 @@ import {
   Season,
   Weather,
 } from "./Types";
+import { TileType } from "./WorldMap.ts";
+
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 4,
@@ -204,3 +206,28 @@ export const initialGameState: GameState = {
   residents: {},
   logs: [],
 };
+
+export const BUILDING_COLORS: Record<string, string> = {
+  MAIN: "#8B5A2B",
+  HOUSE: "#C68642",
+  GRANARY: "#7A4A24",
+  GREENHOUSE: "#6AA84F",
+  MARKET: "#B86B3A",
+  WELL: "#6C9FBF",
+  BRIDGE: "#7B5E3A",
+  ROAD: "#9E7B5A",
+  GARDEN: "#4CAF50",
+  GRAVEYARD: "#5D5D5D",
+};
+
+export const PALETTE = {
+  [TileType.Grass]: "#9EEAA1",
+  [TileType.Hill]: "#57C35B",
+  [TileType.Water]: "#76F2F7",
+  [TileType.Sand]: "#F9FE90",
+  [TileType.PreHill]: "#76DC7A",
+  [TileType.DeepWater]: "#00E1E9",
+};
+
+export const TILE_SIZE = 25;
+export const MAP_DIMENSION = 500;

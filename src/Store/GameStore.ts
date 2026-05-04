@@ -37,7 +37,7 @@ export const appendLog = (
     state.gameState.logs.shift();
   }
 };
-const useGameStore = create<GameStore>()(
+export const useGameStore = create<GameStore>()(
   immer((set) => ({
     gameState: initialGameState,
 

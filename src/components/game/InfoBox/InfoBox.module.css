@@ -1,0 +1,38 @@
+.InfoBox {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    position: absolute;
+    z-index: 10000;
+    background: #e2c0a0;
+    color: #2e2c2c;
+    border: 2px solid rgba(46, 44, 44, 0.12);
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 14px;
+
+    pointer-events: auto
+}
+
+.InfoBox__label {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+
+    p {
+        font-size: 16px;
+    }
+
+    button {
+        border: none;
+        background: none;
+        font-weight: bold;
+
+        cursor: pointer;
+    }
+}
+
+.InfoBox__body {
+    background: #fbf0e5;
+    padding: 5px;
+}
