@@ -1,7 +1,7 @@
 import styles from "./LeftPanel.module.css";
 import { useState } from "react";
 import { BuildingType } from "../../../engine/Types";
-import { BUILDING_CONFIG } from "../../../engine/Constants";
+import { BUILDING_CONFIG, BUILDING_NAMES } from "../../../engine/Constants";
 import { useBuildSelection } from "../../../contexts/BuildSelectionContext";
 import { useGameStore } from "../../../Store/GameStore";
 import type { Buildings } from "../../../engine/Types";
@@ -33,19 +33,6 @@ function BuildingsPanel() {
   const { selected, setSelected } = useBuildSelection();
   const money = useGameStore((state) => state.gameState.economy.money);
   const buildings = useGameStore((state) => state.gameState.buildings);
-
-  const BUILDING_NAMES: Record<BuildingType, string> = {
-    [BuildingType.Main]: "Главное здание",
-    [BuildingType.House]: "Дом",
-    [BuildingType.Granary]: "Амбар",
-    [BuildingType.Greenhouse]: "Теплица",
-    [BuildingType.Market]: "Рынок",
-    [BuildingType.Well]: "Колодец",
-    [BuildingType.Bridge]: "Мост",
-    [BuildingType.Road]: "Дорога",
-    [BuildingType.Garden]: "Огород",
-    [BuildingType.Graveyard]: "Кладбище",
-  };
 
   const buildingTypes = Object.values(BuildingType) as BuildingType[];
 
