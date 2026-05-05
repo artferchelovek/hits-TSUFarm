@@ -29,7 +29,10 @@ export default function InfoPanel() {
             (state) => state.gameState.economy.totalPopulation,
           )}
         />
-        <Row name={"Уровень"} data={"1"} />
+        <Row
+          name={"Уровень"}
+          data={useGameStore((state) => state.gameState.economy.level)}
+        />
       </div>
     </div>
   );

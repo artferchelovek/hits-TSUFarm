@@ -8,6 +8,8 @@ import {
   Weather,
 } from "./Types";
 import { TileType } from "./WorldMap.ts";
+
+import { getBuildingLimit } from "../Store/BuildLimit.ts";
 import MainInfo from "../components/game/InfoBox/InfoGroups/MainInfo.tsx";
 import HouseInfo from "../components/game/InfoBox/InfoGroups/HouseInfo.tsx";
 import GranaryInfo from "../components/game/InfoBox/InfoGroups/GranaryInfo.tsx";
@@ -18,6 +20,7 @@ import WellInfo from "../components/game/InfoBox/InfoGroups/WellInfo.tsx";
 import GraveyardInfo from "../components/game/InfoBox/InfoGroups/GraveyardInfo.tsx";
 import RoadInfo from "../components/game/InfoBox/InfoGroups/RoadInfo.tsx";
 import BridgeInfo from "../components/game/InfoBox/InfoGroups/BridgeInfo.tsx";
+
 
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
@@ -170,7 +173,6 @@ export const WeatherEffects = {
   RAIN_MOISTURE_GAIN: 1.5,
   WINTER_PLANT_DAMAGE: 0.05,
 };
-const mainBuildingId = crypto.randomUUID();
 export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
@@ -188,31 +190,16 @@ export const initialGameState: GameState = {
     level: 1,
     totalPopulation: 2,
   },
-  buildings: {
-    [mainBuildingId]: {
-      id: mainBuildingId,
-      type: BuildingType.Main,
-      position: { x: 0, y: 0 },
-      width: BUILDING_CONFIG[BuildingType.Main].width,
-      length: BUILDING_CONFIG[BuildingType.Main].length,
-      populationStats: {
-        maxCapacity: BUILDING_CONFIG[BuildingType.Main].initialCapacity,
-        currentAmount: 0,
-      },
-    },
-  },
-  buildingCounts: {
-    [BuildingType.Main]: 0,
-    [BuildingType.Market]: 0,
-    [BuildingType.Greenhouse]: 0,
-    [BuildingType.Garden]: 0,
-    [BuildingType.Well]: 0,
-    [BuildingType.Graveyard]: 0,
-    [BuildingType.Bridge]: 0,
-    [BuildingType.Road]: 0,
-    [BuildingType.House]: 0,
-    [BuildingType.Granary]: 0,
-  },
+  buildings: {},
+  buildingCounts: Object.fromEntries(
+    Object.values(BuildingType).map((type) => [type, 0]),
+  ) as Record<BuildingType, number>,
+  buildingRemind: Object.fromEntries(
+    Object.values(BuildingType).map((type) => [
+      type,
+      getBuildingLimit(type, 1),
+    ]),
+  ) as Record<BuildingType, number>,
   residents: {},
   logs: [],
 };

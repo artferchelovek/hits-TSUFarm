@@ -45,6 +45,7 @@
   padding: 8px 10px;
   background: #fbf0e5;
   border: 1px solid rgba(46, 44, 44, 0.08);
+  cursor: pointer;
 }
 
 .buildingItem:hover {
@@ -57,6 +58,7 @@
 
 .buildingItem__disabled {
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .buildingItem__title {

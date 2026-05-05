@@ -221,6 +221,7 @@ export interface GameState {
   };
   buildings: Record<string, Buildings>;
   buildingCounts: Record<BuildingType, number>;
+  buildingRemind: Record<BuildingType, number>;
   residents: Record<string, Resident>;
   logs: GameLog[];
 }
