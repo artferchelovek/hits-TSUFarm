@@ -8,7 +8,19 @@ import {
   Weather,
 } from "./Types";
 import { TileType } from "./WorldMap.ts";
+
 import { getBuildingLimit } from "../Store/BuildLimit.ts";
+import MainInfo from "../components/game/InfoBox/InfoGroups/MainInfo.tsx";
+import HouseInfo from "../components/game/InfoBox/InfoGroups/HouseInfo.tsx";
+import GranaryInfo from "../components/game/InfoBox/InfoGroups/GranaryInfo.tsx";
+import GreenhouseInfo from "../components/game/InfoBox/InfoGroups/GreenhouseInfo.tsx";
+import MarketInfo from "../components/game/InfoBox/InfoGroups/MarketInfo.tsx";
+import GardenInfo from "../components/game/InfoBox/InfoGroups/GardenInfo.tsx";
+import WellInfo from "../components/game/InfoBox/InfoGroups/WellInfo.tsx";
+import GraveyardInfo from "../components/game/InfoBox/InfoGroups/GraveyardInfo.tsx";
+import RoadInfo from "../components/game/InfoBox/InfoGroups/RoadInfo.tsx";
+import BridgeInfo from "../components/game/InfoBox/InfoGroups/BridgeInfo.tsx";
+
 
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
@@ -212,6 +224,19 @@ export const PALETTE = {
   [TileType.Sand]: "#F9FE90",
   [TileType.PreHill]: "#76DC7A",
   [TileType.DeepWater]: "#00E1E9",
+};
+
+export const INFO_COMPONENTS = {
+  [BuildingType.Main]: MainInfo,
+  [BuildingType.Market]: MarketInfo,
+  [BuildingType.Greenhouse]: GreenhouseInfo,
+  [BuildingType.Garden]: GardenInfo,
+  [BuildingType.Well]: WellInfo,
+  [BuildingType.Graveyard]: GraveyardInfo,
+  [BuildingType.Bridge]: BridgeInfo,
+  [BuildingType.Road]: RoadInfo,
+  [BuildingType.House]: HouseInfo,
+  [BuildingType.Granary]: GranaryInfo,
 };
 
 export const TILE_SIZE = 25;
