@@ -192,7 +192,7 @@ export const initialGameState: GameState = {
     },
   },
   buildingCounts: {
-    [BuildingType.Main]: 1,
+    [BuildingType.Main]: 0,
     [BuildingType.Market]: 0,
     [BuildingType.Greenhouse]: 0,
     [BuildingType.Garden]: 0,
