@@ -194,6 +194,8 @@ export interface Resident {
     type: ResourceType;
     amount: number;
   };
+  path: Position[];
+  pathIndex: number;
 }
 
 export interface Decedent {
