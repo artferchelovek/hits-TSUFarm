@@ -29,7 +29,17 @@ export enum ResourceType {
   Wheat = "Wheat",
   Empty = "Empty",
 }
-
+export enum Weather {
+  Snow = "Snow",
+  Rain = "Rain",
+  Clear = "Clear",
+}
+export enum Season {
+  Summer = "Summer",
+  Autumn = "Autumn",
+  Winter = "Winter",
+  Spring = "Spring",
+}
 export enum Gender {
   Male = "Male",
   Female = "Female",
@@ -198,12 +208,19 @@ export interface GameState {
     lastSaved: number;
     gameTick: number;
     graveyardIds: string[];
+    currentWeather: Weather;
+    currentSeason: Season;
+    seasonDuration: number;
+    dayDuration: number;
+    isNight: boolean;
   };
   economy: {
     money: number;
+    level: number;
     totalPopulation: number;
   };
   buildings: Record<string, Buildings>;
+  buildingCounts: Record<BuildingType, number>;
   residents: Record<string, Resident>;
   logs: GameLog[];
 }
