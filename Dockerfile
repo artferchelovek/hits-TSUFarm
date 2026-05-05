@@ -1,4 +1,4 @@
-FROM node:18-alpine as build
+FROM node:22-alpine as build
 LABEL authors="artem"
 WORKDIR /app
 COPY package*.json ./
