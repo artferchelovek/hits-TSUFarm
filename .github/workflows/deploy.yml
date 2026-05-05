@@ -25,5 +25,10 @@ jobs:
             docker stop frontend-container || true
             docker rm frontend-container || true
             
-            docker run -d --name frontend-container -p 80:80 frontend-image
+            docker run -d --name frontend-container \
+            -p 80:80 -p 443:443 \
+            -v /etc/letsencrypt/live/lilv2dim.ru/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro \
+            -v /etc/letsencrypt/live/lilv2dim.ru/privkey.pem:/etc/nginx/certs/privkey.pem:ro \
+            frontend-image
+            
             docker image prune -f
