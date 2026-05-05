@@ -17,16 +17,13 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /projects/hits-TSUFarm
+            cd ~/projects/hits-TSUFarm
             git pull origin develop
             
-            docker build -t frontend-image
+            docker build -t frontend-image .
             
             docker stop frontend-container || true
             docker rm frontend-container || true
             
-            docker run -d \
-              --name frontend-container \
-              -p 80:80 \
-              --restart always \
-              frontend-image
+            docker run -d --name frontend-container -p 80:80 frontend-image
+            docker image prune -f
