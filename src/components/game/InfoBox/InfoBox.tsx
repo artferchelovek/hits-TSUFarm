@@ -1,6 +1,16 @@
 import styles from "./InfoBox.module.css";
-import type { Buildings } from "../../../engine/Types.ts";
-import { BUILDING_NAMES, INFO_COMPONENTS } from "../../../engine/Constants.ts";
+import { type Buildings, BuildingType } from "../../../engine/Types.ts";
+import { BUILDING_NAMES } from "../../../engine/Constants.ts";
+import MainInfo from "./InfoGroups/MainInfo.tsx";
+import MarketInfo from "./InfoGroups/MarketInfo.tsx";
+import GreenhouseInfo from "./InfoGroups/GreenhouseInfo.tsx";
+import GardenInfo from "./InfoGroups/GardenInfo.tsx";
+import WellInfo from "./InfoGroups/WellInfo.tsx";
+import GraveyardInfo from "./InfoGroups/GraveyardInfo.tsx";
+import BridgeInfo from "./InfoGroups/BridgeInfo.tsx";
+import RoadInfo from "./InfoGroups/RoadInfo.tsx";
+import HouseInfo from "./InfoGroups/HouseInfo.tsx";
+import GranaryInfo from "./InfoGroups/GranaryInfo.tsx";
 
 export default function InfoBox({
   build,
@@ -11,10 +21,6 @@ export default function InfoBox({
   position: { x: number; y: number };
   onClose: () => void;
 }) {
-  const DefaultInfo = () => <p>Нет данных</p>;
-
-  const SpecificInfo = INFO_COMPONENTS[build.type] ?? DefaultInfo;
-
   return (
     <div
       className={styles.InfoBox}
@@ -27,7 +33,45 @@ export default function InfoBox({
         <p>{BUILDING_NAMES[build.type]}</p>
         <button onClick={onClose}>Закрыть</button>
       </div>
-      {SpecificInfo && <SpecificInfo build={build as Buildings} />}
+
+      {renderBuildingInfo(build)}
     </div>
   );
+}
+
+function renderBuildingInfo(build: Buildings) {
+  switch (build.type) {
+    case BuildingType.Main:
+      return <MainInfo build={build} />;
+
+    case BuildingType.Market:
+      return <MarketInfo build={build} />;
+
+    case BuildingType.Greenhouse:
+      return <GreenhouseInfo build={build} />;
+
+    case BuildingType.Garden:
+      return <GardenInfo build={build} />;
+
+    case BuildingType.Well:
+      return <WellInfo build={build} />;
+
+    case BuildingType.Graveyard:
+      return <GraveyardInfo build={build} />;
+
+    case BuildingType.Bridge:
+      return <BridgeInfo build={build} />;
+
+    case BuildingType.Road:
+      return <RoadInfo build={build} />;
+
+    case BuildingType.House:
+      return <HouseInfo build={build} />;
+
+    case BuildingType.Granary:
+      return <GranaryInfo build={build} />;
+
+    default:
+      return <p>Нет данных</p>;
+  }
 }
