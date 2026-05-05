@@ -379,10 +379,7 @@ export function useMapCanvas(isBackground: boolean) {
         return;
       }
 
-      const res = useGameStore.getState().addBuilding(sel, { x: col, y: row });
-      if (!res.success) {
-        showPopup(res.message, "warning");
-      }
+      useGameStore.getState().addBuilding(sel, { x: col, y: row });
     }
   };
 
