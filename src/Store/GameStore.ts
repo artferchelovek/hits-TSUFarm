@@ -87,16 +87,13 @@ export const useGameStore = create<GameStore>()(
             return;
           }
           const newBuild = createBuilding(type, pos);
-          state.gameState.buildings[newBuild.id] = newBuild;
-          state.gameState.buildingCounts[type] += 1;
           if (type === BuildingType.Graveyard) {
             state.gameState.meta.graveyardIds.push(newBuild.id);
           }
           if (
             type === BuildingType.Main &&
-            Object.values(state.gameState.buildings).find(
-              (build) => build.type === BuildingType.Main,
-            )
+            getBuildingLimit(type, state.gameState.economy.level) <=
+              state.gameState.buildingCounts[type]
           ) {
             report = {
               success: false,
@@ -105,6 +102,8 @@ export const useGameStore = create<GameStore>()(
             appendLog(state, "Главное здание уже существует", "warning");
             return;
           }
+          state.gameState.buildings[newBuild.id] = newBuild;
+          state.gameState.buildingCounts[type] += 1;
           report = {
             success: true,
             message: `${BUILDING_NAMES[type]}(ID-${newBuild.id}) успешно построен`,
