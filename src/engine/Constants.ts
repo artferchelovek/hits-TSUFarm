@@ -160,7 +160,6 @@ export const WeatherEffects = {
   RAIN_MOISTURE_GAIN: 1.5,
   WINTER_PLANT_DAMAGE: 0.05,
 };
-const mainBuildingId = crypto.randomUUID();
 export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
@@ -178,19 +177,7 @@ export const initialGameState: GameState = {
     level: 1,
     totalPopulation: 2,
   },
-  buildings: {
-    [mainBuildingId]: {
-      id: mainBuildingId,
-      type: BuildingType.Main,
-      position: { x: 0, y: 0 },
-      width: BUILDING_CONFIG[BuildingType.Main].width,
-      length: BUILDING_CONFIG[BuildingType.Main].length,
-      populationStats: {
-        maxCapacity: BUILDING_CONFIG[BuildingType.Main].initialCapacity,
-        currentAmount: 0,
-      },
-    },
-  },
+  buildings: {},
   buildingCounts: {
     [BuildingType.Main]: 0,
     [BuildingType.Market]: 0,
