@@ -33,6 +33,24 @@
 }
 
 .InfoBox__body {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     background: #fbf0e5;
     padding: 5px;
+}
+
+.InfoBox__progress {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    
+    progress {
+        width: 100%;
+    }
+
+    .InfoBox__progressTop {
+        display: flex;
+        justify-content: space-between;
+    }
 }
