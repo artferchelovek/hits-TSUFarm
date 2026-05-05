@@ -184,8 +184,8 @@ export const initialGameState: GameState = {
     isNight: false,
   },
   economy: {
-    money: 10000,
-    level: 100,
+    money: 100,
+    level: 1,
     totalPopulation: 2,
   },
   buildings: {
