@@ -8,6 +8,7 @@ import {
   Weather,
 } from "./Types";
 import { TileType } from "./WorldMap.ts";
+import { getBuildingLimit } from "../Store/BuildLimit.ts";
 
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
@@ -178,18 +179,15 @@ export const initialGameState: GameState = {
     totalPopulation: 2,
   },
   buildings: {},
-  buildingCounts: {
-    [BuildingType.Main]: 0,
-    [BuildingType.Market]: 0,
-    [BuildingType.Greenhouse]: 0,
-    [BuildingType.Garden]: 0,
-    [BuildingType.Well]: 0,
-    [BuildingType.Graveyard]: 0,
-    [BuildingType.Bridge]: 0,
-    [BuildingType.Road]: 0,
-    [BuildingType.House]: 0,
-    [BuildingType.Granary]: 0,
-  },
+  buildingCounts: Object.fromEntries(
+    Object.values(BuildingType).map((type) => [type, 0]),
+  ) as Record<BuildingType, number>,
+  buildingRemind: Object.fromEntries(
+    Object.values(BuildingType).map((type) => [
+      type,
+      getBuildingLimit(type, 1),
+    ]),
+  ) as Record<BuildingType, number>,
   residents: {},
   logs: [],
 };

@@ -104,6 +104,7 @@ export const useGameStore = create<GameStore>()(
           }
           state.gameState.buildings[newBuild.id] = newBuild;
           state.gameState.buildingCounts[type] += 1;
+          state.gameState.buildingRemind[type] -= 1;
           report = {
             success: true,
             message: `${BUILDING_NAMES[type]}(ID-${newBuild.id}) успешно построен`,
