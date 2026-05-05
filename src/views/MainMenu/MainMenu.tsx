@@ -14,7 +14,9 @@ export default function MainMenu() {
   useEffect(() => {
     const USER = "artferchelovek";
     const REPO = "hits-TSUFarm";
-    const url = `https://api.github.com/repos/${USER}/${REPO}/commits?per_page=5`;
+    const BRANCH = "develop";
+
+    const url = `https://api.github.com/repos/${USER}/${REPO}/commits?sha=${BRANCH}&per_page=5`;
 
     let mounted = true;
     type GhCommit = {

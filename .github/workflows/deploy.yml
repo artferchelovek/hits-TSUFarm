@@ -1,0 +1,32 @@
+name: Deploy to Server
+on:
+  push:
+    branches:
+      - develop
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Execute remote ssh comands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /projects/hits-TSUFarm
+            git pull origin develop
+            
+            docker build -t frontend-image
+            
+            docker stop frontend-container || true
+            docker rm frontend-container || true
+            
+            docker run -d \
+              --name frontend-container \
+              -p 80:80 \
+              --restart always \
+              frontend-image
