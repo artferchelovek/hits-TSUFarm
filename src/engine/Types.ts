@@ -125,7 +125,7 @@ export interface Granary extends BaseBuilding {
     maxCapacity: number;
   };
 }
-
+export type PlantPlace = Garden | Greenhouse;
 export interface Garden extends PlaceGrow {
   type: BuildingType.Garden;
 }
