@@ -74,7 +74,7 @@ export class PathFinding {
   private heuristic(a: Position, b: Position) {
     const dx = Math.abs(a.x - b.x);
     const dy = Math.abs(a.y - b.y);
-    return dx + dy + (Math.sqrt(2) - 2) * Math.min(dx, dy);
+    return dx + dy - Math.min(dx, dy);
   }
 
   public findPath(start: Position, end: Position): Position[] {

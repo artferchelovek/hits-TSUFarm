@@ -1,6 +1,7 @@
 import {
-  BuildingType,
-  type Position,
+  type Buildings,
+  type GameLog,
+  type PlantPlace,
   type Resident,
   Season,
   Weather,
@@ -10,11 +11,15 @@ export type UItoWorkerMessage =
   | {
       type: "INIT_WORLD";
       payload: {
-        residents: Record<string, Resident>;
         grid: Uint8Array;
+        buildings: Record<string, Buildings>;
         width: number;
         height: number;
       };
+    }
+  | {
+      type: "SET_RESIDENTS";
+      payload: { residents: Record<string, Resident> };
     }
   | {
       type: "TICK";
@@ -22,25 +27,30 @@ export type UItoWorkerMessage =
         isNight: boolean;
         weather: Weather;
         season: Season;
+        plantBuildings: PlantPlace[];
         tick: number;
       };
     }
   | { type: "RESIDENT_BORN"; payload: Resident }
   | {
-      type: "BUILDING_PLACED";
+      type: "UPDATE_BUILDING";
       payload: {
-        pos: Position;
-        width: number;
-        length: number;
-        type: BuildingType;
+        building: Buildings;
       };
     };
 
 export type WorkerToUIMessage =
-  | { type: "SYNC"; payload: { residents: Record<string, Resident> } }
   | {
-      type: "RESIDENT_DIED";
-      payload: { id: string; name: string; age: number };
+      type: "TICK_DONE";
+      payload: {
+        residents: Record<string, Resident>;
+        deadIds: string[];
+        plants: PlantPlace[];
+        logs: GameLog[];
+      };
     }
-  | { type: "REQUEST_REPRODUCTION"; payload: { parentId: string } }
-  | { type: "LOG"; payload: { message: string; type: "info" | "warning" } };
+  | {
+      type: "INIT_DONE";
+    }
+  | { type: "UPDATE_BUILDING_SUCCESS" }
+  | { type: "SET_RESIDENTS_SUCCESS" };
