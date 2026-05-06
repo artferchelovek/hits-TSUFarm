@@ -1,3 +1,5 @@
+import type { WorkerToUIMessage } from "./CitizenWorker/message.ts";
+
 export enum BuildingType {
   Main = "MAIN",
   House = "HOUSE",
@@ -229,6 +231,7 @@ export interface GameState {
 }
 
 export interface GameActions {
+  applyWorkerUpdate: (message: WorkerToUIMessage) => void;
   tick: () => void;
   addBuilding: (type: BuildingType, pos: Position) => Result;
   addPlant: (build: Garden | Greenhouse, plant: CropType) => Result;

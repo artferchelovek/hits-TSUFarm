@@ -21,6 +21,7 @@ import {
 } from "./Processor.ts";
 import { createBuilding } from "./BuildingFactory.ts";
 import { getBuildingLimit } from "./BuildLimit.ts";
+import { syncToStore, workerManager } from "./WorkerManager.ts";
 
 export const appendLog = (
   state: WritableDraft<GameStore>,
@@ -42,6 +43,11 @@ export const useGameStore = create<GameStore>()(
   immer((set) => ({
     gameState: initialGameState,
 
+    applyWorkerUpdate: (payload) => {
+      set((state) => {
+        syncToStore(state, payload);
+      });
+    },
     tick: () => {
       set((state: GameStore) => {
         state.gameState.meta.gameTick++;
@@ -58,12 +64,21 @@ export const useGameStore = create<GameStore>()(
           }
         });
 
-        Object.values(state.gameState.residents).forEach((resident) => {
-          processResident(state, resident);
+        const plantBuildings = Object.values(state.gameState.buildings).filter(
+          (b) =>
+            b.type === BuildingType.Garden ||
+            b.type === BuildingType.Greenhouse,
+        );
+
+        workerManager.send("TICK", {
+          tick: state.gameState.meta.gameTick,
+          isNight: state.gameState.meta.isNight,
+          weather: state.gameState.meta.currentWeather,
+          season: state.gameState.meta.currentSeason,
+          plantBuildings,
         });
       });
     },
-
     addBuilding: (type, pos): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {
