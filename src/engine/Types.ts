@@ -1,3 +1,5 @@
+import type { WorkerToUIMessage } from "./CitizenWorker/message.ts";
+
 export enum BuildingType {
   Main = "MAIN",
   House = "HOUSE",
@@ -223,11 +225,13 @@ export interface GameState {
   };
   buildings: Record<string, Buildings>;
   buildingCounts: Record<BuildingType, number>;
+  buildingRemind: Record<BuildingType, number>;
   residents: Record<string, Resident>;
   logs: GameLog[];
 }
 
 export interface GameActions {
+  applyWorkerUpdate: (message: WorkerToUIMessage) => void;
   tick: () => void;
   addBuilding: (type: BuildingType, pos: Position) => Result;
 }

@@ -12,6 +12,7 @@ import { useGameStore } from "../../Store/GameStore";
 import type { BuildingType, Buildings, GameStore } from "../../engine/Types";
 import updateTransform from "./map/camera";
 import * as drawFns from "./map/draw";
+import { syncToStore, workerManager } from "../../Store/WorkerManager.ts";
 
 export function useMapCanvas(isBackground: boolean) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,7 +33,26 @@ export function useMapCanvas(isBackground: boolean) {
     w.generate();
     return w;
   });
+  useEffect(() => {
+    if (!world) return;
+    const tiles = world.data;
+    const width = world.width;
+    const height = world.height;
 
+    const state = useGameStore.getState();
+    workerManager.init((payload) =>
+      useGameStore.getState().applyWorkerUpdate(payload),
+    );
+    workerManager.send("INIT_WORLD", {
+      grid: tiles,
+      buildings: state.gameState.buildings,
+      width,
+      height,
+    });
+    workerManager.send("SET_RESIDENTS", {
+      residents: state.gameState.residents,
+    });
+  }, [world]);
   const [buildInfo, setBuildInfo] = useState<null | {
     build: Buildings;
     position: { x: number; y: number };

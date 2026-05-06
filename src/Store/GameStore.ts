@@ -12,14 +12,10 @@ import {
   BUILDING_NAMES,
   initialGameState,
 } from "../engine/Constants.ts";
-import {
-  processDayTime,
-  processPlantGrowth,
-  processResident,
-  processWell,
-} from "./Processor.ts";
+import { processDayTime } from "./Processor.ts";
 import { createBuilding } from "./BuildingFactory.ts";
 import { getBuildingLimit } from "./BuildLimit.ts";
+import { syncToStore, workerManager } from "./WorkerManager.ts";
 
 export const appendLog = (
   state: WritableDraft<GameStore>,
@@ -41,24 +37,28 @@ export const useGameStore = create<GameStore>()(
   immer((set) => ({
     gameState: initialGameState,
 
+    applyWorkerUpdate: (payload) => {
+      set((state) => {
+        syncToStore(state, payload);
+      });
+    },
     tick: () => {
       set((state: GameStore) => {
         state.gameState.meta.gameTick++;
         processDayTime(state);
-        Object.values(state.gameState.buildings).forEach((building) => {
-          if (
-            building.type === BuildingType.Greenhouse ||
-            building.type === BuildingType.Garden
-          ) {
-            processPlantGrowth(state, building);
-          }
-          if (building.type === BuildingType.Well) {
-            processWell(building);
-          }
-        });
 
-        Object.values(state.gameState.residents).forEach((resident) => {
-          processResident(state, resident);
+        const plantBuildings = Object.values(state.gameState.buildings).filter(
+          (b) =>
+            b.type === BuildingType.Garden ||
+            b.type === BuildingType.Greenhouse,
+        );
+
+        workerManager.send("TICK", {
+          tick: state.gameState.meta.gameTick,
+          isNight: state.gameState.meta.isNight,
+          weather: state.gameState.meta.currentWeather,
+          season: state.gameState.meta.currentSeason,
+          plantBuildings,
         });
       });
     },
@@ -104,6 +104,7 @@ export const useGameStore = create<GameStore>()(
           }
           state.gameState.buildings[newBuild.id] = newBuild;
           state.gameState.buildingCounts[type] += 1;
+          workerManager.send("UPDATE_BUILDING", { building: newBuild });
           report = {
             success: true,
             message: `${BUILDING_NAMES[type]}(ID-${newBuild.id}) успешно построен`,
