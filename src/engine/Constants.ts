@@ -80,7 +80,7 @@ export const BUILDING_NAMES: Record<BuildingType, string> = {
   [BuildingType.Main]: "Главное здание",
   [BuildingType.Market]: "Рынок",
   [BuildingType.Greenhouse]: "Теплица",
-  [BuildingType.Garden]: "Сад",
+  [BuildingType.Garden]: "Грядка",
   [BuildingType.Well]: "Колодец",
   [BuildingType.Graveyard]: "Кладбище",
   [BuildingType.Bridge]: "Мост",

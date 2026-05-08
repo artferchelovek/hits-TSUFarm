@@ -229,6 +229,7 @@ export interface GameState {
 export interface GameActions {
   tick: () => void;
   addBuilding: (type: BuildingType, pos: Position) => Result;
+  addPlant: (build: Garden | Greenhouse, plant: CropType) => Result;
 }
 
 export type GameStore = { gameState: GameState } & GameActions;

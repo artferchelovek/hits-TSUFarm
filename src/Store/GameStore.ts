@@ -11,6 +11,7 @@ import {
   BUILDING_CONFIG,
   BUILDING_NAMES,
   initialGameState,
+  PLANT_CONFIG,
 } from "../engine/Constants.ts";
 import {
   processDayTime,
@@ -62,6 +63,7 @@ export const useGameStore = create<GameStore>()(
         });
       });
     },
+
     addBuilding: (type, pos): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {
@@ -121,6 +123,60 @@ export const useGameStore = create<GameStore>()(
             message,
           };
           appendLog(state, message, "warning");
+        }
+      });
+      return report;
+    },
+    addPlant: (build, plant): Result => {
+      let report: Result = { success: false, message: "" };
+      set((state) => {
+        const rightBuild = state.gameState.buildings[build.id];
+        if (rightBuild) {
+          switch (rightBuild.type) {
+            case BuildingType.Garden:
+              rightBuild.harvest = {
+                isReady: false,
+                type: plant,
+                growthProgress: 0,
+              };
+              report = {
+                success: true,
+                message: `${PLANT_CONFIG[plant].name} успешно посажен`,
+              };
+              appendLog(
+                state,
+                `${PLANT_CONFIG[plant].name} успешно посажен`,
+                "success",
+              );
+              break;
+            case BuildingType.Greenhouse:
+              rightBuild.harvest = {
+                growthProgress: 0,
+                isReady: false,
+                type: plant,
+              };
+              report = {
+                success: true,
+                message: `${PLANT_CONFIG[plant].name} успешно посажен`,
+              };
+              appendLog(
+                state,
+                `${PLANT_CONFIG[plant].name} успешно посажен`,
+                "success",
+              );
+              break;
+            default:
+              report = {
+                success: false,
+                message: `Невозможно посадить растение на ${BUILDING_NAMES[build.type]}`,
+              };
+              appendLog(
+                state,
+                `Невозможно посадить растение на ${BUILDING_NAMES[build.type]}`,
+                "warning",
+              );
+              break;
+          }
         }
       });
       return report;
