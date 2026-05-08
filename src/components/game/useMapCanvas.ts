@@ -33,15 +33,20 @@ export function useMapCanvas(isBackground: boolean) {
     return w;
   });
 
-  const [buildInfo, setBuildInfo] = useState<null | {
-    build: Buildings;
-    position: { x: number; y: number };
-  }>(null);
+  const [selectedBuildId, setSelectedBuildId] = useState<string | null>(null);
+  const [clickOffset, setClickOffset] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   const [infoBoxPos, setInfoBoxPos] = useState<{
     x: number;
     y: number;
   } | null>(null);
+
+  const activeBuilding = useGameStore((state) =>
+    selectedBuildId ? state.gameState.buildings[selectedBuildId] : null,
+  );
 
   useEffect(() => {
     const canvas = mapCanvasRef.current;
@@ -100,15 +105,6 @@ export function useMapCanvas(isBackground: boolean) {
       buildingsCanvasRef,
       overlayCanvasRef,
     );
-    if (buildInfo?.build) {
-      const b = buildInfo.build;
-      const wx = b.position.x * TILE_SIZE;
-      const wy = b.position.y * TILE_SIZE;
-      const { x, y, zoom } = cameraRef.current;
-      const left = Math.round(zoom * (wx + x));
-      const top = Math.round(zoom * (wy + y)) - 32;
-      setInfoBoxPos({ x: left, y: top });
-    }
   }, [world]);
 
   const { selected } = useBuildSelection();
@@ -182,23 +178,16 @@ export function useMapCanvas(isBackground: boolean) {
       if (found) {
         e.preventDefault();
         const f = found as Buildings;
-        const bWorldX = f.position.x * TILE_SIZE;
-        const bWorldY = f.position.y * TILE_SIZE;
 
         const clickWorldX =
           mouseX / cameraRef.current.zoom - cameraRef.current.x;
         const clickWorldY =
           mouseY / cameraRef.current.zoom - cameraRef.current.y;
+        const offsetX = clickWorldX - f.position.x * TILE_SIZE;
+        const offsetY = clickWorldY - f.position.y * TILE_SIZE;
 
-        const offsetX = clickWorldX - bWorldX;
-        const offsetY = clickWorldY - bWorldY;
-
-        setBuildInfo({
-          build: f,
-          position: { x: offsetX, y: offsetY },
-        });
-
-        updateInfoBoxPosition(f, offsetX, offsetY);
+        setSelectedBuildId(f.id);
+        setClickOffset({ x: offsetX, y: offsetY });
 
         setSelected(null);
       }
@@ -277,7 +266,7 @@ export function useMapCanvas(isBackground: boolean) {
         overlayCanvasRef,
       );
 
-      if (buildInfo) updateInfoBoxPosition();
+      updateInfoBoxPosition();
       return;
     }
 
@@ -383,30 +372,31 @@ export function useMapCanvas(isBackground: boolean) {
     }
   };
 
-  const updateInfoBoxPosition = (
-    overrideBuild?: Buildings,
-    offX?: number,
-    offY?: number,
-  ) => {
-    const b = overrideBuild || buildInfo?.build;
-    const offsetX = offX ?? buildInfo?.position.x ?? 0;
-    const offsetY = offY ?? buildInfo?.position.y ?? 0;
+  const updateInfoBoxPosition = () => {
+    const b = activeBuilding;
+    const offset = clickOffset;
 
-    if (!b) return;
+    if (!b || !offset) return;
 
     const { x, y, zoom } = cameraRef.current;
-
     const bWorldX = b.position.x * TILE_SIZE;
     const bWorldY = b.position.y * TILE_SIZE;
 
-    const left = Math.round((bWorldX + offsetX + x) * zoom);
-    const top = Math.round((bWorldY + offsetY + y) * zoom);
+    const left = Math.round((bWorldX + offset.x + x) * zoom);
+    const top = Math.round((bWorldY + offset.y + y) * zoom);
 
     setInfoBoxPos({ x: left, y: top });
   };
 
+  useEffect(() => {
+    if (activeBuilding && clickOffset) {
+      updateInfoBoxPosition();
+    }
+  }, [activeBuilding, clickOffset]);
+
   const onInfoBoxClose = () => {
-    setBuildInfo(null);
+    setSelectedBuildId(null);
+    setClickOffset(null);
     setInfoBoxPos(null);
   };
 
@@ -417,9 +407,10 @@ export function useMapCanvas(isBackground: boolean) {
     overlayCanvasRef,
     onMouseMove,
     onClick,
-    buildInfo,
+    buildInfo: activeBuilding
+      ? { build: activeBuilding, position: clickOffset }
+      : null,
     infoBoxPos,
-    setBuildInfo,
     onInfoBoxClose,
     onMouseDown: (e: React.MouseEvent) => {
       if ((e as any).button !== 1) return;
