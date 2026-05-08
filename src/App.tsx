@@ -1,8 +1,13 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import GameView from "./views/GameView.tsx";
 import MainMenu from "./views/MainMenu/MainMenu.tsx";
+import PlugView from "./views/PlugView/PlugView.tsx";
 
 export default function App() {
+  if (window.innerWidth <= 1200) {
+    return <PlugView />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
