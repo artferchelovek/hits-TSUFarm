@@ -1,16 +1,23 @@
 import {
+  type Birth,
   type Buildings,
   BuildingType,
-  type Resident,
+  type GameLog,
+  Gender,
+  type PlantPlace,
   type Position,
+  type Resident,
+  Season,
   VillagerStatus,
   Weather,
-  Season,
-  type GameLog,
-  type PlantPlace,
 } from "../Types.ts";
 import { TileType } from "../WorldMap.ts";
-import { PLANT_CONFIG, VILLAGER_CONFIG, WeatherEffects } from "../Constants.ts";
+import {
+  PLANT_CONFIG,
+  REPRODUCTION,
+  VILLAGER_CONFIG,
+  WeatherEffects,
+} from "../Constants.ts";
 import { PathFinding } from "./pathfinding.ts";
 
 export interface WorkerMessage {
@@ -25,7 +32,7 @@ export const TERRAIN_WEIGHTS = {
   OBSTACLE: 999,
 };
 
-const WANDER_CHANCE = 0.1;
+const WANDER_CHANCE = 0.5;
 const WANDER_RADIUS = 5;
 const WANDER_ATTEMPTS = 5;
 
@@ -160,8 +167,44 @@ class CitizenWorker {
   }) {
     const deadResidentIds: string[] = [];
     const logs: GameLog[] = [];
-
+    const births: Birth[] = [];
     for (const id in this.residents) {
+      const resident = this.residents[id];
+      if (
+        payload.isNight &&
+        resident.status === VillagerStatus.Idle &&
+        resident.age >= REPRODUCTION.MIN_FERTILITY_AGE &&
+        resident.gender === Gender.Male
+      ) {
+        const home = resident.homeId
+          ? this.residents[resident.homeId]
+          : undefined;
+        if (!home) continue;
+
+        const homeX = home.position.x - 1;
+        const homeY = home.position.y - 1;
+        const isAtHome =
+          resident.position.x === homeX && resident.position.y === homeY;
+
+        if (!isAtHome) continue;
+
+        const partner = Object.values(this.residents).find(
+          (r) =>
+            r.id !== resident.id &&
+            r.homeId === resident.homeId &&
+            r.age >= REPRODUCTION.MIN_FERTILITY_AGE &&
+            r.gender !== resident.gender &&
+            r.parents.parentFirst !== resident.id &&
+            r.parents.parentSecond !== resident.id &&
+            r.position.x === homeX &&
+            r.position.y === homeY,
+        );
+        if (partner) {
+          if (this.birthEvents(resident, partner)) {
+            births.push({ parentFirst: resident.id, parentSecond: partner.id });
+          }
+        }
+      }
       this.updateResidentBio(
         this.residents[id],
         deadResidentIds,
@@ -169,9 +212,7 @@ class CitizenWorker {
         payload.tick,
       );
 
-      if (this.residents[id]) {
-        this.updateMovement(this.residents[id], payload.isNight);
-      }
+      this.updateMovement(resident, payload.isNight);
     }
 
     for (const building of payload.plantBuildings) {
@@ -188,6 +229,7 @@ class CitizenWorker {
       deadIds: deadResidentIds,
       plants: payload.plantBuildings,
       logs: logs,
+      births: births,
     };
   }
   private updateResidentBio(
@@ -215,17 +257,47 @@ class CitizenWorker {
 
     resident.age += VILLAGER_CONFIG.agePerTick;
 
-    const deathChance = (resident.age / 100) * VILLAGER_CONFIG.baseDeathChance;
+    const deathChance = (resident.age / 1000) * VILLAGER_CONFIG.baseDeathChance;
     if (Math.random() < deathChance || resident.health <= 0) {
       logs.push({
         id: crypto.randomUUID(),
         tick: currentTick,
-        message: `${resident.name} скончался в возрасте ${Math.floor(resident.age)} лет.`,
+        message: `${resident.name} скончался в возрасте ${Math.floor(resident.age)} лет  ${resident.health}.`,
         type: "warning",
       });
       deadIds.push(resident.id);
       delete this.residents[resident.id];
     }
+  }
+  private birthEvents(parentFirst: Resident, parentSecond: Resident): boolean {
+    if (parentFirst.homeId !== parentSecond.homeId) {
+      return false;
+    }
+    if (parentFirst.gender === parentSecond.gender) {
+      return false;
+    }
+
+    const chance =
+      this.getBirthChance(parentFirst.age) *
+      this.getBirthChance(parentSecond.age);
+    const successBirth = Math.random() < chance;
+    console.log(successBirth);
+    return successBirth;
+  }
+
+  private getBirthChance(age: number): number {
+    if (age < REPRODUCTION.MIN_FERTILITY_AGE) return 0;
+    if (age > REPRODUCTION.MAX_FERTILITY_AGE) return 0;
+
+    if (age <= REPRODUCTION.PEAK_FERTILITY_AGE) {
+      return REPRODUCTION.BASE_REPRODUCTION_CHANCE;
+    }
+
+    const decayRange =
+      REPRODUCTION.MAX_FERTILITY_AGE - REPRODUCTION.PEAK_FERTILITY_AGE;
+    const yearsLeft = REPRODUCTION.MAX_FERTILITY_AGE - age;
+
+    return REPRODUCTION.BASE_REPRODUCTION_CHANCE * (yearsLeft / decayRange);
   }
   private processPlantGrowth(
     building: PlantPlace,
@@ -287,17 +359,18 @@ class CitizenWorker {
   }
   private updateMovement(resident: Resident, isNight: boolean): void {
     if (
-      resident.status === "Moving" &&
-      resident.path &&
-      resident.path.length > 0
+      resident.status === VillagerStatus.Moving &&
+      resident.pathIndex < resident.path.length
     ) {
-      const nextStep = resident.path[0];
+      const nextStep = resident.path[resident.pathIndex];
 
-      if (this.isPositionWalkable(nextStep.x, nextStep.y)) {
+      if (nextStep && this.isPositionWalkable(nextStep.x, nextStep.y)) {
         resident.position = nextStep;
-        resident.path.shift();
-
-        if (resident.path.length === 0) {
+        resident.pathIndex += 1;
+        if (
+          resident.path.length === 0 ||
+          resident.pathIndex >= resident.path.length
+        ) {
           resident.status = VillagerStatus.Idle;
         }
       } else {
@@ -305,24 +378,43 @@ class CitizenWorker {
         resident.status = VillagerStatus.Idle;
       }
     }
+
     if (isNight && resident.homeId) {
       const home = this.buildings[resident.homeId];
       if (home) {
-        if (
-          resident.position.x !== home.position.x ||
-          resident.position.y !== home.position.y
-        ) {
-          resident.path = this.calculatePath(resident.position, home.position);
-          resident.status = VillagerStatus.Moving;
+        const entryX = home.position.x - 1;
+        const entryY = home.position.y - 1;
+
+        if (resident.position.x === entryX && resident.position.y === entryY) {
+          resident.status = VillagerStatus.Idle;
+          console.log(`HOOOME ${resident.name}`);
           return;
         }
+        if (
+          resident.status === VillagerStatus.Moving &&
+          resident.path.length > 0
+        ) {
+          return;
+        }
+        resident.path = this.calculatePath(resident.position, {
+          x: entryX,
+          y: entryY,
+        });
+        resident.status = VillagerStatus.Moving;
       }
     }
-    if (resident.status === VillagerStatus.Idle && Math.random() < WANDER_CHANCE) {
-      const randomTarget = this.getRandomWanderTarget(resident.position, WANDER_RADIUS);
-
+    if (
+      resident.status === VillagerStatus.Idle &&
+      Math.random() < WANDER_CHANCE &&
+      !isNight
+    ) {
+      const randomTarget = this.getRandomWanderTarget(
+        resident.position,
+        WANDER_RADIUS,
+      );
       if (randomTarget) {
         const path = this.calculatePath(resident.position, randomTarget);
+        resident.pathIndex = 0;
         if (path.length > 0) {
           resident.path = path;
           resident.status = VillagerStatus.Moving;

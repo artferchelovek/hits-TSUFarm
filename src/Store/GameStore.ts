@@ -3,6 +3,7 @@ import { type WritableDraft } from "immer";
 import {
   BuildingType,
   type GameStore,
+  type House,
   type LogType,
   type Result,
 } from "../engine/Types.ts";
@@ -10,6 +11,7 @@ import { immer } from "zustand/middleware/immer";
 import {
   BUILDING_CONFIG,
   BUILDING_NAMES,
+  INITIAL_RESIDENTS,
   initialGameState,
 } from "../engine/Constants.ts";
 import { processDayTime } from "./Processor.ts";
@@ -104,6 +106,22 @@ export const useGameStore = create<GameStore>()(
           }
           state.gameState.buildings[newBuild.id] = newBuild;
           state.gameState.buildingCounts[type] += 1;
+          if (
+            type === BuildingType.House &&
+            state.gameState.buildingCounts[type] === 1
+          ) {
+            state.gameState.residents = INITIAL_RESIDENTS;
+            Object.values(state.gameState.residents).forEach((res) => {
+              res.homeId = newBuild.id;
+              const home = state.gameState.buildings[newBuild.id] as House;
+              home.residentsId.push(res.id);
+            });
+
+            state.gameState.economy.totalPopulation += 2;
+            workerManager.send("SET_RESIDENTS", {
+              residents: state.gameState.residents,
+            });
+          }
           workerManager.send("UPDATE_BUILDING", { building: newBuild });
           report = {
             success: true,

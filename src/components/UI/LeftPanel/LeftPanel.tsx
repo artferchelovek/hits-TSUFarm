@@ -33,32 +33,42 @@ function BuildingsPanel() {
   const { selected, setSelected } = useBuildSelection();
   const money = useGameStore((state) => state.gameState.economy.money);
   const buildings = useGameStore((state) => state.gameState.buildings);
+  const buildingsAllow = useGameStore(
+    (state) => state.gameState.buildingRemind,
+  );
 
   const buildingTypes = Object.values(BuildingType) as BuildingType[];
 
   const renderPaletteItem = (bt: BuildingType) => {
     const cfg = BUILDING_CONFIG[bt];
+    const lost = buildingsAllow[bt];
     const isBuy = cfg.cost > money;
+    const isDisabled = isBuy || lost === 0;
     const desc = cfg
       ? `${cfg.width}x${cfg.length} клетки. Цена: ${cfg.cost}`
       : "-";
     const isSelected = selected === bt;
+
+    console.log(lost, bt);
     return (
       <div
         key={bt}
         className={
           isSelected
             ? `${styles.buildingItem} ${styles.buildingItem__selected}`
-            : isBuy
+            : isDisabled
               ? `${styles.buildingItem} ${styles.buildingItem__disabled}`
               : styles.buildingItem
         }
         onClick={() => {
-          if (!isBuy) setSelected(isSelected ? null : bt);
+          if (!isDisabled) setSelected(isSelected ? null : bt);
         }}
       >
         <div className={styles.buildingItem__title}>{BUILDING_NAMES[bt]}</div>
-        <div className={styles.buildingItem__desc}>{desc}</div>
+        <div className={styles.buildingItem__desc}>
+          <p>{desc}</p>
+          <p>Осталось: {lost}</p>
+        </div>
       </div>
     );
   };

@@ -1,6 +1,18 @@
-import type { UItoWorkerMessage, WorkerToUIMessage } from "../engine/CitizenWorker/message.ts";
-import type { GameStore } from "../engine/Types.ts";
+import type {
+  UItoWorkerMessage,
+  WorkerToUIMessage,
+} from "../engine/CitizenWorker/message.ts";
+import {
+  BuildingType,
+  type GameStore,
+  Gender,
+  type Resident,
+  ResourceType,
+  VillagerStatus,
+} from "../engine/Types.ts";
 import type { WritableDraft } from "immer";
+import { BUILDING_CONFIG, generateRandomName } from "../engine/Constants.ts";
+import { appendLog } from "./GameStore.ts";
 
 type MessageHandler = (payload: WorkerToUIMessage) => void;
 
@@ -48,6 +60,7 @@ export const syncToStore = (
 
     deadIds.forEach((id) => {
       delete state.gameState.residents[id];
+      state.gameState.economy.totalPopulation -= 1;
     });
 
     plants.forEach((plant) => {
@@ -60,5 +73,55 @@ export const syncToStore = (
         state.gameState.logs.shift();
       }
     });
+    if (payload.payload.births?.length != 0) {
+      const births = payload.payload.births ?? [];
+      births.forEach((birth) => {
+        const parentFirst = state.gameState.residents[birth.parentFirst];
+        const parentSecond = state.gameState.residents[birth.parentSecond];
+        const home = Object.values(state.gameState.buildings)
+
+          .find((build) => build.id === parentFirst.homeId);
+        if (home?.type === BuildingType.House) {
+          const gender = Math.random() > 0.5 ? Gender.Male : Gender.Female;
+          const baby: Resident = {
+            id: crypto.randomUUID(),
+            name: generateRandomName(gender).name,
+            surname:
+              parentFirst.surname + (gender === Gender.Female ? "а" : ""),
+            age: 0,
+            parents: {
+              parentFirst: parentFirst.id,
+              parentSecond: parentSecond.id,
+            },
+            gender: gender,
+            position: parentFirst.position,
+            health: 100,
+            hunger: 100,
+            status: VillagerStatus.Idle,
+            homeId: parentFirst.homeId,
+            workplaceId: null,
+            inventory: { type: ResourceType.Empty, amount: 0 },
+            path: [],
+            pathIndex: 0,
+          };
+          if (
+            home.residentsId.length <
+            BUILDING_CONFIG[BuildingType.House].capacity
+          ) {
+            state.gameState.residents[baby.id] = baby;
+            state.gameState.economy.totalPopulation += 1;
+            home.residentsId.push(baby.id);
+            appendLog(
+              state,
+              `Родился новый житель - ${baby.name} ${baby.surname}`,
+              "info",
+            );
+            workerManager.send("SET_RESIDENTS", {
+              residents: JSON.parse(JSON.stringify(state.gameState.residents)),
+            });
+          }
+        }
+      });
+    }
   }
 };
