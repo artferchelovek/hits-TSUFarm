@@ -9,7 +9,7 @@ import {
   TILE_SIZE,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import type { BuildingType, Buildings, GameStore } from "../../engine/Types";
+import type { Buildings, BuildingType, GameStore } from "../../engine/Types";
 import updateTransform from "./map/camera";
 import * as drawFns from "./map/draw";
 
@@ -209,9 +209,11 @@ export function useMapCanvas(isBackground: boolean) {
         const zoomSpeed = 0.002;
         const delta = -e.deltaY;
         const oldZoom = cameraRef.current.zoom;
-        const newZoom = Math.min(Math.max(oldZoom + delta * zoomSpeed, 0.2), 2);
 
-        cameraRef.current.zoom = newZoom;
+        cameraRef.current.zoom = Math.min(
+          Math.max(oldZoom + delta * zoomSpeed, 0.2),
+          2,
+        );
       } else {
         cameraRef.current.x -= e.deltaX;
         cameraRef.current.y -= e.deltaY;
@@ -407,9 +409,10 @@ export function useMapCanvas(isBackground: boolean) {
     overlayCanvasRef,
     onMouseMove,
     onClick,
-    buildInfo: activeBuilding
-      ? { build: activeBuilding, position: clickOffset }
-      : null,
+    buildInfo:
+      activeBuilding && clickOffset
+        ? { build: activeBuilding, position: clickOffset }
+        : null,
     infoBoxPos,
     onInfoBoxClose,
     onMouseDown: (e: React.MouseEvent) => {
