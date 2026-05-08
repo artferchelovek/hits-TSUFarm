@@ -1,8 +1,14 @@
 import styles from "../InfoBox.module.css";
-import type { Garden } from "../../../../engine/Types.ts";
+import {
+  type CropType,
+  type Garden,
+  ResourceType,
+} from "../../../../engine/Types.ts";
 import SizeBlock from "../SizeBlock.tsx";
 import { PLANT_CONFIG } from "../../../../engine/Constants.ts";
 import ProgressBlock from "../ProgressBlock.tsx";
+import { useGameStore } from "../../../../Store/GameStore.ts";
+import { useState } from "react";
 
 export default function GardenInfo({ build }: { build: Garden }) {
   return (
@@ -34,6 +40,38 @@ export default function GardenInfo({ build }: { build: Garden }) {
       <p>Коэффицент роста: {build.growthCoefficient}x</p>
       <p>Состояние: {build.health}</p>
       <p>Требует полива: {build.isWatered ? "Да" : "Нет"}</p>
+      {!build.harvest ? <AddPlant build={build} /> : null}
     </div>
   );
 }
+
+const AddPlant = ({ build }: { build: Garden }) => {
+  const plantAction = useGameStore((state) => state.addPlant);
+
+  const [selection, setSelection] = useState<CropType>(ResourceType.Wheat);
+
+  return (
+    <>
+      <p>Выберите культуру</p>
+      <select
+        className={styles.InfoBox__plantSelect}
+        value={selection}
+        onChange={(e) => setSelection(e.target.value as CropType)}
+      >
+        {Object.values(PLANT_CONFIG).map((plant) => (
+          <option key={plant.type} value={plant.type}>
+            {plant.name}
+          </option>
+        ))}
+      </select>
+
+      <button
+        onClick={() => {
+          plantAction(build, selection);
+        }}
+      >
+        Посадить
+      </button>
+    </>
+  );
+};

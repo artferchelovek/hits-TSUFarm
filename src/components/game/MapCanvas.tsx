@@ -1,5 +1,5 @@
 import useMapCanvas from "./useMapCanvas";
-import InfoBox from "./InfoBox/InfoBox";
+import InfoBox from "../UI/InfoBox/InfoBox";
 import { PALETTE } from "../../engine/Constants";
 import { TileType } from "../../engine/WorldMap";
 
