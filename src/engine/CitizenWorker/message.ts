@@ -1,4 +1,5 @@
 import {
+  type Birth,
   type Buildings,
   type GameLog,
   type PlantPlace,
@@ -47,6 +48,7 @@ export type WorkerToUIMessage =
         deadIds: string[];
         plants: PlantPlace[];
         logs: GameLog[];
+        births?: Birth[];
       };
     }
   | {

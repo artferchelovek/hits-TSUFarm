@@ -3,6 +3,7 @@ import { type WritableDraft } from "immer";
 import {
   BuildingType,
   type GameStore,
+  type House,
   type LogType,
   type Result,
 } from "../engine/Types.ts";
@@ -10,15 +11,11 @@ import { immer } from "zustand/middleware/immer";
 import {
   BUILDING_CONFIG,
   BUILDING_NAMES,
+  INITIAL_RESIDENTS,
   initialGameState,
   PLANT_CONFIG,
 } from "../engine/Constants.ts";
-import {
-  processDayTime,
-  processPlantGrowth,
-  processResident,
-  processWell,
-} from "./Processor.ts";
+import { processDayTime } from "./Processor.ts";
 import { createBuilding } from "./BuildingFactory.ts";
 import { getBuildingLimit } from "./BuildLimit.ts";
 import { syncToStore, workerManager } from "./WorkerManager.ts";
@@ -52,17 +49,6 @@ export const useGameStore = create<GameStore>()(
       set((state: GameStore) => {
         state.gameState.meta.gameTick++;
         processDayTime(state);
-        Object.values(state.gameState.buildings).forEach((building) => {
-          if (
-            building.type === BuildingType.Greenhouse ||
-            building.type === BuildingType.Garden
-          ) {
-            processPlantGrowth(state, building);
-          }
-          if (building.type === BuildingType.Well) {
-            processWell(building);
-          }
-        });
 
         const plantBuildings = Object.values(state.gameState.buildings).filter(
           (b) =>
@@ -121,6 +107,23 @@ export const useGameStore = create<GameStore>()(
           }
           state.gameState.buildings[newBuild.id] = newBuild;
           state.gameState.buildingCounts[type] += 1;
+          if (
+            type === BuildingType.House &&
+            state.gameState.buildingCounts[type] === 1
+          ) {
+            state.gameState.residents = INITIAL_RESIDENTS;
+            Object.values(state.gameState.residents).forEach((res) => {
+              res.homeId = newBuild.id;
+              const home = state.gameState.buildings[newBuild.id] as House;
+              home.residentsId.push(res.id);
+            });
+
+            state.gameState.economy.totalPopulation += 2;
+            workerManager.send("SET_RESIDENTS", {
+              residents: state.gameState.residents,
+            });
+          }
+          workerManager.send("UPDATE_BUILDING", { building: newBuild });
           state.gameState.buildingRemind[type] -= 1;
           report = {
             success: true,

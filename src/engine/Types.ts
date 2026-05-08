@@ -184,9 +184,11 @@ export type Buildings =
 export interface Resident {
   id: string;
   name: string;
+  surname: string;
   position: Position;
   gender: Gender;
   age: number;
+  parents: Birth;
   health: number;
   hunger: number;
   status: VillagerStatus;
@@ -199,7 +201,10 @@ export interface Resident {
   path: Position[];
   pathIndex: number;
 }
-
+export interface Birth {
+  parentFirst: string;
+  parentSecond: string;
+}
 export interface Decedent {
   id: string;
   name: string;
