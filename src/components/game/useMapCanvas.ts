@@ -16,7 +16,13 @@ import updateTransform from "./map/camera";
 import * as drawFns from "./map/draw";
 import { workerManager } from "../../Store/WorkerManager.ts";
 
-export function useMapCanvas(isBackground: boolean) {
+export function useMapCanvas(
+  isBackground: boolean,
+  externalWorld?: WorldMap,
+  tileTextures?: Record<number, HTMLImageElement>,
+  buildingTextures?: Record<string, HTMLImageElement>,
+  onMapReady?: () => void,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
   const buildingsCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,12 +34,19 @@ export function useMapCanvas(isBackground: boolean) {
   const lastMousePosRef = useRef({ x: 0, y: 0 });
   const hoveredTileRef = useRef<{ col: number; row: number } | null>(null);
 
-  const texturesRef = useRef<Record<number, HTMLImageElement>>({});
-  const [texturesLoaded, setTexturesLoaded] = useState(false);
+  const texturesRef = useRef<Record<number, HTMLImageElement>>(
+    tileTextures ?? {},
+  );
+  const [texturesLoaded, setTexturesLoaded] = useState(!!tileTextures);
+
+  const buildingTexturesRef = useRef<Record<string, HTMLImageElement>>(
+    buildingTextures ?? {},
+  );
 
   const { setSelected } = useBuildSelection();
 
   const [world] = useState(() => {
+    if (externalWorld) return externalWorld;
     const w = new WorldMap();
     w.generate();
     return w;
@@ -90,6 +103,7 @@ export function useMapCanvas(isBackground: boolean) {
   );
 
   useEffect(() => {
+    if (tileTextures) return;
     const types = Object.keys(TILE_SVG).map(Number);
     let loadedCount = 0;
 
@@ -105,21 +119,7 @@ export function useMapCanvas(isBackground: boolean) {
         }
       };
     });
-  }, []);
-
-  const buildingTexturesRef = useRef<Record<string, HTMLImageElement>>({});
-
-  useEffect(() => {
-    Object.entries(BUILDING_SVG).forEach(([key, url]) => {
-      const img = new Image();
-      img.src = url;
-      img.onload = () => {
-        buildingTexturesRef.current[key] = img;
-        const currentBuildings = useGameStore.getState().gameState.buildings;
-        drawBuildings(currentBuildings);
-      };
-    });
-  }, []);
+  }, [tileTextures]);
 
   useEffect(() => {
     const canvas = mapCanvasRef.current;
@@ -187,6 +187,8 @@ export function useMapCanvas(isBackground: boolean) {
       buildingsCanvasRef,
       overlayCanvasRef,
     );
+
+    onMapReady?.();
   }, [world, texturesLoaded]);
 
   const { selected } = useBuildSelection();
@@ -235,6 +237,19 @@ export function useMapCanvas(isBackground: boolean) {
 
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (buildingTextures) return;
+    Object.entries(BUILDING_SVG).forEach(([key, url]) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        buildingTexturesRef.current[key] = img;
+        const currentBuildings = useGameStore.getState().gameState.buildings;
+        drawBuildings(currentBuildings);
+      };
+    });
+  }, [buildingTextures]);
 
   useEffect(() => {
     const container = containerRef.current;
