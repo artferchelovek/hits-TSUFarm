@@ -6,12 +6,17 @@ import {
   BuildingType,
   type GameStore,
   Gender,
+  type House,
   type Resident,
   ResourceType,
   VillagerStatus,
 } from "../engine/Types.ts";
 import type { WritableDraft } from "immer";
-import { BUILDING_CONFIG, generateRandomName } from "../engine/Constants.ts";
+import {
+  BUILDING_CONFIG,
+  REPRODUCTION,
+  generateRandomName,
+} from "../engine/Constants.ts";
 import { appendLog } from "./GameStore.ts";
 
 type MessageHandler = (payload: WorkerToUIMessage) => void;
@@ -105,6 +110,57 @@ export const syncToStore = (
             pathIndex: 0,
           };
           if (
+            home.residentsId.length >=
+            BUILDING_CONFIG[BuildingType.House].capacity
+          ) {
+            const evictCandidate = home.residentsId
+              .map((id) => state.gameState.residents[id])
+              .find(
+                (r) =>
+                  r.id !== parentFirst.id &&
+                  r.id !== parentSecond.id &&
+                  r.age >= REPRODUCTION.MIN_FERTILITY_AGE,
+              );
+
+            if (evictCandidate) {
+              const freeHouse = Object.values(state.gameState.buildings).find(
+                (b) =>
+                  b.type === BuildingType.House &&
+                  b.id !== home.id &&
+                  (b as House).residentsId.length <
+                    BUILDING_CONFIG[BuildingType.House].capacity,
+              ) as House | undefined;
+
+              if (freeHouse) {
+                freeHouse.residentsId.push(evictCandidate.id);
+                evictCandidate.homeId = freeHouse.id;
+                evictCandidate.position = {
+                  x: freeHouse.position.x - 1,
+                  y: freeHouse.position.y - 1,
+                };
+                home.residentsId = home.residentsId.filter(
+                  (id) => id !== evictCandidate.id,
+                );
+                appendLog(
+                  state,
+                  `${evictCandidate.name} ${evictCandidate.surname} переехал в новый дом`,
+                  "info",
+                );
+              } else {
+                evictCandidate.homeId = null;
+                home.residentsId = home.residentsId.filter(
+                  (id) => id !== evictCandidate.id,
+                );
+                appendLog(
+                  state,
+                  `${evictCandidate.name} ${evictCandidate.surname} стал бездомным!`,
+                  "warning",
+                );
+              }
+            }
+          }
+
+          if (
             home.residentsId.length <
             BUILDING_CONFIG[BuildingType.House].capacity
           ) {
@@ -118,6 +174,9 @@ export const syncToStore = (
             );
             workerManager.send("SET_RESIDENTS", {
               residents: JSON.parse(JSON.stringify(state.gameState.residents)),
+            });
+            workerManager.send("UPDATE_BUILDING", {
+              building: JSON.parse(JSON.stringify(home)),
             });
           }
         }

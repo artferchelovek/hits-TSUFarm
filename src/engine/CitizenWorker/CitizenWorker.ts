@@ -4,6 +4,7 @@ import {
   BuildingType,
   type GameLog,
   Gender,
+  type House,
   type PlantPlace,
   type Position,
   type Resident,
@@ -19,11 +20,6 @@ import {
   WeatherEffects,
 } from "../Constants.ts";
 import { PathFinding } from "./pathfinding.ts";
-
-export interface WorkerMessage {
-  type: string;
-  payload: unknown;
-}
 
 export const TERRAIN_WEIGHTS = {
   ROAD: 1,
@@ -86,7 +82,8 @@ class CitizenWorker {
     return (
       tile === TileType.Grass ||
       tile === TileType.Sand ||
-      tile === TileType.PreHill
+      tile === TileType.PreHill ||
+      tile === TileType.Hill
     );
   }
 
@@ -177,17 +174,18 @@ class CitizenWorker {
         resident.gender === Gender.Male
       ) {
         const home = resident.homeId
-          ? this.residents[resident.homeId]
+          ? (this.buildings[resident.homeId] as House)
           : undefined;
-        if (!home) continue;
-
+        console.log("DA");
+        if (!home) {
+          continue;
+        }
         const homeX = home.position.x - 1;
         const homeY = home.position.y - 1;
         const isAtHome =
           resident.position.x === homeX && resident.position.y === homeY;
 
         if (!isAtHome) continue;
-
         const partner = Object.values(this.residents).find(
           (r) =>
             r.id !== resident.id &&
@@ -199,9 +197,13 @@ class CitizenWorker {
             r.position.x === homeX &&
             r.position.y === homeY,
         );
+
         if (partner) {
           if (this.birthEvents(resident, partner)) {
-            births.push({ parentFirst: resident.id, parentSecond: partner.id });
+            births.push({
+              parentFirst: resident.id,
+              parentSecond: partner.id,
+            });
           }
         }
       }
@@ -210,11 +212,11 @@ class CitizenWorker {
         deadResidentIds,
         logs,
         payload.tick,
+        payload.isNight,
       );
 
       this.updateMovement(resident, payload.isNight);
     }
-
     for (const building of payload.plantBuildings) {
       this.processPlantGrowth(
         building,
@@ -237,12 +239,19 @@ class CitizenWorker {
     deadIds: string[],
     logs: GameLog[],
     currentTick: number,
+    isNight: boolean,
   ): void {
     resident.hunger = Math.max(
       0,
       resident.hunger - VILLAGER_CONFIG.hungerPerTick,
     );
 
+    if (resident.homeId === null && isNight) {
+      resident.health = Math.max(
+        0,
+        resident.health - VILLAGER_CONFIG.homelessDamagePerTick,
+      );
+    }
     if (resident.hunger <= 0) {
       resident.health = Math.max(
         0,
@@ -387,7 +396,6 @@ class CitizenWorker {
 
         if (resident.position.x === entryX && resident.position.y === entryY) {
           resident.status = VillagerStatus.Idle;
-          console.log(`HOOOME ${resident.name}`);
           return;
         }
         if (
@@ -406,7 +414,8 @@ class CitizenWorker {
     if (
       resident.status === VillagerStatus.Idle &&
       Math.random() < WANDER_CHANCE &&
-      !isNight
+      !isNight &&
+      resident.age >= VILLAGER_CONFIG.minWalkableAge
     ) {
       const randomTarget = this.getRandomWanderTarget(
         resident.position,
