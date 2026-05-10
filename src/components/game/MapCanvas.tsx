@@ -1,12 +1,22 @@
 import useMapCanvas from "./useMapCanvas";
 import InfoBox from "../UI/InfoBox/InfoBox";
 import { PALETTE } from "../../engine/Constants";
-import { TileType } from "../../engine/WorldMap";
+import { TileType, type WorldMap } from "../../engine/WorldMap";
 
 export default function MapCanvas({
   isBackground = false,
+  world,
+  tileTextures,
+  buildingTextures,
+  onMapReady,
+  centerCamera,
 }: {
   isBackground?: boolean;
+  world?: WorldMap;
+  tileTextures?: Record<number, HTMLImageElement>;
+  buildingTextures?: Record<string, HTMLImageElement>;
+  onMapReady?: () => void;
+  centerCamera?: boolean;
 }) {
   const {
     containerRef,
@@ -20,7 +30,14 @@ export default function MapCanvas({
     onInfoBoxClose,
     onMouseDown,
     onMouseUp,
-  } = useMapCanvas(isBackground);
+  } = useMapCanvas(
+    isBackground,
+    world,
+    tileTextures,
+    buildingTextures,
+    onMapReady,
+    centerCamera,
+  );
 
   return (
     <div

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { type WritableDraft } from "immer";
 import {
   BuildingType,
+  type GameState,
   type GameStore,
   type House,
   type LogType,
@@ -90,7 +91,6 @@ export const useGameStore = create<GameStore>()(
             return;
           }
           const newBuild = createBuilding(type, pos);
-          state.gameState.buildingCounts[type] += 1;
           if (type === BuildingType.Graveyard) {
             state.gameState.meta.graveyardIds.push(newBuild.id);
           }
@@ -146,6 +146,12 @@ export const useGameStore = create<GameStore>()(
       });
       return report;
     },
+    loadState: (gameState: GameState) => {
+      set((state) => {
+        state.gameState = gameState;
+      });
+    },
+
     addPlant: (build, plant): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {
