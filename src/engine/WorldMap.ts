@@ -10,12 +10,31 @@ export enum TileType {
 }
 
 export class WorldMap {
-  private readonly width: number = 500;
-  private readonly height: number = 500;
-  private data: Uint8Array;
+  readonly width: number = 500;
+  readonly height: number = 500;
+  data: Uint8Array;
 
   constructor() {
     this.data = new Uint8Array(this.width * this.height);
+  }
+
+  serialize(): string {
+    let binary = "";
+    for (let i = 0; i < this.data.length; i++) {
+      binary += String.fromCharCode(this.data[i]);
+    }
+    return btoa(binary);
+  }
+
+  static deserialize(raw: string): WorldMap {
+    const binary = atob(raw);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const map = new WorldMap();
+    map.data = bytes;
+    return map;
   }
 
   private getIndex(x: number, y: number): number {

@@ -1,6 +1,8 @@
+import { useRef } from "react";
 import { useEffect, useState } from "react";
 import styles from "./MainMenu.module.css";
 import MapCanvas from "../../components/game/MapCanvas";
+import { loadGameFromFile, setPendingLoad } from "../../Store/SaveManager";
 
 type CommitEntry = {
   sha: string;
@@ -10,6 +12,7 @@ type CommitEntry = {
 
 export default function MainMenu() {
   const [commits, setCommits] = useState<CommitEntry[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const USER = "artferchelovek";
@@ -63,7 +66,12 @@ export default function MainMenu() {
           >
             Начать игру
           </button>
-          <button className={styles.btn}>Загрузить сохранение</button>
+          <button
+            className={styles.btn}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Загрузить сохранение
+          </button>
           <button className={styles.btn}>Настройки</button>
         </div>
 
@@ -85,6 +93,24 @@ export default function MainMenu() {
           </div>
         </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: "none" }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const save = await loadGameFromFile(file);
+          if (save) {
+            setPendingLoad(save);
+            window.location.href = "/game";
+          } else {
+            alert("Не удалось загрузить сохранение");
+          }
+        }}
+      />
     </div>
   );
 }

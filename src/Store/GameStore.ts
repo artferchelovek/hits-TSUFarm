@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { type WritableDraft } from "immer";
 import {
   BuildingType,
+  type GameState,
   type GameStore,
   type LogType,
   type Result,
@@ -127,6 +128,12 @@ export const useGameStore = create<GameStore>()(
       });
       return report;
     },
+    loadState: (gameState: GameState) => {
+      set((state) => {
+        state.gameState = gameState;
+      });
+    },
+
     addPlant: (build, plant): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {

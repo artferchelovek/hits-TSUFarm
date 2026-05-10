@@ -11,7 +11,8 @@ import {
   TILE_SVG,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import type { Buildings, BuildingType, GameStore } from "../../engine/Types";
+import { BuildingType } from "../../engine/Types";
+import type { Buildings, GameStore } from "../../engine/Types";
 import updateTransform from "./map/camera";
 import * as drawFns from "./map/draw";
 
@@ -21,6 +22,7 @@ export function useMapCanvas(
   tileTextures?: Record<number, HTMLImageElement>,
   buildingTextures?: Record<string, HTMLImageElement>,
   onMapReady?: () => void,
+  centerCamera?: boolean,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,7 +30,33 @@ export function useMapCanvas(
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number | null>(null);
 
-  const cameraRef = useRef({ x: -2000, y: -2000, zoom: 1 });
+  const getInitialCam = () => {
+    if (centerCamera && !isBackground) {
+      const buildings = useGameStore.getState().gameState.buildings;
+      const main = Object.values(buildings).find(
+        (b) => b.type === BuildingType.Main,
+      );
+      const viewW = window.innerWidth;
+      const viewH = window.innerHeight;
+      if (main) {
+        const cx = (main.position.x + main.width / 2) * TILE_SIZE;
+        const cy = (main.position.y + main.length / 2) * TILE_SIZE;
+        return {
+          x: viewW / 2 - cx,
+          y: viewH / 2 - cy,
+          zoom: 1,
+        };
+      }
+      const worldSize = MAP_DIMENSION * TILE_SIZE;
+      return {
+        x: viewW / 2 - worldSize / 2,
+        y: viewH / 2 - worldSize / 2,
+        zoom: 1,
+      };
+    }
+    return { x: -2000, y: -2000, zoom: 1 };
+  };
+  const cameraRef = useRef(getInitialCam());
   const isPanningRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
   const hoveredTileRef = useRef<{ col: number; row: number } | null>(null);
