@@ -180,9 +180,14 @@ export type Buildings =
   | Bridge
   | Road
   | Graveyard;
-
+export interface Farmer {
+  experience: number;
+}
+export type Profession = Farmer;
 export interface Resident {
   id: string;
+  profession: Profession | null;
+  skills: Record<string, number>;
   name: string;
   surname: string;
   position: Position;

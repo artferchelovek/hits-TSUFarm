@@ -12,7 +12,7 @@ import { useGameStore } from "../../Store/GameStore";
 import type { BuildingType, Buildings, GameStore } from "../../engine/Types";
 import updateTransform from "./map/camera";
 import * as drawFns from "./map/draw";
-import { syncToStore, workerManager } from "../../Store/WorkerManager.ts";
+import { workerManager } from "../../Store/WorkerManager.ts";
 
 export function useMapCanvas(isBackground: boolean) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,7 +53,7 @@ export function useMapCanvas(isBackground: boolean) {
       residents: state.gameState.residents,
     });
   }, [world]);
-  const [buildInfo, setBuildInfo] = useState<null | {
+  const [buildInfo] = useState<null | {
     build: Buildings;
     position: { x: number; y: number };
   }>(null);
@@ -211,8 +211,6 @@ export function useMapCanvas(isBackground: boolean) {
       if (found) {
         e.preventDefault();
         const f = found as Buildings;
-        const bWorldX = f.position.x * TILE_SIZE;
-        const bWorldY = f.position.y * TILE_SIZE;
 
         const clickWorldX =
           mouseX / cameraRef.current.zoom - cameraRef.current.x;

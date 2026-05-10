@@ -5,7 +5,6 @@ import { BuildSelectionProvider } from "../contexts/BuildSelectionContext";
 import { PopupProvider } from "../contexts/PopupContext";
 import { useEffect } from "react";
 import { useGameStore } from "../Store/GameStore.ts";
-import { workerManager } from "../Store/WorkerManager.ts";
 
 export default function GameView() {
   useEffect(() => {

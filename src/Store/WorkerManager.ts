@@ -108,6 +108,8 @@ export const syncToStore = (
             inventory: { type: ResourceType.Empty, amount: 0 },
             path: [],
             pathIndex: 0,
+            profession: null,
+            skills: {},
           };
           if (
             home.residentsId.length >=
