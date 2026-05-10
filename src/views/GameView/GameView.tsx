@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
-import { WorldMap } from "../engine/WorldMap.ts";
-import { BUILDING_SVG, TILE_SVG } from "../engine/Constants.ts";
-import { applySave, getPendingLoad, saveGame } from "../Store/SaveManager.ts";
-import { useGameStore } from "../Store/GameStore.ts";
-import MapCanvas from "../components/game/MapCanvas.tsx";
-import InfoPanel from "../components/UI/InfoPanel/InfoPanel.tsx";
-import LeftPanel from "../components/UI/LeftPanel/LeftPanel.tsx";
-import { BuildSelectionProvider } from "../contexts/BuildSelectionContext";
-import { PopupProvider } from "../contexts/PopupContext";
-import { useGameStore } from "../Store/GameStore.ts";
+import { WorldMap } from "../../engine/WorldMap.ts";
+import { BUILDING_SVG, TILE_SVG } from "../../engine/Constants.ts";
+import {
+  applySave,
+  getPendingLoad,
+  saveGame,
+} from "../../Store/SaveManager.ts";
+import { useGameStore } from "../../Store/GameStore.ts";
+import MapCanvas from "../../components/game/MapCanvas.tsx";
+import InfoPanel from "../../components/UI/InfoPanel/InfoPanel.tsx";
+import LeftPanel from "../../components/UI/LeftPanel/LeftPanel.tsx";
+import { BuildSelectionProvider } from "../../contexts/BuildSelectionContext";
+import { PopupProvider } from "../../contexts/PopupContext";
+import styles from "./GameView.module.css";
 
 const LOADING_STAGES = [
   "Подготовка мира...",
@@ -124,14 +128,7 @@ export default function GameView() {
     <>
       <BuildSelectionProvider>
         <PopupProvider>
-          <div
-            style={{
-              position: "relative",
-              width: "100vw",
-              height: "100vh",
-              overflow: "hidden",
-            }}
-          >
+          <div className={styles.container}>
             {ready && (
               <MapCanvas
                 world={world}
@@ -153,71 +150,22 @@ export default function GameView() {
             saveGame(useGameStore.getState().gameState, world);
           }
         }}
-        style={{
-          position: "fixed",
-          bottom: 16,
-          right: 16,
-          zIndex: 10000,
-          padding: "8px 20px",
-          fontSize: 14,
-          fontFamily: "'Press Start 2P', system-ui, monospace",
-          background: "#dcbb9a",
-          color: "#2e2c2c",
-          border: "none",
-          borderRadius: 4,
-          cursor: "pointer",
-        }}
+        className={styles.saveBtn}
       >
         Сохранить
       </button>
 
       {isLoading && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#1a1a2e",
-            color: "#e6f0ff",
-            fontFamily: "'Press Start 2P', system-ui, monospace",
-            gap: 24,
-          }}
-        >
-          <style>{`
-            progress {
-              appearance: none;
-              -webkit-appearance: none;
-              width: 300px;
-              height: 20px;
-              border: 2px solid #dcbb9a;
-              border-radius: 4px;
-              background: #2e2c2c;
-            }
-            progress::-webkit-progress-bar {
-              background: #2e2c2c;
-              border-radius: 4px;
-            }
-            progress::-webkit-progress-value {
-              background: #dcbb9a;
-              border-radius: 2px;
-            }
-            progress::-moz-progress-bar {
-              background: #dcbb9a;
-              border-radius: 2px;
-            }
-          `}</style>
+        <div className={styles.loadingOverlay}>
+          <p className={styles.loadingTitle}>TSUFarm</p>
 
-          <p style={{ fontSize: 28, color: "honeydew" }}>TSUFarm</p>
+          <progress
+            className={styles.progress}
+            value={stage}
+            max={LOADING_STAGES.length}
+          />
 
-          <progress value={stage} max={LOADING_STAGES.length} />
-
-          <p style={{ fontSize: 12, color: "#dcbb9a" }}>
-            {LOADING_STAGES[stage]}
-          </p>
+          <p className={styles.loadingStage}>{LOADING_STAGES[stage]}</p>
         </div>
       )}
     </>

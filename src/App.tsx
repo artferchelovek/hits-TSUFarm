@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router";
-import GameView from "./views/GameView.tsx";
+import GameView from "./views/GameView/GameView.tsx";
 import MainMenu from "./views/MainMenu/MainMenu.tsx";
 import PlugView from "./views/PlugView/PlugView.tsx";
 
