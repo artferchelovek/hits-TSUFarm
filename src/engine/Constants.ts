@@ -236,16 +236,18 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 0.001,
+  hungerPerTick: 0.02,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,
   agePerTick: 1 / 600,
   baseDeathChance: 0.0001,
+  minWalkableAge: 3,
+  homelessDamagePerTick: 5,
   maxInventCapacity: 10,
   moveSpeed: 1,
 };
 export const REPRODUCTION = {
-  BASE_REPRODUCTION_CHANCE: 0.2,
+  BASE_REPRODUCTION_CHANCE: 0.1,
   PEAK_FERTILITY_AGE: 30,
   MAX_FERTILITY_AGE: 60,
   MIN_FERTILITY_AGE: 18,
