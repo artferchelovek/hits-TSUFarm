@@ -9,12 +9,14 @@ export default function MapCanvas({
   tileTextures,
   buildingTextures,
   onMapReady,
+  centerCamera,
 }: {
   isBackground?: boolean;
   world?: WorldMap;
   tileTextures?: Record<number, HTMLImageElement>;
   buildingTextures?: Record<string, HTMLImageElement>;
   onMapReady?: () => void;
+  centerCamera?: boolean;
 }) {
   const {
     containerRef,
@@ -34,6 +36,7 @@ export default function MapCanvas({
     tileTextures,
     buildingTextures,
     onMapReady,
+    centerCamera,
   );
 
   return (

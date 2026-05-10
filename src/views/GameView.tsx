@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { WorldMap } from "../engine/WorldMap.ts";
 import { BUILDING_SVG, TILE_SVG } from "../engine/Constants.ts";
+import { applySave, getPendingLoad, saveGame } from "../Store/SaveManager.ts";
+import { useGameStore } from "../Store/GameStore.ts";
 import MapCanvas from "../components/game/MapCanvas.tsx";
 import InfoPanel from "../components/UI/InfoPanel/InfoPanel.tsx";
 import LeftPanel from "../components/UI/LeftPanel/LeftPanel.tsx";
@@ -9,7 +11,7 @@ import { PopupProvider } from "../contexts/PopupContext";
 import { useGameStore } from "../Store/GameStore.ts";
 
 const LOADING_STAGES = [
-  "Генерация ландшафта...",
+  "Подготовка мира...",
   "Загрузка текстур...",
   "Отрисовка карты...",
 ];
@@ -23,6 +25,7 @@ export default function GameView() {
   const [buildingTextures, setBuildingTextures] =
     useState<Record<string, HTMLImageElement>>();
   const [mapRendered, setMapRendered] = useState(false);
+  const [loadedFromSave, setLoadedFromSave] = useState(false);
 
   const isLoading = !ready || !mapRendered;
 
@@ -45,10 +48,19 @@ export default function GameView() {
       await new Promise((r) => setTimeout(r, 0));
       if (cancelled) return;
 
-      const w = new WorldMap();
-      w.generate();
-      if (cancelled) return;
-      setWorld(w);
+      const saved = getPendingLoad();
+
+      if (saved) {
+        const { world: loadedWorld, gameState } = applySave(saved);
+        setWorld(loadedWorld);
+        useGameStore.getState().loadState(gameState);
+        setLoadedFromSave(true);
+      } else {
+        const w = new WorldMap();
+        w.generate();
+        if (cancelled) return;
+        setWorld(w);
+      }
 
       setStage(1);
       const tileTex: Record<number, HTMLImageElement> = {};
@@ -99,6 +111,15 @@ export default function GameView() {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   return (
     <>
       <BuildSelectionProvider>
@@ -117,6 +138,7 @@ export default function GameView() {
                 tileTextures={tileTextures}
                 buildingTextures={buildingTextures}
                 onMapReady={() => setMapRendered(true)}
+                centerCamera={loadedFromSave}
               />
             )}
             {ready && <InfoPanel />}
@@ -124,6 +146,30 @@ export default function GameView() {
           </div>
         </PopupProvider>
       </BuildSelectionProvider>
+
+      <button
+        onClick={() => {
+          if (world) {
+            saveGame(useGameStore.getState().gameState, world);
+          }
+        }}
+        style={{
+          position: "fixed",
+          bottom: 16,
+          right: 16,
+          zIndex: 10000,
+          padding: "8px 20px",
+          fontSize: 14,
+          fontFamily: "'Press Start 2P', system-ui, monospace",
+          background: "#dcbb9a",
+          color: "#2e2c2c",
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+        }}
+      >
+        Сохранить
+      </button>
 
       {isLoading && (
         <div

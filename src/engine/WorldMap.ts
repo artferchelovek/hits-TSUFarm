@@ -18,6 +18,25 @@ export class WorldMap {
     this.data = new Uint8Array(this.width * this.height);
   }
 
+  serialize(): string {
+    let binary = "";
+    for (let i = 0; i < this.data.length; i++) {
+      binary += String.fromCharCode(this.data[i]);
+    }
+    return btoa(binary);
+  }
+
+  static deserialize(raw: string): WorldMap {
+    const binary = atob(raw);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const map = new WorldMap();
+    map.data = bytes;
+    return map;
+  }
+
   private getIndex(x: number, y: number): number {
     if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return -1;
