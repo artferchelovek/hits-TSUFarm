@@ -212,10 +212,6 @@ export function useMapCanvas(
       workerManager.terminate();
     };
   }, [world]);
-  const [buildInfo] = useState<null | {
-    build: Buildings;
-    position: { x: number; y: number };
-  }>(null);
   const [selectedBuildId, setSelectedBuildId] = useState<string | null>(null);
   const [clickOffset, setClickOffset] = useState<{
     x: number;
