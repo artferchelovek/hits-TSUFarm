@@ -1,0 +1,26 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="8" width="56" height="52" fill="#4B3621"/>
+
+    <path d="M8 20H56V24H8V20Z" fill="#352619"/>
+    <path d="M8 36H56V40H8V36Z" fill="#352619"/>
+    <path d="M8 52H56V56H8V52Z" fill="#352619"/>
+
+    <rect x="12" y="12" width="8" height="4" fill="#5D432A"/>
+    <rect x="40" y="28" width="8" height="4" fill="#5D432A"/>
+    <rect x="20" y="44" width="8" height="4" fill="#5D432A"/>
+
+    <rect x="16" y="14" width="4" height="4" fill="#4CAF50"/>
+    <rect x="14" y="16" width="8" height="2" fill="#4CAF50"/>
+
+    <rect x="44" y="14" width="4" height="4" fill="#4CAF50"/>
+    <rect x="42" y="16" width="8" height="2" fill="#4CAF50"/>
+
+    <rect x="30" y="30" width="4" height="4" fill="#4CAF50"/>
+    <rect x="28" y="32" width="8" height="2" fill="#4CAF50"/>
+
+    <rect x="12" y="46" width="4" height="4" fill="#4CAF50"/>
+    <rect x="10" y="48" width="8" height="2" fill="#4CAF50"/>
+
+    <rect x="48" y="46" width="4" height="4" fill="#4CAF50"/>
+    <rect x="46" y="48" width="8" height="2" fill="#4CAF50"/>
+</svg>

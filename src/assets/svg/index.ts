@@ -1,0 +1,16 @@
+export { default as grass } from "./grass.svg";
+export { default as hill } from "./hill.svg";
+export { default as prehill } from "./prehill.svg";
+export { default as sand } from "./sand.svg";
+export { default as water } from "./water.svg";
+export { default as deepwater } from "./deepwater.svg";
+export { default as mainbuilding } from "./mainbuilding.svg";
+export { default as house } from "./house.svg";
+export { default as granary } from "./granary.svg";
+export { default as market } from "./market.svg";
+export { default as well } from "./well.svg";
+export { default as bridge } from "./bridge.svg";
+export { default as road } from "./road.svg";
+export { default as garden } from "./garden.svg";
+export { default as graveyard } from "./graveyard.svg";
+export { default as greenhouse } from "./greenhouse.svg";
