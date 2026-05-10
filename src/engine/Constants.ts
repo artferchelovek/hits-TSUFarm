@@ -139,7 +139,7 @@ export const BUILDING_CONFIG = {
     width: 3,
     length: 2,
     waterMax: 150,
-    moisture: 100,
+    moisture: 0,
     growthCoefficient: 1.5,
     cost: 200,
   },
@@ -321,7 +321,7 @@ export const initialGameState: GameState = {
     isNight: false,
   },
   economy: {
-    money: 1030,
+    money: 100,
     level: 1,
     totalPopulation: 0,
   },
