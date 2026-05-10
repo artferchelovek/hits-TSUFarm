@@ -14,6 +14,7 @@ import {
 } from "../Types.ts";
 import { TileType } from "../WorldMap.ts";
 import {
+  DROUGHT_DAMAGE_TICK,
   PLANT_CONFIG,
   REPRODUCTION,
   VILLAGER_CONFIG,
@@ -318,16 +319,18 @@ class CitizenWorker {
       const config = PLANT_CONFIG[building.harvest.type];
       const consumption = config.waterConsumptionPerTick;
 
-      const RAIN_FILL_RATE = 0.5;
       const isRaining = currentWeather === Weather.Rain;
 
       if (isRaining) {
         if (building.type === BuildingType.Garden) {
-          building.moisture = Math.min(100, building.moisture + RAIN_FILL_RATE);
+          building.moisture = Math.min(
+            100,
+            building.moisture + WeatherEffects.RAIN_MOISTURE_GAIN,
+          );
         } else if (building.type === BuildingType.Greenhouse) {
           building.waterTank.current = Math.min(
             building.waterTank.max,
-            building.waterTank.current + RAIN_FILL_RATE,
+            building.waterTank.current + WeatherEffects.RAIN_MOISTURE_GAIN,
           );
         }
       }
@@ -359,7 +362,7 @@ class CitizenWorker {
           building.harvest.isReady = true;
         }
       } else {
-        building.health = Math.max(0, building.health - 0.1);
+        building.health = Math.max(0, building.health - DROUGHT_DAMAGE_TICK);
         if (building.health <= 0) {
           building.harvest = null;
         }

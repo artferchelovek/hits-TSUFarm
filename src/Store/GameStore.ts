@@ -61,7 +61,7 @@ export const useGameStore = create<GameStore>()(
           isNight: state.gameState.meta.isNight,
           weather: state.gameState.meta.currentWeather,
           season: state.gameState.meta.currentSeason,
-          plantBuildings,
+          plantBuildings: JSON.parse(JSON.stringify(plantBuildings)),
         });
       });
     },

@@ -97,8 +97,6 @@ export function generateRandomName(gender: Gender): {
   };
 }
 
-import { getBuildingLimit } from "../Store/BuildLimit.ts";
-
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 4,
@@ -133,7 +131,7 @@ export const BUILDING_CONFIG = {
   [BuildingType.Garden]: {
     width: 1,
     length: 1,
-    moisture: 100,
+    moisture: 0,
     growthCoefficient: 1.0,
     cost: 10,
   },
@@ -232,7 +230,7 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
     maxYield: 2,
   },
 };
-
+export const DROUGHT_DAMAGE_TICK = 0.1;
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
@@ -255,12 +253,14 @@ export const REPRODUCTION = {
 
 export const WeatherEffects = {
   NIGHT_GROWTH_COEFFICIENT: 0.5,
-  RAIN_MOISTURE_GAIN: 1.5,
+  RAIN_MOISTURE_GAIN: 0.5,
   WINTER_PLANT_DAMAGE: 0.05,
 };
 export const INITIAL_RESIDENTS: Record<string, Resident> = {
   "res-1": {
     id: "res-1",
+    profession: null,
+    skills: {},
     name: generateRandomName(Gender.Male).name,
     surname: generateRandomName(Gender.Male).surname,
     age: 30,
@@ -284,6 +284,8 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
   },
   "res-2": {
     id: "res-2",
+    profession: null,
+    skills: {},
     name: generateRandomName(Gender.Female).name,
     surname: generateRandomName(Gender.Female).surname,
     age: 22,
@@ -319,7 +321,7 @@ export const initialGameState: GameState = {
     isNight: false,
   },
   economy: {
-    money: 100,
+    money: 1030,
     level: 1,
     totalPopulation: 0,
   },
