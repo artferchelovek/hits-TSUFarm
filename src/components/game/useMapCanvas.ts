@@ -13,8 +13,18 @@ import {
 import { useGameStore } from "../../Store/GameStore";
 import { BuildingType } from "../../engine/Types";
 import type { Buildings, GameStore } from "../../engine/Types";
-import updateTransform from "./map/camera";
 import * as drawFns from "./map/draw";
+
+const PALETTE_RGBA: Record<number, [number, number, number, number]> = {};
+for (const [key, hex] of Object.entries(PALETTE)) {
+  const i = Number(key);
+  PALETTE_RGBA[i] = [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+    255,
+  ];
+}
 
 export function useMapCanvas(
   isBackground: boolean,
@@ -29,6 +39,97 @@ export function useMapCanvas(
   const buildingsCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number | null>(null);
+  const renderQueued = useRef(false);
+  const lowResCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const queueRender = () => {
+    if (renderQueued.current) return;
+    renderQueued.current = true;
+    requestAnimationFrame(() => {
+      renderQueued.current = false;
+      renderAll();
+    });
+  };
+
+  const renderMap = (camera: { x: number; y: number; zoom: number }) => {
+    const canvas = mapCanvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!ctx || !canvas) return;
+
+    const { x: camX, y: camY, zoom } = camera;
+    const vpW = canvas.width;
+    const vpH = canvas.height;
+
+    const minCol = Math.max(0, Math.floor(-camX / (TILE_SIZE * zoom)));
+    const minRow = Math.max(0, Math.floor(-camY / (TILE_SIZE * zoom)));
+    const maxCol = Math.min(
+      MAP_DIMENSION - 1,
+      Math.ceil((vpW - camX) / (TILE_SIZE * zoom)) - 1,
+    );
+    const maxRow = Math.min(
+      MAP_DIMENSION - 1,
+      Math.ceil((vpH - camY) / (TILE_SIZE * zoom)) - 1,
+    );
+    const cols = maxCol - minCol + 1;
+    const rows = maxRow - minRow + 1;
+    if (cols <= 0 || rows <= 0) return;
+
+    const tileSize = Math.ceil(TILE_SIZE * zoom);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, vpW, vpH);
+
+    if (tileSize < 12) {
+      if (!lowResCanvasRef.current) {
+        lowResCanvasRef.current = document.createElement("canvas");
+      }
+      const temp = lowResCanvasRef.current;
+      temp.width = cols;
+      temp.height = rows;
+      const tctx = temp.getContext("2d");
+      if (!tctx) return;
+      const imgData = tctx.createImageData(cols, rows);
+      const data = imgData.data;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const tile = world.getTile(minCol + c, minRow + r);
+          const color = PALETTE_RGBA[tile];
+          const idx = (r * cols + c) * 4;
+          data[idx] = color[0];
+          data[idx + 1] = color[1];
+          data[idx + 2] = color[2];
+          data[idx + 3] = color[3];
+        }
+      }
+      tctx.putImageData(imgData, 0, 0);
+      const sx = Math.round(minCol * TILE_SIZE * zoom + camX);
+      const sy = Math.round(minRow * TILE_SIZE * zoom + camY);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(temp, sx, sy, cols * tileSize, rows * tileSize);
+    } else {
+      for (let row = minRow; row <= maxRow; row++) {
+        const sy = Math.round(row * TILE_SIZE * zoom + camY);
+        for (let col = minCol; col <= maxCol; col++) {
+          const sx = Math.round(col * TILE_SIZE * zoom + camX);
+          const tile = world.getTile(col, row);
+          const texture = texturesRef.current[tile];
+          if (texture && texturesLoaded) {
+            ctx.drawImage(texture, sx, sy, tileSize, tileSize);
+          } else {
+            ctx.fillStyle = PALETTE[tile];
+            ctx.fillRect(sx, sy, tileSize, tileSize);
+          }
+        }
+      }
+    }
+  };
+
+  const renderAll = () => {
+    const cam = cameraRef.current;
+    renderMap(cam);
+    const s = useGameStore.getState();
+    drawBuildings(s.gameState.buildings);
+  };
 
   const getInitialCam = () => {
     if (centerCamera && !isBackground) {
@@ -114,74 +215,56 @@ export function useMapCanvas(
   }, [tileTextures]);
 
   useEffect(() => {
-    const canvas = mapCanvasRef.current;
-    if (!canvas) return;
-    const size = MAP_DIMENSION * TILE_SIZE;
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
     const dpr = 1;
 
-    canvas.style.width = `${size}px`;
-    canvas.style.height = `${size}px`;
-    canvas.width = Math.floor(size * dpr);
-    canvas.height = Math.floor(size * dpr);
-    const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-
-    console.time("Отрисовка всей карты");
-    for (let row = 0; row < MAP_DIMENSION; row++) {
-      for (let col = 0; col < MAP_DIMENSION; col++) {
-        const tile = world.getTile(col, row);
-        const x = col * TILE_SIZE;
-        const y = row * TILE_SIZE;
-
-        const texture = texturesRef.current[tile];
-
-        if (texture && texturesLoaded) {
-          ctx.drawImage(texture, x, y, TILE_SIZE, TILE_SIZE);
-        } else {
-          ctx.fillStyle = PALETTE[tile];
-          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-        }
-      }
-    }
-    console.timeEnd("Отрисовка всей карты");
-
-    const overlay = overlayCanvasRef.current;
-    if (overlay) {
-      overlay.style.width = `${size}px`;
-      overlay.style.height = `${size}px`;
-      overlay.width = Math.floor(size * dpr);
-      overlay.height = Math.floor(size * dpr);
-      const octx = overlay.getContext("2d");
-      if (octx) {
-        octx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        octx.imageSmoothingEnabled = false;
-      }
+    const mc = mapCanvasRef.current;
+    if (mc) {
+      mc.style.width = `${vpW}px`;
+      mc.style.height = `${vpH}px`;
+      mc.width = Math.floor(vpW * dpr);
+      mc.height = Math.floor(vpH * dpr);
+      const ctx = mc.getContext("2d", { alpha: false });
+      if (ctx) ctx.imageSmoothingEnabled = false;
     }
 
-    const buildingsCanvas = buildingsCanvasRef.current;
-    if (buildingsCanvas) {
-      buildingsCanvas.style.width = `${size}px`;
-      buildingsCanvas.style.height = `${size}px`;
-      buildingsCanvas.width = Math.floor(size * dpr);
-      buildingsCanvas.height = Math.floor(size * dpr);
-      const bctx = buildingsCanvas.getContext("2d");
-      if (bctx) {
-        bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        bctx.imageSmoothingEnabled = false;
-      }
-    }
+    [overlayCanvasRef, buildingsCanvasRef].forEach((ref) => {
+      const c = ref.current;
+      if (!c) return;
+      c.style.width = `${vpW}px`;
+      c.style.height = `${vpH}px`;
+      c.width = Math.floor(vpW * dpr);
+      c.height = Math.floor(vpH * dpr);
+      const ctx = c.getContext("2d");
+      if (ctx) ctx.imageSmoothingEnabled = false;
+    });
 
-    updateTransform(
-      cameraRef,
-      mapCanvasRef,
-      buildingsCanvasRef,
-      overlayCanvasRef,
-    );
+    const cam = cameraRef.current;
+    renderMap(cam);
+    const s = useGameStore.getState();
+    drawBuildings(s.gameState.buildings);
 
     onMapReady?.();
   }, [world, texturesLoaded]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const vpW = window.innerWidth;
+      const vpH = window.innerHeight;
+      [mapCanvasRef, overlayCanvasRef, buildingsCanvasRef].forEach((ref) => {
+        const c = ref.current;
+        if (!c) return;
+        c.style.width = `${vpW}px`;
+        c.style.height = `${vpH}px`;
+        c.width = Math.floor(vpW);
+        c.height = Math.floor(vpH);
+      });
+      queueRender();
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const { selected } = useBuildSelection();
   const buildSelectionRef = useRef<{ selected: BuildingType | null } | null>(
@@ -205,7 +288,7 @@ export function useMapCanvas(
         >
       )[sel as BuildingType];
     }
-    drawFns.drawOverlay(overlay, hovered, cfg);
+    drawFns.drawOverlay(overlay, hovered, cameraRef.current, cfg);
   };
 
   const drawBuildings = (buildings: Record<string, Buildings> | null) =>
@@ -213,6 +296,7 @@ export function useMapCanvas(
       buildingsCanvasRef.current,
       buildings,
       buildingTexturesRef.current,
+      cameraRef.current,
     );
 
   useEffect(() => {
@@ -306,7 +390,10 @@ export function useMapCanvas(
         const zoomSpeed = 0.002;
         const delta = -e.deltaY;
         const oldZoom = cameraRef.current.zoom;
-        const newZoom = Math.min(Math.max(oldZoom + delta * zoomSpeed, 0.2), 2);
+        const newZoom = Math.min(
+          Math.max(oldZoom + delta * zoomSpeed, 0.35),
+          2,
+        );
 
         const worldX = (mouseX - cameraRef.current.x) / oldZoom;
         const worldY = (mouseY - cameraRef.current.y) / oldZoom;
@@ -319,13 +406,7 @@ export function useMapCanvas(
         cameraRef.current.y -= e.deltaY;
       }
 
-      updateTransform(
-        cameraRef,
-        mapCanvasRef,
-        buildingsCanvasRef,
-        overlayCanvasRef,
-      );
-
+      queueRender();
       updateInfoBoxPosition();
     };
 
@@ -341,12 +422,7 @@ export function useMapCanvas(
       last = now;
       cameraRef.current.x += dt * 12;
       cameraRef.current.y += dt * 6;
-      updateTransform(
-        cameraRef,
-        mapCanvasRef,
-        buildingsCanvasRef,
-        overlayCanvasRef,
-      );
+      queueRender();
       animRef.current = requestAnimationFrame(step);
     };
     animRef.current = requestAnimationFrame(step);
@@ -361,12 +437,7 @@ export function useMapCanvas(
       cameraRef.current.x += e.clientX - lastMousePosRef.current.x;
       cameraRef.current.y += e.clientY - lastMousePosRef.current.y;
       lastMousePosRef.current = { x: e.clientX, y: e.clientY };
-      updateTransform(
-        cameraRef,
-        mapCanvasRef,
-        buildingsCanvasRef,
-        overlayCanvasRef,
-      );
+      queueRender();
 
       updateInfoBoxPosition();
       return;
