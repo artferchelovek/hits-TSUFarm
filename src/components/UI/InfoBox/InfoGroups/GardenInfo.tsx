@@ -38,8 +38,9 @@ export default function GardenInfo({ build }: { build: Garden }) {
         </>
       )}
       <p>Коэффицент роста: {build.growthCoefficient}x</p>
-      <p>Состояние: {build.health}</p>
-      <p>Требует полива: {build.isWatered ? "Да" : "Нет"}</p>
+      <p>Состояние: {build.health.toFixed(2)}</p>
+      <p>Требует полива: {build.isWatered ? "Нет" : "Да"}</p>
+      <p>Влажность: {build.moisture.toFixed()}</p>
       {!build.harvest ? <AddPlant build={build} /> : null}
     </div>
   );

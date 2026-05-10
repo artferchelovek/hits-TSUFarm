@@ -2,14 +2,100 @@ import {
   BuildingType,
   type CropType,
   type GameState,
+  Gender,
   type Plant,
+  type Resident,
   ResourceType,
   Season,
+  VillagerStatus,
   Weather,
 } from "./Types";
 import { TileType } from "./WorldMap.ts";
-
 import { getBuildingLimit } from "../Store/BuildLimit.ts";
+
+export const FIRST_NAMES_MALE = [
+  "Александр",
+  "Андрей",
+  "Борис",
+  "Василий",
+  "Григорий",
+  "Дмитрий",
+  "Евгений",
+  "Иван",
+  "Константин",
+  "Леонид",
+  "Михаил",
+  "Никита",
+  "Олег",
+  "Петр",
+  "Сергей",
+  "Федор",
+  "Юрий",
+  "Ярослав",
+];
+
+export const FIRST_NAMES_FEMALE = [
+  "Анна",
+  "Белла",
+  "Валентина",
+  "Галина",
+  "Дарья",
+  "Екатерина",
+  "Жанна",
+  "Зоя",
+  "Ирина",
+  "Ксения",
+  "Людмила",
+  "Мария",
+  "Наталья",
+  "Ольга",
+  "Полина",
+  "Светлана",
+  "Татьяна",
+  "Юлия",
+];
+
+export const LAST_NAMES = [
+  "Смирнов",
+  "Иванов",
+  "Кузнецов",
+  "Петров",
+  "Сидоров",
+  "Соколов",
+  "Михайлов",
+  "Федоров",
+  "Волков",
+  "Алексеев",
+  "Лебедев",
+  "Новиков",
+  "Морозов",
+  "Романов",
+  "Захаров",
+  "Зайцев",
+  "Павлов",
+  "Козлов",
+  "Макаров",
+  "Орлов",
+  "Киселев",
+  "Васильев",
+  "Соловьев",
+  "Титов",
+];
+
+export function generateRandomName(gender: Gender): {
+  name: string;
+  surname: string;
+} {
+  const firstNames =
+    gender === Gender.Male ? FIRST_NAMES_MALE : FIRST_NAMES_FEMALE;
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+  const finalSurname = lastName + (gender === Gender.Female ? "а" : "");
+  return {
+    name: firstName,
+    surname: finalSurname,
+  };
+}
 
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
@@ -45,7 +131,7 @@ export const BUILDING_CONFIG = {
   [BuildingType.Garden]: {
     width: 1,
     length: 1,
-    moisture: 100,
+    moisture: 0,
     growthCoefficient: 1.0,
     cost: 10,
   },
@@ -53,7 +139,7 @@ export const BUILDING_CONFIG = {
     width: 3,
     length: 2,
     waterMax: 150,
-    moisture: 100,
+    moisture: 0,
     growthCoefficient: 1.5,
     cost: 200,
   },
@@ -144,23 +230,83 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
     maxYield: 2,
   },
 };
-
+export const DROUGHT_DAMAGE_TICK = 0.1;
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 0.5,
+  hungerPerTick: 0.02,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,
   agePerTick: 1 / 600,
   baseDeathChance: 0.0001,
+  minWalkableAge: 3,
+  homelessDamagePerTick: 5,
   maxInventCapacity: 10,
   moveSpeed: 1,
+};
+export const REPRODUCTION = {
+  BASE_REPRODUCTION_CHANCE: 0.1,
+  PEAK_FERTILITY_AGE: 30,
+  MAX_FERTILITY_AGE: 60,
+  MIN_FERTILITY_AGE: 18,
 };
 
 export const WeatherEffects = {
   NIGHT_GROWTH_COEFFICIENT: 0.5,
-  RAIN_MOISTURE_GAIN: 1.5,
+  RAIN_MOISTURE_GAIN: 0.5,
   WINTER_PLANT_DAMAGE: 0.05,
+};
+export const INITIAL_RESIDENTS: Record<string, Resident> = {
+  "res-1": {
+    id: "res-1",
+    profession: null,
+    skills: {},
+    name: generateRandomName(Gender.Male).name,
+    surname: generateRandomName(Gender.Male).surname,
+    age: 30,
+    gender: Gender.Male,
+    position: { x: 113, y: 109 },
+    health: 100,
+    hunger: 100,
+    status: VillagerStatus.Moving,
+    homeId: "",
+    workplaceId: null,
+    inventory: {
+      type: ResourceType.Empty,
+      amount: 0,
+    },
+    path: [],
+    pathIndex: 0,
+    parents: {
+      parentFirst: "initial",
+      parentSecond: "initial",
+    },
+  },
+  "res-2": {
+    id: "res-2",
+    profession: null,
+    skills: {},
+    name: generateRandomName(Gender.Female).name,
+    surname: generateRandomName(Gender.Female).surname,
+    age: 22,
+    gender: Gender.Female,
+    position: { x: 112, y: 101 },
+    health: 100,
+    hunger: 100,
+    status: VillagerStatus.Moving,
+    homeId: "main-building",
+    workplaceId: null,
+    inventory: {
+      type: ResourceType.Empty,
+      amount: 0,
+    },
+    path: [],
+    pathIndex: 0,
+    parents: {
+      parentFirst: "initial",
+      parentSecond: "initial",
+    },
+  },
 };
 export const initialGameState: GameState = {
   meta: {
@@ -177,7 +323,7 @@ export const initialGameState: GameState = {
   economy: {
     money: 100,
     level: 1,
-    totalPopulation: 2,
+    totalPopulation: 0,
   },
   buildings: {},
   buildingCounts: Object.fromEntries(

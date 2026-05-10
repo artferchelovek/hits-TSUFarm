@@ -1,6 +1,7 @@
 import type { House } from "../../../../engine/Types.ts";
 import styles from "../InfoBox.module.css";
 import SizeBlock from "../SizeBlock.tsx";
+import { useGameStore } from "../../../../Store/GameStore.ts";
 
 export default function HouseInfo({ build }: { build: House }) {
   return (
@@ -16,7 +17,12 @@ export default function HouseInfo({ build }: { build: House }) {
         >
           <p>Проживают:</p>
           {build.residentsId.map((id, index) => (
-            <p key={index}>{id}</p>
+            <p key={index}>
+              {useGameStore.getState().gameState.residents[id].name +
+                " " +
+                useGameStore.getState().gameState.residents[id].surname +
+                ` (Возраст: ${useGameStore.getState().gameState.residents[id].age.toFixed(0)})`}
+            </p>
           ))}
         </div>
       ) : (

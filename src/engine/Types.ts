@@ -1,3 +1,5 @@
+import type { WorkerToUIMessage } from "./CitizenWorker/message.ts";
+
 export enum BuildingType {
   Main = "MAIN",
   House = "HOUSE",
@@ -125,7 +127,7 @@ export interface Granary extends BaseBuilding {
     maxCapacity: number;
   };
 }
-
+export type PlantPlace = Garden | Greenhouse;
 export interface Garden extends PlaceGrow {
   type: BuildingType.Garden;
 }
@@ -178,13 +180,20 @@ export type Buildings =
   | Bridge
   | Road
   | Graveyard;
-
+export interface Farmer {
+  experience: number;
+}
+export type Profession = Farmer;
 export interface Resident {
   id: string;
+  profession: Profession | null;
+  skills: Record<string, number>;
   name: string;
+  surname: string;
   position: Position;
   gender: Gender;
   age: number;
+  parents: Birth;
   health: number;
   hunger: number;
   status: VillagerStatus;
@@ -194,8 +203,13 @@ export interface Resident {
     type: ResourceType;
     amount: number;
   };
+  path: Position[];
+  pathIndex: number;
 }
-
+export interface Birth {
+  parentFirst: string;
+  parentSecond: string;
+}
 export interface Decedent {
   id: string;
   name: string;
@@ -227,6 +241,7 @@ export interface GameState {
 }
 
 export interface GameActions {
+  applyWorkerUpdate: (message: WorkerToUIMessage) => void;
   tick: () => void;
   addBuilding: (type: BuildingType, pos: Position) => Result;
   addPlant: (build: Garden | Greenhouse, plant: CropType) => Result;

@@ -10,9 +10,9 @@ export enum TileType {
 }
 
 export class WorldMap {
-  private readonly width: number = 500;
-  private readonly height: number = 500;
-  private data: Uint8Array;
+  readonly width: number = 500;
+  readonly height: number = 500;
+  data: Uint8Array;
 
   constructor() {
     this.data = new Uint8Array(this.width * this.height);

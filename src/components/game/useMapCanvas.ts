@@ -9,9 +9,10 @@ import {
   TILE_SIZE,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import type { Buildings, BuildingType, GameStore } from "../../engine/Types";
+import type { BuildingType, Buildings, GameStore } from "../../engine/Types";
 import updateTransform from "./map/camera";
 import * as drawFns from "./map/draw";
+import { workerManager } from "../../Store/WorkerManager.ts";
 
 export function useMapCanvas(isBackground: boolean) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,7 +33,42 @@ export function useMapCanvas(isBackground: boolean) {
     w.generate();
     return w;
   });
+  useEffect(() => {
+    if (!world) return;
+    const tiles = world.data;
+    const width = world.width;
+    const height = world.height;
 
+    const state = useGameStore.getState();
+    workerManager.init((payload) =>
+      useGameStore.getState().applyWorkerUpdate(payload),
+    );
+
+    async function init() {
+      await workerManager.sendAndWait(
+        "INIT_WORLD",
+        {
+          grid: tiles,
+          buildings: state.gameState.buildings,
+          width,
+          height,
+        },
+        "INIT_DONE",
+      );
+      workerManager.send("SET_RESIDENTS", {
+        residents: state.gameState.residents,
+      });
+    }
+    init();
+
+    return () => {
+      workerManager.terminate();
+    };
+  }, [world]);
+  const [buildInfo] = useState<null | {
+    build: Buildings;
+    position: { x: number; y: number };
+  }>(null);
   const [selectedBuildId, setSelectedBuildId] = useState<string | null>(null);
   const [clickOffset, setClickOffset] = useState<{
     x: number;
@@ -105,6 +141,15 @@ export function useMapCanvas(isBackground: boolean) {
       buildingsCanvasRef,
       overlayCanvasRef,
     );
+    if (buildInfo?.build) {
+      const b = buildInfo.build;
+      const wx = b.position.x * TILE_SIZE;
+      const wy = b.position.y * TILE_SIZE;
+      const { x, y, zoom } = cameraRef.current;
+      const left = Math.round(zoom * (wx + x));
+      const top = Math.round(zoom * (wy + y)) - 32;
+      setInfoBoxPos({ x: left, y: top });
+    }
   }, [world]);
 
   const { selected } = useBuildSelection();
@@ -209,11 +254,9 @@ export function useMapCanvas(isBackground: boolean) {
         const zoomSpeed = 0.002;
         const delta = -e.deltaY;
         const oldZoom = cameraRef.current.zoom;
+        const newZoom = Math.min(Math.max(oldZoom + delta * zoomSpeed, 0.2), 2);
 
-        cameraRef.current.zoom = Math.min(
-          Math.max(oldZoom + delta * zoomSpeed, 0.2),
-          2,
-        );
+        cameraRef.current.zoom = newZoom;
       } else {
         cameraRef.current.x -= e.deltaX;
         cameraRef.current.y -= e.deltaY;
@@ -381,6 +424,7 @@ export function useMapCanvas(isBackground: boolean) {
     if (!b || !offset) return;
 
     const { x, y, zoom } = cameraRef.current;
+
     const bWorldX = b.position.x * TILE_SIZE;
     const bWorldY = b.position.y * TILE_SIZE;
 
