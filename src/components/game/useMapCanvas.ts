@@ -4,9 +4,11 @@ import { useBuildSelection } from "../../contexts/BuildSelectionContext";
 import { usePopup } from "../../contexts/PopupContext";
 import {
   BUILDING_CONFIG,
+  BUILDING_SVG,
   MAP_DIMENSION,
   PALETTE,
   TILE_SIZE,
+  TILE_SVG,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
 import type { Buildings, BuildingType, GameStore } from "../../engine/Types";
@@ -24,6 +26,9 @@ export function useMapCanvas(isBackground: boolean) {
   const isPanningRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
   const hoveredTileRef = useRef<{ col: number; row: number } | null>(null);
+
+  const texturesRef = useRef<Record<number, HTMLImageElement>>({});
+  const [texturesLoaded, setTexturesLoaded] = useState(false);
 
   const { setSelected } = useBuildSelection();
 
@@ -49,6 +54,38 @@ export function useMapCanvas(isBackground: boolean) {
   );
 
   useEffect(() => {
+    const types = Object.keys(TILE_SVG).map(Number);
+    let loadedCount = 0;
+
+    types.forEach((type) => {
+      const img = new Image();
+      img.src = TILE_SVG[type as keyof typeof TILE_SVG];
+
+      img.onload = () => {
+        texturesRef.current[type] = img;
+        loadedCount++;
+        if (loadedCount === types.length) {
+          setTexturesLoaded(true);
+        }
+      };
+    });
+  }, []);
+
+  const buildingTexturesRef = useRef<Record<string, HTMLImageElement>>({});
+
+  useEffect(() => {
+    Object.entries(BUILDING_SVG).forEach(([key, url]) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        buildingTexturesRef.current[key] = img;
+        const currentBuildings = useGameStore.getState().gameState.buildings;
+        drawBuildings(currentBuildings);
+      };
+    });
+  }, []);
+
+  useEffect(() => {
     const canvas = mapCanvasRef.current;
     if (!canvas) return;
     const size = MAP_DIMENSION * TILE_SIZE;
@@ -67,8 +104,17 @@ export function useMapCanvas(isBackground: boolean) {
     for (let row = 0; row < MAP_DIMENSION; row++) {
       for (let col = 0; col < MAP_DIMENSION; col++) {
         const tile = world.getTile(col, row);
-        ctx.fillStyle = PALETTE[tile];
-        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        const x = col * TILE_SIZE;
+        const y = row * TILE_SIZE;
+
+        const texture = texturesRef.current[tile];
+
+        if (texture && texturesLoaded) {
+          ctx.drawImage(texture, x, y, TILE_SIZE, TILE_SIZE);
+        } else {
+          ctx.fillStyle = PALETTE[tile];
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        }
       }
     }
     console.timeEnd("Отрисовка всей карты");
@@ -105,7 +151,7 @@ export function useMapCanvas(isBackground: boolean) {
       buildingsCanvasRef,
       overlayCanvasRef,
     );
-  }, [world]);
+  }, [world, texturesLoaded]);
 
   const { selected } = useBuildSelection();
   const buildSelectionRef = useRef<{ selected: BuildingType | null } | null>(
@@ -133,7 +179,11 @@ export function useMapCanvas(isBackground: boolean) {
   };
 
   const drawBuildings = (buildings: Record<string, Buildings> | null) =>
-    drawFns.drawBuildings(buildingsCanvasRef.current, buildings);
+    drawFns.drawBuildings(
+      buildingsCanvasRef.current,
+      buildings,
+      buildingTexturesRef.current,
+    );
 
   useEffect(() => {
     const unsub = useGameStore.subscribe((s: GameStore) =>

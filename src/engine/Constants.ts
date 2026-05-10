@@ -11,10 +11,12 @@ import { TileType } from "./WorldMap.ts";
 
 import { getBuildingLimit } from "../Store/BuildLimit.ts";
 
+import * as SVGs from "../assets/svg";
+
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
-    width: 4,
-    length: 4,
+    width: 3,
+    length: 3,
     initialCapacity: 2,
     cost: 0,
   },
@@ -213,6 +215,28 @@ export const PALETTE = {
   [TileType.Sand]: "#F9FE90",
   [TileType.PreHill]: "#76DC7A",
   [TileType.DeepWater]: "#00E1E9",
+};
+
+export const TILE_SVG = {
+  [TileType.Grass]: SVGs.grass,
+  [TileType.Hill]: SVGs.hill,
+  [TileType.PreHill]: SVGs.prehill,
+  [TileType.Sand]: SVGs.sand,
+  [TileType.Water]: SVGs.water,
+  [TileType.DeepWater]: SVGs.deepwater,
+};
+
+export const BUILDING_SVG: Record<string, string> = {
+  MAIN: SVGs.mainbuilding,
+  HOUSE: SVGs.house,
+  GRANARY: SVGs.granary,
+  GREENHOUSE: SVGs.greenhouse,
+  MARKET: SVGs.market,
+  WELL: SVGs.well,
+  BRIDGE: SVGs.bridge,
+  ROAD: SVGs.road,
+  GARDEN: SVGs.garden,
+  GRAVEYARD: SVGs.graveyard,
 };
 
 export const TILE_SIZE = 25;

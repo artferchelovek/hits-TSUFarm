@@ -1,38 +1,33 @@
 import type { Buildings } from "../../../engine/Types";
 import { TILE_SIZE, BUILDING_COLORS } from "../../../engine/Constants";
 
-export function drawBuildings(
-  buildingsCanvas: HTMLCanvasElement | null,
+export const drawBuildings = (
+  canvas: HTMLCanvasElement | null,
   buildings: Record<string, Buildings> | null,
-) {
-  if (!buildingsCanvas) return;
-  const ctx = buildingsCanvas.getContext("2d");
+  textures: Record<string, HTMLImageElement>,
+) => {
+  if (!canvas || !buildings) return;
+  const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  ctx.clearRect(0, 0, buildingsCanvas.width, buildingsCanvas.height);
 
-  if (!buildings) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const list = Object.values(buildings).slice() as Buildings[];
-  list.sort(
-    (a: Buildings, b: Buildings) =>
-      a.position.y + (a.length || 1) - (b.position.y + (b.length || 1)),
-  );
-
-  list.forEach((b: Buildings) => {
+  Object.values(buildings).forEach((b) => {
     const x = b.position.x * TILE_SIZE;
     const y = b.position.y * TILE_SIZE;
     const w = (b.width || 1) * TILE_SIZE;
     const h = (b.length || 1) * TILE_SIZE;
 
-    const color = BUILDING_COLORS[b.type] || "#6b4b3a";
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
+    const sprite = textures[b.type];
 
-    ctx.strokeStyle = "rgba(46,44,44,1)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    if (sprite && sprite.complete) {
+      ctx.drawImage(sprite, x, y, w, h);
+    } else {
+      ctx.fillStyle = BUILDING_COLORS[b.type] || "#ccc";
+      ctx.fillRect(x, y, w, h);
+    }
   });
-}
+};
 
 export function drawOverlay(
   overlayCanvas: HTMLCanvasElement | null,
