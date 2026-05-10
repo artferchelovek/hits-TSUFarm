@@ -90,7 +90,6 @@ export const useGameStore = create<GameStore>()(
             return;
           }
           const newBuild = createBuilding(type, pos);
-          state.gameState.buildings[newBuild.id] = newBuild;
           state.gameState.buildingCounts[type] += 1;
           if (type === BuildingType.Graveyard) {
             state.gameState.meta.graveyardIds.push(newBuild.id);

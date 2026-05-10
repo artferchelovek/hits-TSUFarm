@@ -41,6 +41,27 @@ class WorkerManager {
     this.worker?.postMessage({ type, payload } as UItoWorkerMessage);
   }
 
+  async sendAndWait<T extends UItoWorkerMessage>(
+    type: T["type"],
+    payload: T["payload"],
+    responseType: string,
+  ): Promise<WorkerToUIMessage | null> {
+    return new Promise((resolve) => {
+      if (!this.worker) {
+        resolve(null);
+        return;
+      }
+      const handler = (e: MessageEvent<WorkerToUIMessage>) => {
+        if (e.data.type === responseType) {
+          this.worker?.removeEventListener("message", handler);
+          resolve(e.data);
+        }
+      };
+      this.worker.addEventListener("message", handler);
+      this.worker.postMessage({ type, payload } as UItoWorkerMessage);
+    });
+  }
+
   terminate() {
     this.worker?.terminate();
     this.worker = null;

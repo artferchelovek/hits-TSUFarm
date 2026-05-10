@@ -13,7 +13,7 @@ export default function GameView() {
       console.log(
         `тик номер ${useGameStore.getState().gameState.meta.gameTick}`,
       );
-    }, 100);
+    }, 1000);
 
     return () => clearInterval(gameLoop);
   }, []);

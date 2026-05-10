@@ -43,15 +43,27 @@ export function useMapCanvas(isBackground: boolean) {
     workerManager.init((payload) =>
       useGameStore.getState().applyWorkerUpdate(payload),
     );
-    workerManager.send("INIT_WORLD", {
-      grid: tiles,
-      buildings: state.gameState.buildings,
-      width,
-      height,
-    });
-    workerManager.send("SET_RESIDENTS", {
-      residents: state.gameState.residents,
-    });
+
+    async function init() {
+      await workerManager.sendAndWait(
+        "INIT_WORLD",
+        {
+          grid: tiles,
+          buildings: state.gameState.buildings,
+          width,
+          height,
+        },
+        "INIT_DONE",
+      );
+      workerManager.send("SET_RESIDENTS", {
+        residents: state.gameState.residents,
+      });
+    }
+    init();
+
+    return () => {
+      workerManager.terminate();
+    };
   }, [world]);
   const [buildInfo] = useState<null | {
     build: Buildings;
