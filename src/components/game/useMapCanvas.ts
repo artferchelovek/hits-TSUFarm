@@ -260,8 +260,8 @@ export function useMapCanvas(
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
-      const worldX = mouseX - cameraRef.current.x;
-      const worldY = mouseY - cameraRef.current.y;
+      const worldX = (mouseX - cameraRef.current.x) / cameraRef.current.zoom;
+      const worldY = (mouseY - cameraRef.current.y) / cameraRef.current.zoom;
 
       const col = Math.floor(worldX / TILE_SIZE);
       const row = Math.floor(worldY / TILE_SIZE);
@@ -280,12 +280,12 @@ export function useMapCanvas(
         e.preventDefault();
         const f = found as Buildings;
 
-        const clickWorldX =
-          mouseX / cameraRef.current.zoom - cameraRef.current.x;
-        const clickWorldY =
-          mouseY / cameraRef.current.zoom - cameraRef.current.y;
-        const offsetX = clickWorldX - f.position.x * TILE_SIZE;
-        const offsetY = clickWorldY - f.position.y * TILE_SIZE;
+        const clickCanvasX =
+          (mouseX - cameraRef.current.x) / cameraRef.current.zoom;
+        const clickCanvasY =
+          (mouseY - cameraRef.current.y) / cameraRef.current.zoom;
+        const offsetX = clickCanvasX - f.position.x * TILE_SIZE;
+        const offsetY = clickCanvasY - f.position.y * TILE_SIZE;
 
         setSelectedBuildId(f.id);
         setClickOffset({ x: offsetX, y: offsetY });
@@ -307,12 +307,21 @@ export function useMapCanvas(
       e.preventDefault();
 
       if (e.ctrlKey || e.metaKey) {
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
         const zoomSpeed = 0.002;
         const delta = -e.deltaY;
         const oldZoom = cameraRef.current.zoom;
         const newZoom = Math.min(Math.max(oldZoom + delta * zoomSpeed, 0.2), 2);
 
+        const worldX = (mouseX - cameraRef.current.x) / oldZoom;
+        const worldY = (mouseY - cameraRef.current.y) / oldZoom;
+
         cameraRef.current.zoom = newZoom;
+        cameraRef.current.x = mouseX - worldX * newZoom;
+        cameraRef.current.y = mouseY - worldY * newZoom;
       } else {
         cameraRef.current.x -= e.deltaX;
         cameraRef.current.y -= e.deltaY;
@@ -378,8 +387,8 @@ export function useMapCanvas(
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const worldX = mouseX - cameraRef.current.x;
-    const worldY = mouseY - cameraRef.current.y;
+    const worldX = (mouseX - cameraRef.current.x) / cameraRef.current.zoom;
+    const worldY = (mouseY - cameraRef.current.y) / cameraRef.current.zoom;
 
     const col = Math.floor(worldX / TILE_SIZE);
     const row = Math.floor(worldY / TILE_SIZE);
@@ -402,8 +411,8 @@ export function useMapCanvas(
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const worldX = mouseX - cameraRef.current.x;
-    const worldY = mouseY - cameraRef.current.y;
+    const worldX = (mouseX - cameraRef.current.x) / cameraRef.current.zoom;
+    const worldY = (mouseY - cameraRef.current.y) / cameraRef.current.zoom;
 
     const col = Math.floor(worldX / TILE_SIZE);
     const row = Math.floor(worldY / TILE_SIZE);
@@ -475,19 +484,18 @@ export function useMapCanvas(
 
   const updateInfoBoxPosition = () => {
     const b = activeBuilding;
-    const offset = clickOffset;
+    const offs = clickOffset;
 
-    if (!b || !offset) return;
+    if (!b || !offs) return;
 
     const { x, y, zoom } = cameraRef.current;
+    const canvasX = b.position.x * TILE_SIZE + offs.x;
+    const canvasY = b.position.y * TILE_SIZE + offs.y;
 
-    const bWorldX = b.position.x * TILE_SIZE;
-    const bWorldY = b.position.y * TILE_SIZE;
+    const screenX = Math.round(canvasX * zoom + x);
+    const screenY = Math.round(canvasY * zoom + y);
 
-    const left = Math.round((bWorldX + offset.x + x) * zoom);
-    const top = Math.round((bWorldY + offset.y + y) * zoom);
-
-    setInfoBoxPos({ x: left, y: top });
+    setInfoBoxPos({ x: screenX, y: screenY });
   };
 
   useEffect(() => {
