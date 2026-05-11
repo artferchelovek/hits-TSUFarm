@@ -7,8 +7,8 @@ import {
   type GameStore,
   Gender,
   type House,
+  ProfessionType,
   type Resident,
-  ResourceType,
   VillagerStatus,
 } from "../engine/Types.ts";
 import type { WritableDraft } from "immer";
@@ -80,15 +80,15 @@ export const syncToStore = (
   payload: WorkerToUIMessage,
 ) => {
   if (payload.type === "TICK_DONE" && payload.payload) {
-    const { residents, deadIds, plants, logs } = payload.payload;
+    const { residents, deadIds, plants, buildings, logs } = payload.payload;
 
     Object.assign(state.gameState.residents, residents);
+    Object.assign(state.gameState.buildings, buildings);
 
     deadIds.forEach((id) => {
       delete state.gameState.residents[id];
       state.gameState.economy.totalPopulation -= 1;
     });
-
     plants.forEach((plant) => {
       state.gameState.buildings[plant.id] = plant;
     });
@@ -126,11 +126,13 @@ export const syncToStore = (
             status: VillagerStatus.Idle,
             homeId: parentFirst.homeId,
             workplaceId: null,
-            inventory: { type: ResourceType.Empty, amount: 0 },
+            inventory: { resources: {}, totalAmount: 0 },
             path: [],
             pathIndex: 0,
-            profession: null,
+            profession: { type: ProfessionType.Jobless },
             skills: {},
+            workProgress: 0,
+            targetId: null,
           };
           if (
             home.residentsId.length >=

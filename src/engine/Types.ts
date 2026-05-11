@@ -16,6 +16,8 @@ export enum BuildingType {
 export enum VillagerStatus {
   Idle = "Idle",
   Moving = "Moving",
+  MovingToStorage = "MovingToStorage",
+  Unloading = "Unloading",
   Working = "Working",
   Sleeping = "Sleeping",
   Eating = "Eating",
@@ -125,6 +127,7 @@ export interface Granary extends BaseBuilding {
   storage: {
     resources: Partial<Record<CropType, number>>;
     maxCapacity: number;
+    currentAmount: number;
   };
 }
 export type PlantPlace = Garden | Greenhouse;
@@ -183,6 +186,7 @@ export type Buildings =
 
 export enum ProfessionType {
   Farmer = "Farmer",
+  Jobless = "Jobless",
 }
 
 export interface Farmer {
@@ -191,11 +195,16 @@ export interface Farmer {
   xp: number;
   assignedGardenIds: string[];
 }
-export type Profession = Farmer;
+export interface Jobless {
+  type: ProfessionType.Jobless;
+}
+export type Profession = Farmer | Jobless;
 export interface Resident {
   id: string;
-  profession: Profession | null;
+  profession: Profession;
   skills: Record<string, number>;
+  workProgress: number;
+  targetId: string | null;
   name: string;
   surname: string;
   position: Position;
@@ -208,8 +217,8 @@ export interface Resident {
   homeId: string | null;
   workplaceId: string | null;
   inventory: {
-    type: ResourceType;
-    amount: number;
+    resources: Partial<Record<ResourceType, number>>;
+    totalAmount: number;
   };
   path: Position[];
   pathIndex: number;

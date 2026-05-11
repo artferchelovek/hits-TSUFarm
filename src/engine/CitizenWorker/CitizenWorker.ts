@@ -2,11 +2,14 @@ import {
   type Birth,
   type Buildings,
   BuildingType,
+  type CropType,
   type GameLog,
   Gender,
+  type Granary,
   type House,
   type PlantPlace,
   type Position,
+  ProfessionType,
   type Resident,
   Season,
   VillagerStatus,
@@ -15,6 +18,9 @@ import {
 import { TileType } from "../WorldMap.ts";
 import {
   DROUGHT_DAMAGE_TICK,
+  FARMER_TASK_DURATION,
+  getMaxInventoryCapacity,
+  getSpeedWork,
   PLANT_CONFIG,
   REPRODUCTION,
   VILLAGER_CONFIG,
@@ -106,7 +112,6 @@ class CitizenWorker {
   public getResident(id: string): Resident | undefined {
     return this.residents[id];
   }
-
   public getGrid(): number[][] {
     return this.grid;
   }
@@ -231,6 +236,7 @@ class CitizenWorker {
       residents: this.residents,
       deadIds: deadResidentIds,
       plants: payload.plantBuildings,
+      buildings: this.buildings,
       logs: logs,
       births: births,
     };
@@ -279,6 +285,7 @@ class CitizenWorker {
       delete this.residents[resident.id];
     }
   }
+
   private birthEvents(parentFirst: Resident, parentSecond: Resident): boolean {
     if (parentFirst.homeId !== parentSecond.homeId) {
       return false;
@@ -309,6 +316,109 @@ class CitizenWorker {
 
     return REPRODUCTION.BASE_REPRODUCTION_CHANCE * (yearsLeft / decayRange);
   }
+  private updateFarmer(resident: Resident): void {
+    if (resident.profession.type !== ProfessionType.Farmer) {
+      return;
+    }
+    if (
+      resident.inventory.totalAmount >=
+      getMaxInventoryCapacity(ProfessionType.Farmer, resident.profession.level)
+    ) {
+      const granary = this.findNearestGranary(
+        resident,
+        resident.inventory.totalAmount,
+      );
+      if (granary) {
+        resident.pathIndex = 0;
+        resident.path = this.calculatePath(resident.position, {
+          x: granary.position.x,
+          y: granary.position.y - 1,
+        });
+        resident.targetId = granary.id;
+        resident.status = VillagerStatus.MovingToStorage;
+      }
+    }
+  }
+
+  private findNearestGranary(
+    resident: Resident,
+    currentAmount: number,
+  ): Granary | null {
+    const getEvcDist = (a: Position, b: Position) => {
+      const dx = Math.abs(a.x - b.x);
+      const dy = Math.abs(a.y - b.y);
+      return dx + dy - Math.min(dx, dy);
+    };
+
+    let minDist = Infinity;
+    let nearestGranary: Granary | null = null;
+
+    for (const build of Object.values(this.buildings)) {
+      if (build.type !== BuildingType.Granary) continue;
+
+      const granary = build as Granary;
+      const freeSpace =
+        granary.storage.maxCapacity - granary.storage.currentAmount;
+      if (freeSpace < currentAmount) continue;
+
+      const dist = getEvcDist(resident.position, {
+        x: granary.position.x,
+        y: granary.position.y - 1,
+      });
+
+      if (dist < minDist) {
+        minDist = dist;
+        nearestGranary = granary;
+      }
+    }
+
+    return nearestGranary;
+  }
+
+  private unloadToGranary(resident: Resident): boolean {
+    if (resident.profession.type !== ProfessionType.Farmer) {
+      return false;
+    }
+
+    const granary = this.buildings[resident.targetId ?? ""] as Granary;
+    if (!granary) {
+      return false;
+    }
+
+    const freeSpace =
+      granary.storage.maxCapacity - granary.storage.currentAmount;
+    if (freeSpace < resident.inventory.totalAmount) {
+      resident.targetId = null;
+      return false;
+    }
+
+    if (resident.workProgress < FARMER_TASK_DURATION.UNLOADING) {
+      resident.workProgress += getSpeedWork(
+        ProfessionType.Farmer,
+        resident.profession.level,
+      );
+      return false;
+    }
+
+    for (const [resourceType, amount] of Object.entries(
+      resident.inventory.resources,
+    )) {
+      if (amount > 0) {
+        const cropType = resourceType as CropType;
+        granary.storage.resources[cropType] =
+          (granary.storage.resources[cropType] ?? 0) + amount;
+      }
+    }
+
+    granary.storage.currentAmount += resident.inventory.totalAmount;
+    resident.inventory.resources = {};
+    resident.inventory.totalAmount = 0;
+    resident.workProgress = 0;
+    resident.targetId = null;
+
+    return true;
+  }
+
   private processPlantGrowth(
     building: PlantPlace,
     isNight: boolean,
@@ -371,7 +481,8 @@ class CitizenWorker {
   }
   private updateMovement(resident: Resident, isNight: boolean): void {
     if (
-      resident.status === VillagerStatus.Moving &&
+      (resident.status === VillagerStatus.Moving ||
+        resident.status === VillagerStatus.MovingToStorage) &&
       resident.pathIndex < resident.path.length
     ) {
       const nextStep = resident.path[resident.pathIndex];
@@ -379,14 +490,27 @@ class CitizenWorker {
       if (nextStep && this.isPositionWalkable(nextStep.x, nextStep.y)) {
         resident.position = nextStep;
         resident.pathIndex += 1;
+        if (resident.gender === Gender.Male) {
+          console.log(resident.position);
+        }
         if (
           resident.path.length === 0 ||
           resident.pathIndex >= resident.path.length
         ) {
+          if (resident.status === VillagerStatus.MovingToStorage) {
+            resident.status = VillagerStatus.Unloading;
+            return;
+          }
           resident.status = VillagerStatus.Idle;
         }
       } else {
         resident.path = [];
+        resident.status = VillagerStatus.Idle;
+      }
+    }
+
+    if (resident.status === VillagerStatus.Unloading) {
+      if (this.unloadToGranary(resident)) {
         resident.status = VillagerStatus.Idle;
       }
     }
@@ -413,6 +537,12 @@ class CitizenWorker {
         });
         resident.status = VillagerStatus.Moving;
       }
+    }
+    if (
+      resident.status === VillagerStatus.Idle &&
+      resident.profession.type === ProfessionType.Farmer
+    ) {
+      this.updateFarmer(resident);
     }
     if (
       resident.status === VillagerStatus.Idle &&

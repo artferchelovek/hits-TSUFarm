@@ -4,10 +4,10 @@ import {
   type GameState,
   Gender,
   type Plant,
+  ProfessionType,
   type Resident,
   ResourceType,
   Season,
-  ProfessionType,
   VillagerStatus,
   Weather,
 } from "./Types";
@@ -99,36 +99,50 @@ export function generateRandomName(gender: Gender): {
     surname: finalSurname,
   };
 }
-export const PROFESSION_SETTINGS: Record<
-  ProfessionType,
-  {
-    assignmentCost: number;
-    baseWorkSpeed: number;
-    xpGainPerTick: number;
-    baseSalary: number;
-    xpPerLevel: number;
-    baseMaxGardens: number;
-    gardensPerLevel: number;
-    maxLevel: number;
-  }
+export const PROFESSION_SETTINGS: Partial<
+  Record<
+    ProfessionType,
+    {
+      assignmentCost: number;
+      baseWorkSpeed: number;
+      workSpeedUpPerLevel: number;
+      xpGainPerTick: number;
+      baseSalary: number;
+      xpPerLevel: number;
+      baseMaxGardens: number;
+      gardensPerLevel: number;
+      maxLevel: number;
+      baseInventoryCapacity: number;
+      inventoryCapacityPerLevel: number;
+    }
+  >
 > = {
   [ProfessionType.Farmer]: {
     assignmentCost: 150,
     baseWorkSpeed: 1.0,
+    workSpeedUpPerLevel: 0.5,
     xpGainPerTick: 0.1,
     baseSalary: 0,
     xpPerLevel: 100,
     baseMaxGardens: 5,
     gardensPerLevel: 5,
     maxLevel: 5,
+    baseInventoryCapacity: 10,
+    inventoryCapacityPerLevel: 2,
   },
 };
-
+export const FARMER_TASK_DURATION = {
+  SET_WATER: 10,
+  HARVESTING: 20,
+  PLANTING: 15,
+  UNLOADING: 5,
+};
 export function getMaxGardens(
   professionType: ProfessionType,
   level: number,
 ): number {
   const settings = PROFESSION_SETTINGS[professionType];
+  if (!settings) return 0;
   return settings.baseMaxGardens + level * settings.gardensPerLevel;
 }
 
@@ -137,7 +151,27 @@ export function getXpForNextLevel(
   currentLevel: number,
 ): number {
   const settings = PROFESSION_SETTINGS[professionType];
+  if (!settings) return 0;
   return settings.xpPerLevel * currentLevel;
+}
+
+export function getMaxInventoryCapacity(
+  professionType: ProfessionType,
+  level: number,
+): number {
+  const settings = PROFESSION_SETTINGS[professionType];
+  if (!settings) return 10;
+  return (
+    settings.baseInventoryCapacity + level * settings.inventoryCapacityPerLevel
+  );
+}
+export function getSpeedWork(
+  professionType: ProfessionType,
+  level: number,
+): number {
+  const settings = PROFESSION_SETTINGS[professionType];
+  if (!settings) return 10;
+  return settings.baseWorkSpeed + level * settings.workSpeedUpPerLevel;
 }
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
@@ -155,7 +189,7 @@ export const BUILDING_CONFIG = {
   [BuildingType.Granary]: {
     width: 5,
     length: 4,
-    maxCapacity: 200,
+    maxCapacity: 700,
     cost: 120,
   },
   [BuildingType.Well]: {
@@ -302,8 +336,10 @@ export const WeatherEffects = {
 export const INITIAL_RESIDENTS: Record<string, Resident> = {
   "res-1": {
     id: "res-1",
-    profession: null,
+    profession: { type: ProfessionType.Jobless },
     skills: {},
+    workProgress: 0,
+    targetId: null,
     name: generateRandomName(Gender.Male).name,
     surname: generateRandomName(Gender.Male).surname,
     age: 30,
@@ -311,12 +347,12 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     position: { x: 113, y: 109 },
     health: 100,
     hunger: 100,
-    status: VillagerStatus.Moving,
+    status: VillagerStatus.Idle,
     homeId: "",
     workplaceId: null,
     inventory: {
-      type: ResourceType.Empty,
-      amount: 0,
+      resources: {},
+      totalAmount: 0,
     },
     path: [],
     pathIndex: 0,
@@ -327,8 +363,10 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
   },
   "res-2": {
     id: "res-2",
-    profession: null,
+    profession: { type: ProfessionType.Jobless },
     skills: {},
+    workProgress: 0,
+    targetId: null,
     name: generateRandomName(Gender.Female).name,
     surname: generateRandomName(Gender.Female).surname,
     age: 22,
@@ -340,8 +378,8 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     homeId: "main-building",
     workplaceId: null,
     inventory: {
-      type: ResourceType.Empty,
-      amount: 0,
+      resources: {},
+      totalAmount: 0,
     },
     path: [],
     pathIndex: 0,
@@ -355,7 +393,7 @@ export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
     lastSaved: Date.now(),
-    gameTick: 0,
+    gameTick: 300,
     graveyardIds: [],
     seasonDuration: 30 * 1000,
     currentSeason: Season.Summer,
@@ -364,7 +402,7 @@ export const initialGameState: GameState = {
     isNight: false,
   },
   economy: {
-    money: 100,
+    money: 10330,
     level: 1,
     totalPopulation: 0,
   },

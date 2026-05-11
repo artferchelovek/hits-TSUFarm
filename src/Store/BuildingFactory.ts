@@ -70,7 +70,7 @@ export const createBuilding = (
       return {
         ...base,
         type,
-        storage: { resources: {}, maxCapacity: config.maxCapacity },
+        storage: { resources: {}, maxCapacity: config.maxCapacity, currentAmount: 0 },
       };
     }
     case BuildingType.Well: {
