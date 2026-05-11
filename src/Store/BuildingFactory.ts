@@ -45,7 +45,7 @@ export const createBuilding = (
         lastWateredTime: Date.now(),
         isWatered: false,
         health: 100,
-        assignedWorkerId: [],
+        assignedWorkerId: undefined,
       };
     }
     case BuildingType.Greenhouse: {
@@ -62,7 +62,7 @@ export const createBuilding = (
         fixedCropType: null,
         waterTank: { current: 0, max: config.waterMax },
         baseYield: 1,
-        assignedWorkerId: [],
+        assignedWorkerId: undefined,
       };
     }
     case BuildingType.Granary: {

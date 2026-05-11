@@ -103,7 +103,7 @@ interface PlaceGrow extends BaseBuilding {
   lastWateredTime: number;
   isWatered: boolean;
   health: number;
-  assignedWorkerId?: string[];
+  assignedWorkerId?: string;
 }
 
 export interface Main extends BaseBuilding {
@@ -180,8 +180,16 @@ export type Buildings =
   | Bridge
   | Road
   | Graveyard;
+
+export enum ProfessionType {
+  Farmer = "Farmer",
+}
+
 export interface Farmer {
-  experience: number;
+  type: ProfessionType.Farmer;
+  level: number;
+  xp: number;
+  assignedGardenIds: string[];
 }
 export type Profession = Farmer;
 export interface Resident {
@@ -245,7 +253,10 @@ export interface GameActions {
   tick: () => void;
   addBuilding: (type: BuildingType, pos: Position) => Result;
   addPlant: (build: Garden | Greenhouse, plant: CropType) => Result;
+  giveProfession: (profession: Profession, resident: Resident) => void;
   loadState: (gameState: GameState) => void;
+  assignGardenToFarmer: (resident: Resident, place: PlantPlace) => void;
+  getResidents: () => Record<string, Resident>;
 }
 
 export type GameStore = { gameState: GameState } & GameActions;

@@ -7,6 +7,7 @@ import {
   type Resident,
   ResourceType,
   Season,
+  ProfessionType,
   VillagerStatus,
   Weather,
 } from "./Types";
@@ -98,7 +99,46 @@ export function generateRandomName(gender: Gender): {
     surname: finalSurname,
   };
 }
+export const PROFESSION_SETTINGS: Record<
+  ProfessionType,
+  {
+    assignmentCost: number;
+    baseWorkSpeed: number;
+    xpGainPerTick: number;
+    baseSalary: number;
+    xpPerLevel: number;
+    baseMaxGardens: number;
+    gardensPerLevel: number;
+    maxLevel: number;
+  }
+> = {
+  [ProfessionType.Farmer]: {
+    assignmentCost: 150,
+    baseWorkSpeed: 1.0,
+    xpGainPerTick: 0.1,
+    baseSalary: 0,
+    xpPerLevel: 100,
+    baseMaxGardens: 5,
+    gardensPerLevel: 5,
+    maxLevel: 5,
+  },
+};
 
+export function getMaxGardens(
+  professionType: ProfessionType,
+  level: number,
+): number {
+  const settings = PROFESSION_SETTINGS[professionType];
+  return settings.baseMaxGardens + level * settings.gardensPerLevel;
+}
+
+export function getXpForNextLevel(
+  professionType: ProfessionType,
+  currentLevel: number,
+): number {
+  const settings = PROFESSION_SETTINGS[professionType];
+  return settings.xpPerLevel * currentLevel;
+}
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 3,
@@ -242,6 +282,7 @@ export const VILLAGER_CONFIG = {
   agePerTick: 1 / 600,
   baseDeathChance: 0.0001,
   minWalkableAge: 3,
+  minAgeForWork: 14,
   homelessDamagePerTick: 5,
   maxInventCapacity: 10,
   moveSpeed: 1,
