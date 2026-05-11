@@ -61,7 +61,6 @@ export const useGameStore = create<GameStore>()(
             b.type === BuildingType.Garden ||
             b.type === BuildingType.Greenhouse,
         );
-
         workerManager.send("TICK", {
           tick: state.gameState.meta.gameTick,
           isNight: state.gameState.meta.isNight,
@@ -254,6 +253,9 @@ export const useGameStore = create<GameStore>()(
                 `${PLANT_CONFIG[plant].name} успешно посажен`,
                 "success",
               );
+              workerManager.send("UPDATE_BUILDING", {
+                building: JSON.parse(JSON.stringify(rightBuild)),
+              });
               break;
             case BuildingType.Greenhouse:
               rightBuild.harvest = {
@@ -270,6 +272,9 @@ export const useGameStore = create<GameStore>()(
                 `${PLANT_CONFIG[plant].name} успешно посажен`,
                 "success",
               );
+              workerManager.send("UPDATE_BUILDING", {
+                building: JSON.parse(JSON.stringify(rightBuild)),
+              });
               break;
             default:
               report = {

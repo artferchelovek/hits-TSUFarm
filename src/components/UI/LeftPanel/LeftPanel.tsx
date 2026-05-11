@@ -49,7 +49,6 @@ function BuildingsPanel() {
       : "-";
     const isSelected = selected === bt;
 
-    console.log(lost, bt);
     return (
       <div
         key={bt}

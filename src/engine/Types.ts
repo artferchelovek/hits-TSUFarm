@@ -18,11 +18,17 @@ export enum VillagerStatus {
   Moving = "Moving",
   MovingToStorage = "MovingToStorage",
   Unloading = "Unloading",
+  Harvesting = "Harvesting",
+  MovingToHarvest = "MovingToHarvest",
   Working = "Working",
   Sleeping = "Sleeping",
   Eating = "Eating",
 }
-
+export const moveStatuses: VillagerStatus[] = [
+  VillagerStatus.MovingToHarvest,
+  VillagerStatus.MovingToStorage,
+  VillagerStatus.Moving,
+];
 export enum ResourceType {
   Water = "Water",
   Tomato = "Tomato",

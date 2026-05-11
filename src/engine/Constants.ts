@@ -133,7 +133,7 @@ export const PROFESSION_SETTINGS: Partial<
 };
 export const FARMER_TASK_DURATION = {
   SET_WATER: 10,
-  HARVESTING: 20,
+  HARVESTING: 3,
   PLANTING: 15,
   UNLOADING: 5,
 };
