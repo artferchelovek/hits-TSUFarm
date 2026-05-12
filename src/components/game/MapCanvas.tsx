@@ -10,11 +10,13 @@ export default function MapCanvas({
   buildingTextures,
   onMapReady,
   centerCamera,
+  residentTextures,
 }: {
   isBackground?: boolean;
   world?: WorldMap;
   tileTextures?: Record<number, HTMLImageElement>;
   buildingTextures?: Record<string, HTMLImageElement>;
+  residentTextures?: Record<string, HTMLImageElement>;
   onMapReady?: () => void;
   centerCamera?: boolean;
 }) {
@@ -23,6 +25,7 @@ export default function MapCanvas({
     mapCanvasRef,
     buildingsCanvasRef,
     overlayCanvasRef,
+    residentCanvasRef,
     onMouseMove,
     onClick,
     buildInfo,
@@ -35,6 +38,7 @@ export default function MapCanvas({
     world,
     tileTextures,
     buildingTextures,
+    residentTextures,
     onMapReady,
     centerCamera,
   );
@@ -76,6 +80,18 @@ export default function MapCanvas({
 
       <canvas
         ref={buildingsCanvasRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transformOrigin: "0 0",
+          willChange: "transform",
+          pointerEvents: "none",
+        }}
+      />
+
+      <canvas
+        ref={residentCanvasRef}
         style={{
           position: "absolute",
           top: 0,

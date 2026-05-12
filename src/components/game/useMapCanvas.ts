@@ -11,7 +11,7 @@ import {
   TILE_SVG,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import { BuildingType } from "../../engine/Types";
+import { BuildingType, type Resident } from "../../engine/Types";
 import type { Buildings, GameStore } from "../../engine/Types";
 import * as drawFns from "./map/draw";
 import { workerManager } from "../../Store/WorkerManager.ts";
@@ -32,12 +32,14 @@ export function useMapCanvas(
   externalWorld?: WorldMap,
   tileTextures?: Record<number, HTMLImageElement>,
   buildingTextures?: Record<string, HTMLImageElement>,
+  residentTextures?: Record<string, HTMLImageElement>,
   onMapReady?: () => void,
   centerCamera?: boolean,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
   const buildingsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const residentCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number | null>(null);
   const renderQueued = useRef(false);
@@ -130,6 +132,7 @@ export function useMapCanvas(
     renderMap(cam);
     const s = useGameStore.getState();
     drawBuildings(s.gameState.buildings);
+    drawResidents(s.gameState.residents);
   };
 
   const getInitialCam = () => {
@@ -170,6 +173,10 @@ export function useMapCanvas(
 
   const buildingTexturesRef = useRef<Record<string, HTMLImageElement>>(
     buildingTextures ?? {},
+  );
+
+  const residentTexturesRef = useRef<Record<string, HTMLImageElement>>(
+    residentTextures ?? {},
   );
 
   const { setSelected } = useBuildSelection();
@@ -261,7 +268,7 @@ export function useMapCanvas(
       if (ctx) ctx.imageSmoothingEnabled = false;
     }
 
-    [overlayCanvasRef, buildingsCanvasRef].forEach((ref) => {
+    [overlayCanvasRef, buildingsCanvasRef, residentCanvasRef].forEach((ref) => {
       const c = ref.current;
       if (!c) return;
       c.style.width = `${vpW}px`;
@@ -276,6 +283,7 @@ export function useMapCanvas(
     renderMap(cam);
     const s = useGameStore.getState();
     drawBuildings(s.gameState.buildings);
+    drawResidents(s.gameState.residents);
 
     onMapReady?.();
   }, [world, texturesLoaded]);
@@ -284,7 +292,12 @@ export function useMapCanvas(
     const onResize = () => {
       const vpW = window.innerWidth;
       const vpH = window.innerHeight;
-      [mapCanvasRef, overlayCanvasRef, buildingsCanvasRef].forEach((ref) => {
+      [
+        mapCanvasRef,
+        overlayCanvasRef,
+        buildingsCanvasRef,
+        residentCanvasRef,
+      ].forEach((ref) => {
         const c = ref.current;
         if (!c) return;
         c.style.width = `${vpW}px`;
@@ -331,6 +344,15 @@ export function useMapCanvas(
       cameraRef.current,
     );
 
+  const drawResidents = (residents: Record<string, Resident> | null) => {
+    drawFns.drawResidents(
+      residentCanvasRef.current,
+      residents,
+      residentTexturesRef.current,
+      cameraRef.current,
+    );
+  };
+
   useEffect(() => {
     const unsub = useGameStore.subscribe((s: GameStore) =>
       drawBuildings(s.gameState.buildings),
@@ -339,6 +361,21 @@ export function useMapCanvas(
     try {
       const state = useGameStore.getState();
       drawBuildings(state.gameState.buildings);
+    } catch {
+      // ignore
+    }
+
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = useGameStore.subscribe((s: GameStore) =>
+      drawResidents(s.gameState.residents),
+    );
+
+    try {
+      const state = useGameStore.getState();
+      drawResidents(state.gameState.residents);
     } catch {
       // ignore
     }
@@ -609,6 +646,7 @@ export function useMapCanvas(
     containerRef,
     mapCanvasRef,
     buildingsCanvasRef,
+    residentCanvasRef,
     overlayCanvasRef,
     onMouseMove,
     onClick,
