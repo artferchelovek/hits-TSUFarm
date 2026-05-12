@@ -39,6 +39,8 @@ export const drawResidents = (
   residents: Record<string, Resident> | null,
   textures: Record<string, HTMLImageElement>,
   camera: { x: number; y: number; zoom: number },
+  prevPositions: Record<string, { x: number; y: number }>,
+  progress: number,
 ) => {
   if (!canvas || !residents) return;
   const ctx = canvas.getContext("2d");
@@ -52,8 +54,11 @@ export const drawResidents = (
   const h = canvas.height;
 
   Object.values(residents).forEach((r) => {
-    const sx = Math.round(r.position.x * TILE_SIZE * camera.zoom + camera.x);
-    const sy = Math.round(r.position.y * TILE_SIZE * camera.zoom + camera.y);
+    const prev = prevPositions[r.id] ?? r.position;
+    const drawX = prev.x + (r.position.x - prev.x) * progress;
+    const drawY = prev.y + (r.position.y - prev.y) * progress;
+    const sx = Math.round(drawX * TILE_SIZE * camera.zoom + camera.x);
+    const sy = Math.round(drawY * TILE_SIZE * camera.zoom + camera.y);
 
     if (sx + size < 0 || sy + size < 0 || sx > w || sy > h) return;
     const sprite = textures[r.gender];

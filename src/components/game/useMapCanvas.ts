@@ -132,7 +132,6 @@ export function useMapCanvas(
     renderMap(cam);
     const s = useGameStore.getState();
     drawBuildings(s.gameState.buildings);
-    drawResidents(s.gameState.residents);
   };
 
   const getInitialCam = () => {
@@ -178,6 +177,12 @@ export function useMapCanvas(
   const residentTexturesRef = useRef<Record<string, HTMLImageElement>>(
     residentTextures ?? {},
   );
+
+  const prevResidentPosRef = useRef<Record<string, { x: number; y: number }>>(
+    {},
+  );
+  const lastTickTimeRef = useRef(performance.now());
+  const TICK_INTERVAL = 1000;
 
   const { setSelected } = useBuildSelection();
 
@@ -283,7 +288,6 @@ export function useMapCanvas(
     renderMap(cam);
     const s = useGameStore.getState();
     drawBuildings(s.gameState.buildings);
-    drawResidents(s.gameState.residents);
 
     onMapReady?.();
   }, [world, texturesLoaded]);
@@ -344,14 +348,31 @@ export function useMapCanvas(
       cameraRef.current,
     );
 
-  const drawResidents = (residents: Record<string, Resident> | null) => {
+  const drawResidents = (
+    residents: Record<string, Resident> | null,
+    progress: number,
+  ) => {
     drawFns.drawResidents(
       residentCanvasRef.current,
       residents,
       residentTexturesRef.current,
       cameraRef.current,
+      prevResidentPosRef.current,
+      progress,
     );
   };
+
+  const getPositions = (
+    residents: Record<string, Resident>,
+  ): Record<string, { x: number; y: number }> => {
+    const pos: Record<string, { x: number; y: number }> = {};
+    for (const id in residents) {
+      pos[id] = { ...residents[id].position };
+    }
+    return pos;
+  };
+
+  const targetPosRef = useRef<Record<string, { x: number; y: number }>>({});
 
   useEffect(() => {
     const unsub = useGameStore.subscribe((s: GameStore) =>
@@ -369,18 +390,33 @@ export function useMapCanvas(
   }, []);
 
   useEffect(() => {
-    const unsub = useGameStore.subscribe((s: GameStore) =>
-      drawResidents(s.gameState.residents),
-    );
+    const unsub = useGameStore.subscribe((s: GameStore) => {
+      prevResidentPosRef.current = targetPosRef.current;
+      targetPosRef.current = getPositions(s.gameState.residents);
+      lastTickTimeRef.current = performance.now();
+    });
 
-    try {
+    const state = useGameStore.getState();
+    const initial = getPositions(state.gameState.residents);
+    prevResidentPosRef.current = initial;
+    targetPosRef.current = initial;
+
+    let running = true;
+    const frame = () => {
+      if (!running) return;
+      const now = performance.now();
+      const elapsed = now - lastTickTimeRef.current;
+      const progress = Math.min(elapsed / TICK_INTERVAL, 1);
       const state = useGameStore.getState();
-      drawResidents(state.gameState.residents);
-    } catch {
-      // ignore
-    }
+      drawResidents(state.gameState.residents, progress);
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
 
-    return () => unsub();
+    return () => {
+      unsub();
+      running = false;
+    };
   }, []);
 
   useEffect(() => {
