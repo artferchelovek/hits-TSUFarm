@@ -140,6 +140,8 @@ export default function GameView() {
   }, []);
 
   useEffect(() => {
+    if (import.meta.env.DEV) return;
+
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";

@@ -1,7 +1,11 @@
 import styles from "./LeftPanel.module.css";
 import { useState } from "react";
 import { BuildingType } from "../../../engine/Types";
-import { BUILDING_CONFIG, BUILDING_NAMES } from "../../../engine/Constants";
+import {
+  BUILDING_CONFIG,
+  BUILDING_NAMES,
+  BUILDING_SVG,
+} from "../../../engine/Constants";
 import { useBuildSelection } from "../../../contexts/BuildSelectionContext";
 import { useGameStore } from "../../../Store/GameStore";
 import type { Buildings } from "../../../engine/Types";
@@ -49,7 +53,6 @@ function BuildingsPanel() {
       : "-";
     const isSelected = selected === bt;
 
-    console.log(lost, bt);
     return (
       <div
         key={bt}
@@ -64,10 +67,17 @@ function BuildingsPanel() {
           if (!isDisabled) setSelected(isSelected ? null : bt);
         }}
       >
-        <div className={styles.buildingItem__title}>{BUILDING_NAMES[bt]}</div>
-        <div className={styles.buildingItem__desc}>
-          <p>{desc}</p>
-          <p>Осталось: {lost}</p>
+        <img
+          className={styles.buildingItem__image}
+          src={BUILDING_SVG[bt]}
+          alt=""
+        />
+        <div>
+          <div className={styles.buildingItem__title}>{BUILDING_NAMES[bt]}</div>
+          <div className={styles.buildingItem__desc}>
+            <p>{desc}</p>
+            <p>Осталось: {lost}</p>
+          </div>
         </div>
       </div>
     );
