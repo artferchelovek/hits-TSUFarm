@@ -47,6 +47,7 @@ export type WorkerToUIMessage =
         residents: Record<string, Resident>;
         deadIds: string[];
         plants: PlantPlace[];
+        buildings: Record<string, Buildings>;
         logs: GameLog[];
         births?: Birth[];
       };

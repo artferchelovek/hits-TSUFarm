@@ -16,11 +16,19 @@ export enum BuildingType {
 export enum VillagerStatus {
   Idle = "Idle",
   Moving = "Moving",
+  MovingToStorage = "MovingToStorage",
+  Unloading = "Unloading",
+  Harvesting = "Harvesting",
+  MovingToHarvest = "MovingToHarvest",
   Working = "Working",
   Sleeping = "Sleeping",
   Eating = "Eating",
 }
-
+export const moveStatuses: VillagerStatus[] = [
+  VillagerStatus.MovingToHarvest,
+  VillagerStatus.MovingToStorage,
+  VillagerStatus.Moving,
+];
 export enum ResourceType {
   Water = "Water",
   Tomato = "Tomato",
@@ -103,7 +111,7 @@ interface PlaceGrow extends BaseBuilding {
   lastWateredTime: number;
   isWatered: boolean;
   health: number;
-  assignedWorkerId?: string[];
+  assignedWorkerId?: string;
 }
 
 export interface Main extends BaseBuilding {
@@ -125,6 +133,7 @@ export interface Granary extends BaseBuilding {
   storage: {
     resources: Partial<Record<CropType, number>>;
     maxCapacity: number;
+    currentAmount: number;
   };
 }
 export type PlantPlace = Garden | Greenhouse;
@@ -180,14 +189,28 @@ export type Buildings =
   | Bridge
   | Road
   | Graveyard;
-export interface Farmer {
-  experience: number;
+
+export enum ProfessionType {
+  Farmer = "Farmer",
+  Jobless = "Jobless",
 }
-export type Profession = Farmer;
+
+export interface Farmer {
+  type: ProfessionType.Farmer;
+  level: number;
+  xp: number;
+  assignedGardenIds: string[];
+}
+export interface Jobless {
+  type: ProfessionType.Jobless;
+}
+export type Profession = Farmer | Jobless;
 export interface Resident {
   id: string;
-  profession: Profession | null;
+  profession: Profession;
   skills: Record<string, number>;
+  workProgress: number;
+  targetId: string | null;
   name: string;
   surname: string;
   position: Position;
@@ -200,8 +223,8 @@ export interface Resident {
   homeId: string | null;
   workplaceId: string | null;
   inventory: {
-    type: ResourceType;
-    amount: number;
+    resources: Partial<Record<ResourceType, number>>;
+    totalAmount: number;
   };
   path: Position[];
   pathIndex: number;
@@ -245,7 +268,10 @@ export interface GameActions {
   tick: () => void;
   addBuilding: (type: BuildingType, pos: Position) => Result;
   addPlant: (build: Garden | Greenhouse, plant: CropType) => Result;
+  giveProfession: (profession: Profession, resident: Resident) => void;
   loadState: (gameState: GameState) => void;
+  assignGardenToFarmer: (resident: Resident, place: PlantPlace) => void;
+  getResidents: () => Record<string, Resident>;
 }
 
 export type GameStore = { gameState: GameState } & GameActions;

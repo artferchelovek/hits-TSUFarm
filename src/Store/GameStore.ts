@@ -6,15 +6,20 @@ import {
   type GameStore,
   type House,
   type LogType,
+  ProfessionType,
+  type Resident,
   type Result,
+  VillagerStatus,
 } from "../engine/Types.ts";
 import { immer } from "zustand/middleware/immer";
 import {
   BUILDING_CONFIG,
   BUILDING_NAMES,
   INITIAL_RESIDENTS,
+  getMaxGardens,
   initialGameState,
   PLANT_CONFIG,
+  VILLAGER_CONFIG,
 } from "../engine/Constants.ts";
 import { processDayTime } from "./Processor.ts";
 import { createBuilding } from "./BuildingFactory.ts";
@@ -56,7 +61,6 @@ export const useGameStore = create<GameStore>()(
             b.type === BuildingType.Garden ||
             b.type === BuildingType.Greenhouse,
         );
-
         workerManager.send("TICK", {
           tick: state.gameState.meta.gameTick,
           isNight: state.gameState.meta.isNight,
@@ -116,6 +120,7 @@ export const useGameStore = create<GameStore>()(
             Object.values(state.gameState.residents).forEach((res) => {
               res.homeId = newBuild.id;
               const home = state.gameState.buildings[newBuild.id] as House;
+              res.position = { x: home.position.x - 1, y: home.position.y - 1 };
               home.residentsId.push(res.id);
             });
 
@@ -146,6 +151,81 @@ export const useGameStore = create<GameStore>()(
       });
       return report;
     },
+    giveProfession: (profession, resident): void => {
+      set((state) => {
+        if (resident.age < VILLAGER_CONFIG.minAgeForWork) {
+          appendLog(
+            state,
+            `${resident.name} ${resident.surname} не достиг минимального возраста для работы`,
+            "warning",
+          );
+          return;
+        }
+        if (resident.status !== VillagerStatus.Idle) {
+          appendLog(
+            state,
+            `${resident.name} ${resident.surname} занят другим делом`,
+            "warning",
+          );
+          return;
+        }
+        resident.profession = profession;
+        workerManager.send("SET_RESIDENTS", {
+          residents: state.gameState.residents,
+        });
+      });
+    },
+    assignGardenToFarmer: (resident, selectedPlantPlace): void => {
+      set((state) => {
+        if (selectedPlantPlace.assignedWorkerId) {
+          appendLog(state, "На этом месте уже есть работник", "warning");
+          return;
+        }
+        if (
+          !(
+            resident.profession &&
+            resident.profession.type === ProfessionType.Farmer
+          )
+        ) {
+          appendLog(state, "Необходимо, чтоб житель был фермером", "warning");
+          return;
+        }
+        if (
+          resident.profession.assignedGardenIds.includes(selectedPlantPlace.id)
+        ) {
+          appendLog(
+            state,
+            "Этот работник уже привязан к этому месту",
+            "warning",
+          );
+          return;
+        }
+        const maxGardens = getMaxGardens(
+          ProfessionType.Farmer,
+          resident.profession.level,
+        );
+        if (resident.profession.assignedGardenIds.length >= maxGardens) {
+          appendLog(
+            state,
+            `У фермера максимум ${maxGardens} грядок (уровень ${resident.profession.level})`,
+            "warning",
+          );
+          return;
+        }
+        resident.profession.assignedGardenIds.push(selectedPlantPlace.id);
+        selectedPlantPlace.assignedWorkerId = resident.id;
+
+        workerManager.send("SET_RESIDENTS", {
+          residents: JSON.parse(JSON.stringify(state.gameState.residents)),
+        });
+        workerManager.send("UPDATE_BUILDING", {
+          building: JSON.parse(JSON.stringify(selectedPlantPlace)),
+        });
+      });
+    },
+    getResidents: (): Record<string, Resident> => {
+      return useGameStore.getState().gameState.residents;
+    },
     loadState: (gameState: GameState) => {
       set((state) => {
         state.gameState = gameState;
@@ -173,6 +253,9 @@ export const useGameStore = create<GameStore>()(
                 `${PLANT_CONFIG[plant].name} успешно посажен`,
                 "success",
               );
+              workerManager.send("UPDATE_BUILDING", {
+                building: JSON.parse(JSON.stringify(rightBuild)),
+              });
               break;
             case BuildingType.Greenhouse:
               rightBuild.harvest = {
@@ -189,6 +272,9 @@ export const useGameStore = create<GameStore>()(
                 `${PLANT_CONFIG[plant].name} успешно посажен`,
                 "success",
               );
+              workerManager.send("UPDATE_BUILDING", {
+                building: JSON.parse(JSON.stringify(rightBuild)),
+              });
               break;
             default:
               report = {
