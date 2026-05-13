@@ -31,13 +31,34 @@
   color: #2e2c2c;
 }
 
-.buildingsList {
+.buildingsList, .residentsList {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
 }
 
+.residentsItem {
+  gap: 10px;
+  display: flex;
+  align-items: center;
+  border-radius: 2px;
+  padding: 8px 10px;
+  background: #fbf0e5;
+}
+
+.residentsItem__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  select {
+    width: 100%;
+  }
+}
+
 .buildingItem {
+  align-items: center;
   display: flex;
   gap: 10px;
 

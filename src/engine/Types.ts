@@ -195,10 +195,13 @@ export enum ProfessionType {
   Jobless = "Jobless",
 }
 
-export interface Farmer {
-  type: ProfessionType.Farmer;
+export interface BaseWorker {
   level: number;
   xp: number;
+}
+
+export interface Farmer extends BaseWorker {
+  type: ProfessionType.Farmer;
   assignedGardenIds?: string[];
 }
 export interface Jobless {
@@ -208,6 +211,7 @@ export type Profession = Farmer | Jobless;
 export interface Resident {
   id: string;
   profession: Profession;
+  pendingProfession?: Profession;
   skills: Record<string, number>;
   workProgress: number;
   targetId: string | null;
@@ -272,7 +276,7 @@ export interface GameActions {
     size?: { width: number; length: number },
   ) => Result;
   addPlant: (build: Garden | Greenhouse, plant: CropType) => Result;
-  giveProfession: (profession: Profession, resident: Resident) => void;
+  giveProfession: (profession: Profession, resident: Resident) => boolean;
   loadState: (gameState: GameState) => void;
   assignGardenToFarmer: (resident: Resident, place: PlantPlace) => void;
   getResidents: () => Record<string, Resident>;

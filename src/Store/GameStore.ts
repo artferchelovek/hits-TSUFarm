@@ -178,29 +178,30 @@ export const useGameStore = create<GameStore>()(
       });
       return report;
     },
-    giveProfession: (profession, resident): void => {
+    giveProfession: (profession, resident): boolean => {
+      let success = false;
       set((state) => {
-        if (resident.age < VILLAGER_CONFIG.minAgeForWork) {
+        const r = state.gameState.residents[resident.id];
+        if (!r) return;
+        if (r.age < VILLAGER_CONFIG.minAgeForWork) {
           appendLog(
             state,
-            `${resident.name} ${resident.surname} не достиг минимального возраста для работы`,
+            `${r.name} ${r.surname} не достиг минимального возраста для работы`,
             "warning",
           );
           return;
         }
-        if (resident.status !== VillagerStatus.Idle) {
-          appendLog(
-            state,
-            `${resident.name} ${resident.surname} занят другим делом`,
-            "warning",
-          );
-          return;
+        success = true;
+        if (r.status === VillagerStatus.Idle) {
+          r.profession = profession;
+        } else {
+          r.pendingProfession = profession;
         }
-        resident.profession = profession;
         workerManager.send("SET_RESIDENTS", {
-          residents: state.gameState.residents,
+          residents: JSON.parse(JSON.stringify(state.gameState.residents)),
         });
       });
+      return success;
     },
     assignGardenToFarmer: (resident, selectedPlantPlace): void => {
       set((state) => {

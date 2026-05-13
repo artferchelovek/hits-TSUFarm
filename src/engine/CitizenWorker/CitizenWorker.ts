@@ -233,6 +233,14 @@ class CitizenWorker {
       );
 
       this.updateMovement(resident, payload.isNight);
+
+      if (
+        resident.status === VillagerStatus.Idle &&
+        resident.pendingProfession
+      ) {
+        resident.profession = resident.pendingProfession;
+        delete resident.pendingProfession;
+      }
     }
     const internalPlants = Object.values(this.buildings).filter(
       (b): b is PlantPlace =>

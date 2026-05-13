@@ -1,10 +1,17 @@
 import styles from "./LeftPanel.module.css";
 import { useState } from "react";
-import { BuildingType } from "../../../engine/Types";
+import {
+  BuildingType,
+  ProfessionType,
+  type Resident,
+} from "../../../engine/Types";
 import {
   BUILDING_CONFIG,
   BUILDING_NAMES,
   BUILDING_SVG,
+  CHARACTERS_SVG,
+  createProfession,
+  PROFESSION_NAMES,
 } from "../../../engine/Constants";
 import { useBuildSelection } from "../../../contexts/BuildSelectionContext";
 import { useGameStore } from "../../../Store/GameStore";
@@ -24,11 +31,57 @@ export default function LeftPanel() {
       >
         <option value="buildings">Строения</option>
         <option value="statistic">Статистика</option>
-        <option value="vilagers">Жители</option>
+        <option value="residents">Жители</option>
         <option value="taxes">Налоги</option>
         <option value="cultures">Культуры</option>
       </select>
       {picker === "buildings" ? <BuildingsPanel /> : null}
+      {picker === "residents" ? <ResidentPanel /> : null}
+    </div>
+  );
+}
+
+function ResidentItem({ res }: { res: Resident }) {
+  const [prof, setProf] = useState(res.profession.type);
+
+  return (
+    <div className={styles.residentsItem}>
+      <img src={CHARACTERS_SVG[res.gender]} alt="" />
+      <div className={styles.residentsItem__body}>
+        <p>
+          {res.name}, {Math.round(res.age)}
+        </p>
+        <select
+          value={prof}
+          onChange={(e) => {
+            const type = e.target.value as ProfessionType;
+            const ok = useGameStore
+              .getState()
+              .giveProfession(createProfession(type), res);
+            if (ok) setProf(type);
+          }}
+        >
+          {(Object.keys(PROFESSION_NAMES) as ProfessionType[]).map((type) => (
+            <option key={type} value={type}>
+              {PROFESSION_NAMES[type]}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function ResidentPanel() {
+  const residents = useGameStore((state) => state.gameState.residents);
+
+  return (
+    <div className={styles.leftPanel__body}>
+      <div className={styles.residentsList}>
+        {Object.values(residents).map((res: Resident) => (
+          <ResidentItem key={res.id} res={res} />
+        ))}
+      </div>
     </div>
   );
 }

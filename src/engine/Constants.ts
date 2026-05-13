@@ -1,9 +1,11 @@
 import {
+  type BaseWorker,
   BuildingType,
   type CropType,
   type GameState,
   Gender,
   type Plant,
+  type Profession,
   ProfessionType,
   type Resident,
   ResourceType,
@@ -173,6 +175,14 @@ export function getSpeedWork(
   if (!settings) return 10;
   return settings.baseWorkSpeed + level * settings.workSpeedUpPerLevel;
 }
+export function createProfession(
+  type: ProfessionType,
+  overrides?: Partial<BaseWorker>,
+): Profession {
+  if (type === ProfessionType.Jobless) return { type: ProfessionType.Jobless };
+  return { type, level: 1, xp: 0, ...overrides } as Profession;
+}
+
 export const XP_REWARDS = {
   [ProfessionType.Farmer]: {
     HARVEST: 15,
@@ -479,6 +489,11 @@ export const BUILDING_SVG: Record<string, string> = {
 export const CHARACTERS_SVG: Record<string, string> = {
   Male: SVGs.man,
   Female: SVGs.woman,
+};
+
+export const PROFESSION_NAMES: Record<ProfessionType, string> = {
+  Farmer: "Фермер",
+  Jobless: "Безработный",
 };
 
 export const TILE_SIZE = 25;
