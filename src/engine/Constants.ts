@@ -2,6 +2,7 @@ import {
   BuildingType,
   type CropType,
   type GameState,
+  type Garden,
   Gender,
   type Plant,
   ProfessionType,
@@ -173,6 +174,13 @@ export function getSpeedWork(
   if (!settings) return 10;
   return settings.baseWorkSpeed + level * settings.workSpeedUpPerLevel;
 }
+export const XP_REWARDS = {
+  [ProfessionType.Farmer]: {
+    HARVEST: 15,
+    WATERING: 10,
+    UNLOADING: 5,
+  },
+};
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 3,
@@ -333,10 +341,35 @@ export const WeatherEffects = {
   RAIN_MOISTURE_GAIN: 0.5,
   WINTER_PLANT_DAMAGE: 0.05,
 };
+const testGarden: Garden = {
+  id: "test-garden-001",
+  type: BuildingType.Garden,
+  position: { x: 94, y: 98 },
+  width: 1,
+  length: 1,
+
+  // Поля из PlaceGrow
+  harvest: {
+    type: ResourceType.Tomato,
+    growthProgress: 100,
+    isReady: true,
+  }, // Пока ничего не посажено
+  growthCoefficient: 1.0,
+  moisture: 50, // Начальная влажность 50%
+  lastWateredTime: 0,
+  isWatered: false,
+  health: 100,
+  assignedWorkerId: "res-1", // Пока нет закрепленного фермера
+};
 export const INITIAL_RESIDENTS: Record<string, Resident> = {
   "res-1": {
     id: "res-1",
-    profession: { type: ProfessionType.Jobless },
+    profession: {
+      type: ProfessionType.Farmer,
+      level: 1,
+      xp: 100,
+      assignedGardenIds: ["test-garden-001"],
+    },
     skills: {},
     workProgress: 0,
     targetId: null,
@@ -349,7 +382,7 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     hunger: 100,
     status: VillagerStatus.Idle,
     homeId: "",
-    workplaceId: null,
+    workplaceId: "test-garden-001",
     inventory: {
       resources: {},
       totalAmount: 0,
@@ -397,7 +430,7 @@ export const initialGameState: GameState = {
     graveyardIds: [],
     seasonDuration: 30 * 1000,
     currentSeason: Season.Summer,
-    currentWeather: Weather.Clear,
+    currentWeather: Weather.Rain,
     dayDuration: 1000,
     isNight: false,
   },
@@ -406,7 +439,7 @@ export const initialGameState: GameState = {
     level: 1,
     totalPopulation: 0,
   },
-  buildings: {},
+  buildings: { "test-garden-001": testGarden },
   buildingCounts: Object.fromEntries(
     Object.values(BuildingType).map((type) => [type, 0]),
   ) as Record<BuildingType, number>,

@@ -89,10 +89,10 @@ export const syncToStore = (
       delete state.gameState.residents[id];
       state.gameState.economy.totalPopulation -= 1;
     });
+
     plants.forEach((plant) => {
       state.gameState.buildings[plant.id] = plant;
     });
-
     logs.forEach((log) => {
       state.gameState.logs.push(log);
       if (state.gameState.logs.length > 50) {

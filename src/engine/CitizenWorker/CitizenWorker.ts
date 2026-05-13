@@ -26,10 +26,13 @@ import {
   FARMER_TASK_DURATION,
   getMaxInventoryCapacity,
   getSpeedWork,
+  getXpForNextLevel,
   PLANT_CONFIG,
+  PROFESSION_SETTINGS,
   REPRODUCTION,
   VILLAGER_CONFIG,
   WeatherEffects,
+  XP_REWARDS,
 } from "../Constants.ts";
 import { PathFinding } from "./pathfinding.ts";
 
@@ -472,6 +475,7 @@ class CitizenWorker {
     resident.inventory.totalAmount = 0;
     resident.workProgress = 0;
     resident.targetId = null;
+    this.addExperience(resident, XP_REWARDS[ProfessionType.Farmer].UNLOADING);
 
     return true;
   }
@@ -512,13 +516,31 @@ class CitizenWorker {
     this.addItemToInventory(resident, garden.harvest.type, amount);
     resident.workProgress = 0;
     resident.targetId = null;
+    this.addExperience(resident, XP_REWARDS[ProfessionType.Farmer].HARVEST);
     const targetGarden = this.buildings[garden.id] as PlantPlace;
     targetGarden.harvest = null;
     targetGarden.moisture = 0;
     targetGarden.isWatered = false;
     return true;
   }
+  private addExperience(resident: Resident, amount: number): void {
+    const prof = resident.profession;
+    if (prof.type === ProfessionType.Jobless) return;
+    const settings = PROFESSION_SETTINGS[prof.type];
+    if (!settings || prof.level >= settings.maxLevel) return;
 
+    prof.xp += amount;
+    while (prof.level < settings.maxLevel) {
+      const xpNeeded = getXpForNextLevel(prof.type, prof.level);
+      if (prof.xp >= xpNeeded) {
+        prof.xp -= xpNeeded;
+        prof.level += 1;
+        console.log(`${resident.name} повысил уровень до ${prof.level}!`);
+      } else {
+        break;
+      }
+    }
+  }
   private addItemToInventory = (
     resident: Resident,
     type: ResourceType,
@@ -623,7 +645,7 @@ class CitizenWorker {
         resident.status = VillagerStatus.Idle;
       }
     }
-
+    /// потом создать функцию, где это будет все проверяться
     if (resident.status === VillagerStatus.Unloading) {
       if (this.unloadToGranary(resident)) {
         resident.status = VillagerStatus.Idle;
