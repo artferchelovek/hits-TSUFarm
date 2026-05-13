@@ -11,7 +11,7 @@ import {
   TILE_SVG,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import { BuildingType } from "../../engine/Types";
+import { BuildingType, type Resident } from "../../engine/Types";
 import type { Buildings, GameStore } from "../../engine/Types";
 import * as drawFns from "./map/draw";
 import { workerManager } from "../../Store/WorkerManager.ts";
@@ -32,12 +32,14 @@ export function useMapCanvas(
   externalWorld?: WorldMap,
   tileTextures?: Record<number, HTMLImageElement>,
   buildingTextures?: Record<string, HTMLImageElement>,
+  residentTextures?: Record<string, HTMLImageElement>,
   onMapReady?: () => void,
   centerCamera?: boolean,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
   const buildingsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const residentCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number | null>(null);
   const renderQueued = useRef(false);
@@ -172,6 +174,16 @@ export function useMapCanvas(
     buildingTextures ?? {},
   );
 
+  const residentTexturesRef = useRef<Record<string, HTMLImageElement>>(
+    residentTextures ?? {},
+  );
+
+  const prevResidentPosRef = useRef<Record<string, { x: number; y: number }>>(
+    {},
+  );
+  const lastTickTimeRef = useRef(performance.now());
+  const TICK_INTERVAL = 1000;
+
   const { setSelected } = useBuildSelection();
 
   const [world] = useState(() => {
@@ -261,7 +273,7 @@ export function useMapCanvas(
       if (ctx) ctx.imageSmoothingEnabled = false;
     }
 
-    [overlayCanvasRef, buildingsCanvasRef].forEach((ref) => {
+    [overlayCanvasRef, buildingsCanvasRef, residentCanvasRef].forEach((ref) => {
       const c = ref.current;
       if (!c) return;
       c.style.width = `${vpW}px`;
@@ -284,7 +296,12 @@ export function useMapCanvas(
     const onResize = () => {
       const vpW = window.innerWidth;
       const vpH = window.innerHeight;
-      [mapCanvasRef, overlayCanvasRef, buildingsCanvasRef].forEach((ref) => {
+      [
+        mapCanvasRef,
+        overlayCanvasRef,
+        buildingsCanvasRef,
+        residentCanvasRef,
+      ].forEach((ref) => {
         const c = ref.current;
         if (!c) return;
         c.style.width = `${vpW}px`;
@@ -331,6 +348,32 @@ export function useMapCanvas(
       cameraRef.current,
     );
 
+  const drawResidents = (
+    residents: Record<string, Resident> | null,
+    progress: number,
+  ) => {
+    drawFns.drawResidents(
+      residentCanvasRef.current,
+      residents,
+      residentTexturesRef.current,
+      cameraRef.current,
+      prevResidentPosRef.current,
+      progress,
+    );
+  };
+
+  const getPositions = (
+    residents: Record<string, Resident>,
+  ): Record<string, { x: number; y: number }> => {
+    const pos: Record<string, { x: number; y: number }> = {};
+    for (const id in residents) {
+      pos[id] = { ...residents[id].position };
+    }
+    return pos;
+  };
+
+  const targetPosRef = useRef<Record<string, { x: number; y: number }>>({});
+
   useEffect(() => {
     const unsub = useGameStore.subscribe((s: GameStore) =>
       drawBuildings(s.gameState.buildings),
@@ -344,6 +387,36 @@ export function useMapCanvas(
     }
 
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = useGameStore.subscribe((s: GameStore) => {
+      prevResidentPosRef.current = targetPosRef.current;
+      targetPosRef.current = getPositions(s.gameState.residents);
+      lastTickTimeRef.current = performance.now();
+    });
+
+    const state = useGameStore.getState();
+    const initial = getPositions(state.gameState.residents);
+    prevResidentPosRef.current = initial;
+    targetPosRef.current = initial;
+
+    let running = true;
+    const frame = () => {
+      if (!running) return;
+      const now = performance.now();
+      const elapsed = now - lastTickTimeRef.current;
+      const progress = Math.min(elapsed / TICK_INTERVAL, 1);
+      const state = useGameStore.getState();
+      drawResidents(state.gameState.residents, progress);
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+
+    return () => {
+      unsub();
+      running = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -609,6 +682,7 @@ export function useMapCanvas(
     containerRef,
     mapCanvasRef,
     buildingsCanvasRef,
+    residentCanvasRef,
     overlayCanvasRef,
     onMouseMove,
     onClick,

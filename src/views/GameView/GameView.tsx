@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { WorldMap } from "../../engine/WorldMap.ts";
-import { BUILDING_SVG, TILE_SVG } from "../../engine/Constants.ts";
+import {
+  BUILDING_SVG,
+  CHARACTERS_SVG,
+  TILE_SVG,
+} from "../../engine/Constants.ts";
 import {
   applySave,
   getPendingLoad,
@@ -27,6 +31,8 @@ export default function GameView() {
   const [tileTextures, setTileTextures] =
     useState<Record<number, HTMLImageElement>>();
   const [buildingTextures, setBuildingTextures] =
+    useState<Record<string, HTMLImageElement>>();
+  const [residentTextures, setResidentTextures] =
     useState<Record<string, HTMLImageElement>>();
   const [mapRendered, setMapRendered] = useState(false);
   const [loadedFromSave, setLoadedFromSave] = useState(false);
@@ -102,8 +108,26 @@ export default function GameView() {
       );
       if (cancelled) return;
 
+      const residentTex: Record<string, HTMLImageElement> = {};
+      await Promise.all(
+        Object.entries(CHARACTERS_SVG).map(
+          ([key, url]) =>
+            new Promise<void>((resolve) => {
+              const img = new Image();
+              img.src = url;
+              img.onload = () => {
+                residentTex[key] = img;
+                resolve();
+              };
+              img.onerror = () => resolve();
+            }),
+        ),
+      );
+      if (cancelled) return;
+
       setTileTextures(tileTex);
       setBuildingTextures(buildingTex);
+      setResidentTextures(residentTex);
       setReady(true);
       setStage(2);
     };
@@ -116,6 +140,8 @@ export default function GameView() {
   }, []);
 
   useEffect(() => {
+    if (import.meta.env.DEV) return;
+
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
@@ -134,6 +160,7 @@ export default function GameView() {
                 world={world}
                 tileTextures={tileTextures}
                 buildingTextures={buildingTextures}
+                residentTextures={residentTextures}
                 onMapReady={() => setMapRendered(true)}
                 centerCamera={loadedFromSave}
               />

@@ -1,4 +1,4 @@
-import type { Buildings } from "../../../engine/Types";
+import type { Buildings, Resident } from "../../../engine/Types";
 import { TILE_SIZE, BUILDING_COLORS } from "../../../engine/Constants";
 
 export const drawBuildings = (
@@ -30,6 +30,46 @@ export const drawBuildings = (
     } else {
       ctx.fillStyle = BUILDING_COLORS[b.type] || "#ccc";
       ctx.fillRect(sx, sy, sw, sh);
+    }
+  });
+};
+
+export const drawResidents = (
+  canvas: HTMLCanvasElement | null,
+  residents: Record<string, Resident> | null,
+  textures: Record<string, HTMLImageElement>,
+  camera: { x: number; y: number; zoom: number },
+  prevPositions: Record<string, { x: number; y: number }>,
+  progress: number,
+) => {
+  if (!canvas || !residents) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const size = Math.round(TILE_SIZE * camera.zoom);
+  const w = canvas.width;
+  const h = canvas.height;
+
+  Object.values(residents).forEach((r) => {
+    const prev = prevPositions[r.id] ?? r.position;
+    const drawX = prev.x + (r.position.x - prev.x) * progress;
+    const drawY = prev.y + (r.position.y - prev.y) * progress;
+    const sx = Math.round(drawX * TILE_SIZE * camera.zoom + camera.x);
+    const sy = Math.round(drawY * TILE_SIZE * camera.zoom + camera.y);
+
+    if (sx + size < 0 || sy + size < 0 || sx > w || sy > h) return;
+    const sprite = textures[r.gender];
+
+    if (sprite && sprite.complete) {
+      ctx.drawImage(sprite, sx, sy, size, size);
+    } else {
+      ctx.fillStyle = r.gender === "Male" ? "#4a90d9" : "#e88aa5";
+      ctx.beginPath();
+      ctx.arc(sx + size / 2, sy + size / 2, size / 3, 0, Math.PI * 2);
+      ctx.fill();
     }
   });
 };

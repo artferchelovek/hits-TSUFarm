@@ -39,13 +39,18 @@
 
 .buildingItem {
   display: flex;
-  flex-direction: column;
+  gap: 10px;
 
   border-radius: 2px;
   padding: 8px 10px;
   background: #fbf0e5;
   border: 1px solid rgba(46, 44, 44, 0.08);
   cursor: pointer;
+
+  img {
+    width: 40px;
+    height: auto;
+  }
 }
 
 .buildingItem:hover {

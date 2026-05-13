@@ -385,5 +385,10 @@ export const BUILDING_SVG: Record<string, string> = {
   GRAVEYARD: SVGs.graveyard,
 };
 
+export const CHARACTERS_SVG: Record<string, string> = {
+  Male: SVGs.man,
+  Female: SVGs.woman,
+};
+
 export const TILE_SIZE = 25;
 export const MAP_DIMENSION = 500;
