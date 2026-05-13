@@ -183,18 +183,18 @@ export const XP_REWARDS = {
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 3,
-    length: 3,
+    length: 5,
     initialCapacity: 2,
     cost: 0,
   },
   [BuildingType.House]: {
-    width: 2,
-    length: 2,
+    width: 3,
+    length: 3,
     capacity: 3,
     cost: 50,
   },
   [BuildingType.Granary]: {
-    width: 5,
+    width: 4,
     length: 4,
     maxCapacity: 700,
     cost: 120,

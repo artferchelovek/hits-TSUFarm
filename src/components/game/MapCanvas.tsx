@@ -26,6 +26,7 @@ export default function MapCanvas({
     buildingsCanvasRef,
     overlayCanvasRef,
     residentCanvasRef,
+    weatherCanvasRef,
     onMouseMove,
     onClick,
     buildInfo,
@@ -104,6 +105,18 @@ export default function MapCanvas({
 
       <canvas
         ref={overlayCanvasRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transformOrigin: "0 0",
+          willChange: "transform",
+          pointerEvents: "none",
+        }}
+      />
+
+      <canvas
+        ref={weatherCanvasRef}
         style={{
           position: "absolute",
           top: 0,

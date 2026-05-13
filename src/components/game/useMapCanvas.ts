@@ -11,7 +11,7 @@ import {
   TILE_SVG,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import { BuildingType, type Resident } from "../../engine/Types";
+import { BuildingType, type Resident, Weather } from "../../engine/Types";
 import type { Buildings, GameStore } from "../../engine/Types";
 import * as drawFns from "./map/draw";
 import { workerManager } from "../../Store/WorkerManager.ts";
@@ -41,6 +41,7 @@ export function useMapCanvas(
   const buildingsCanvasRef = useRef<HTMLCanvasElement>(null);
   const residentCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const weatherCanvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number | null>(null);
   const renderQueued = useRef(false);
   const lowResCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -277,7 +278,12 @@ export function useMapCanvas(
       if (ctx) ctx.imageSmoothingEnabled = false;
     }
 
-    [overlayCanvasRef, buildingsCanvasRef, residentCanvasRef].forEach((ref) => {
+    [
+      overlayCanvasRef,
+      buildingsCanvasRef,
+      residentCanvasRef,
+      weatherCanvasRef,
+    ].forEach((ref) => {
       const c = ref.current;
       if (!c) return;
       c.style.width = `${vpW}px`;
@@ -305,6 +311,7 @@ export function useMapCanvas(
         overlayCanvasRef,
         buildingsCanvasRef,
         residentCanvasRef,
+        weatherCanvasRef,
       ].forEach((ref) => {
         const c = ref.current;
         if (!c) return;
@@ -420,6 +427,15 @@ export function useMapCanvas(
       const progress = Math.min(elapsed / TICK_INTERVAL, 1);
       const state = useGameStore.getState();
       drawResidents(state.gameState.residents, progress);
+      if (state.gameState.meta.currentWeather === Weather.Rain) {
+        drawFns.drawRain(weatherCanvasRef.current);
+      } else {
+        const wc = weatherCanvasRef.current;
+        if (wc) {
+          const wctx = wc.getContext("2d");
+          if (wctx) wctx.clearRect(0, 0, wc.width, wc.height);
+        }
+      }
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
@@ -702,6 +718,7 @@ export function useMapCanvas(
     buildingsCanvasRef,
     residentCanvasRef,
     overlayCanvasRef,
+    weatherCanvasRef,
     onMouseMove,
     onClick,
     buildInfo:

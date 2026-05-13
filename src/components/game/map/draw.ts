@@ -15,6 +15,48 @@ function getGardenTextureKey(b: Buildings): string {
   return "GARDEN_PLANTED";
 }
 
+const RAIN_DROPS = Array.from({ length: 150 }, () => ({
+  x: Math.random(),
+  y: Math.random(),
+  length: 15 + Math.random() * 25,
+  speed: 250 + Math.random() * 350,
+  opacity: 0.3 + Math.random() * 0.5,
+}));
+
+export function drawRain(canvas: HTMLCanvasElement | null) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const w = canvas.width;
+  const h = canvas.height;
+  const time = performance.now() / 1000;
+
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+
+  for (const drop of RAIN_DROPS) {
+    const offset = (time * drop.speed) % (h + drop.length * 2);
+    const y = ((drop.y * h + offset) % (h + drop.length * 2)) - drop.length * 2;
+    const x = drop.x * w;
+
+    ctx.globalAlpha = drop.opacity;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 8, y + drop.length);
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1;
+
+  ctx.globalAlpha = 1;
+}
+
 export const drawBuildings = (
   canvas: HTMLCanvasElement | null,
   buildings: Record<string, Buildings> | null,
