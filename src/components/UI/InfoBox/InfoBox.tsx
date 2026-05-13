@@ -1,6 +1,5 @@
 import styles from "./InfoBox.module.css";
 import { type Buildings, BuildingType } from "../../../engine/Types.ts";
-import { BUILDING_NAMES } from "../../../engine/Constants.ts";
 import MainInfo from "./InfoGroups/MainInfo.tsx";
 import MarketInfo from "./InfoGroups/MarketInfo.tsx";
 import GreenhouseInfo from "./InfoGroups/GreenhouseInfo.tsx";
@@ -11,6 +10,7 @@ import BridgeInfo from "./InfoGroups/BridgeInfo.tsx";
 import RoadInfo from "./InfoGroups/RoadInfo.tsx";
 import HouseInfo from "./InfoGroups/HouseInfo.tsx";
 import GranaryInfo from "./InfoGroups/GranaryInfo.tsx";
+import { BUILDING_NAMES } from "../../../engine/localization/locales.ts";
 
 export default function InfoBox({
   build,

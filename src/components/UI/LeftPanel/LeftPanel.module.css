@@ -97,3 +97,28 @@
   color: #5a4634;
   margin-top: 6px;
 }
+
+.statisticList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statisticList__metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: 2px;
+  padding: 8px 10px;
+  background: #fbf0e5;
+  border: 1px solid rgba(46, 44, 44, 0.08);
+}
+
+.statisticPanel__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.statisticPanel__rowData {
+  font-weight: bold;
+}

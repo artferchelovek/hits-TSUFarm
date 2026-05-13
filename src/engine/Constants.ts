@@ -255,18 +255,6 @@ export const BUILDING_CONFIG = {
     cost: 80,
   },
 };
-export const BUILDING_NAMES: Record<BuildingType, string> = {
-  [BuildingType.Main]: "Главное здание",
-  [BuildingType.Market]: "Рынок",
-  [BuildingType.Greenhouse]: "Теплица",
-  [BuildingType.Garden]: "Грядка",
-  [BuildingType.Well]: "Колодец",
-  [BuildingType.Graveyard]: "Кладбище",
-  [BuildingType.Bridge]: "Мост",
-  [BuildingType.Road]: "Дорога",
-  [BuildingType.House]: "Дом для жителей",
-  [BuildingType.Granary]: "Амбар",
-};
 export const PLANT_CONFIG: Record<CropType, Plant> = {
   [ResourceType.Wheat]: {
     type: ResourceType.Wheat,
@@ -489,11 +477,6 @@ export const BUILDING_SVG: Record<string, string> = {
 export const CHARACTERS_SVG: Record<string, string> = {
   Male: SVGs.man,
   Female: SVGs.woman,
-};
-
-export const PROFESSION_NAMES: Record<ProfessionType, string> = {
-  Farmer: "Фермер",
-  Jobless: "Безработный",
 };
 
 export const TILE_SIZE = 25;

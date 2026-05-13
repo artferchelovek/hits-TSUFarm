@@ -51,10 +51,6 @@ export default function InfoPanel() {
           )}
         />
         <Row
-          name={"Погода"}
-          data={useGameStore((state) => state.gameState.meta.currentWeather)}
-        />
-        <Row
           name={"Баланс"}
           data={useGameStore((state) => state.gameState.economy.money)}
         />

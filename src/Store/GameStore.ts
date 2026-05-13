@@ -14,7 +14,6 @@ import {
 import { immer } from "zustand/middleware/immer";
 import {
   BUILDING_CONFIG,
-  BUILDING_NAMES,
   INITIAL_RESIDENTS,
   getMaxGardens,
   initialGameState,
@@ -25,6 +24,7 @@ import { processDayTime } from "./Processor.ts";
 import { createBuilding } from "./BuildingFactory.ts";
 import { getBuildingLimit } from "./BuildLimit.ts";
 import { syncToStore, workerManager } from "./WorkerManager.ts";
+import { BUILDING_NAMES } from "../engine/localization/locales.ts";
 
 export const appendLog = (
   state: WritableDraft<GameStore>,
