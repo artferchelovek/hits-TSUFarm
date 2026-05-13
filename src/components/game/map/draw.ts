@@ -79,12 +79,38 @@ export function drawOverlay(
   hovered: { col: number; row: number } | null,
   camera: { x: number; y: number; zoom: number },
   selectedCfg?: { width?: number; length?: number },
+  dragStart?: { col: number; row: number } | null,
+  dragEnd?: { col: number; row: number } | null,
 ) {
   if (!overlayCanvas) return;
   const ctx = overlayCanvas.getContext("2d");
   if (!ctx) return;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+  if (dragStart && dragEnd) {
+    const col = Math.min(dragStart.col, dragEnd.col);
+    const row = Math.min(dragStart.row, dragEnd.row);
+    const w = Math.abs(dragEnd.col - dragStart.col) + 1;
+    const h = Math.abs(dragEnd.row - dragStart.row) + 1;
+
+    const cx = Math.round(col * TILE_SIZE * camera.zoom + camera.x);
+    const cy = Math.round(row * TILE_SIZE * camera.zoom + camera.y);
+    const cw = Math.round(w * TILE_SIZE * camera.zoom);
+    const ch = Math.round(h * TILE_SIZE * camera.zoom);
+
+    ctx.strokeStyle = "rgba(46, 44, 44, 1)";
+    ctx.lineWidth = 3;
+    ctx.fillStyle = "rgba(78,48,23,0.12)";
+    ctx.fillRect(cx + 1, cy + 1, cw - 2, ch - 2);
+    ctx.strokeRect(cx + 1, cy + 1, cw - 2, ch - 2);
+
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText(`${w}x${h}`, cx + 4, cy + 18);
+    return;
+  }
+
   if (!hovered) return;
 
   ctx.strokeStyle = "#acacac";

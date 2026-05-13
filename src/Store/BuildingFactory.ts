@@ -8,14 +8,15 @@ import { BUILDING_CONFIG } from "../engine/Constants.ts";
 export const createBuilding = (
   type: BuildingType,
   pos: Position,
+  size?: { width?: number; length?: number },
 ): Buildings => {
   const config = BUILDING_CONFIG[type];
   const id = crypto.randomUUID();
   const base = {
     id,
     position: pos,
-    width: config.width,
-    length: config.length,
+    width: size?.width ?? config.width,
+    length: size?.length ?? config.length,
   };
 
   switch (type) {
@@ -70,7 +71,11 @@ export const createBuilding = (
       return {
         ...base,
         type,
-        storage: { resources: {}, maxCapacity: config.maxCapacity, currentAmount: 0 },
+        storage: {
+          resources: {},
+          maxCapacity: config.maxCapacity,
+          currentAmount: 0,
+        },
       };
     }
     case BuildingType.Well: {

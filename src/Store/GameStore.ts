@@ -70,10 +70,13 @@ export const useGameStore = create<GameStore>()(
         });
       });
     },
-    addBuilding: (type, pos): Result => {
+    addBuilding: (type, pos, size?): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {
-        const cost = BUILDING_CONFIG[type].cost;
+        let cost = BUILDING_CONFIG[type].cost;
+        if (type === BuildingType.Garden && size) {
+          cost *= size.width * size.length;
+        }
 
         if (cost <= state.gameState.economy.money) {
           state.gameState.economy.money -= cost;
@@ -94,7 +97,7 @@ export const useGameStore = create<GameStore>()(
             );
             return;
           }
-          const newBuild = createBuilding(type, pos);
+          const newBuild = createBuilding(type, pos, size);
           if (type === BuildingType.Graveyard) {
             state.gameState.meta.graveyardIds.push(newBuild.id);
           }
@@ -191,7 +194,7 @@ export const useGameStore = create<GameStore>()(
           return;
         }
         if (
-          resident.profession.assignedGardenIds.includes(selectedPlantPlace.id)
+          resident.profession.assignedGardenIds?.includes(selectedPlantPlace.id)
         ) {
           appendLog(
             state,
@@ -204,13 +207,18 @@ export const useGameStore = create<GameStore>()(
           ProfessionType.Farmer,
           resident.profession.level,
         );
-        if (resident.profession.assignedGardenIds.length >= maxGardens) {
+        if (
+          (resident.profession.assignedGardenIds?.length ?? 0) >= maxGardens
+        ) {
           appendLog(
             state,
             `У фермера максимум ${maxGardens} грядок (уровень ${resident.profession.level})`,
             "warning",
           );
           return;
+        }
+        if (!resident.profession.assignedGardenIds) {
+          resident.profession.assignedGardenIds = [];
         }
         resident.profession.assignedGardenIds.push(selectedPlantPlace.id);
         selectedPlantPlace.assignedWorkerId = resident.id;

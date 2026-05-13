@@ -376,16 +376,29 @@ class CitizenWorker {
       return;
     }
     const needHarvesting: (Garden | Greenhouse)[] = [];
-    for (const gardenId of resident.profession.assignedGardenIds) {
-      const build = this.buildings[gardenId];
-      console.log(build);
-      if (!build) continue;
-      if (
-        (build.type === BuildingType.Garden ||
-          build.type === BuildingType.Greenhouse) &&
-        build.harvest?.isReady
-      ) {
-        needHarvesting.push(build as Garden | Greenhouse);
+    const assignedIds = resident.profession.assignedGardenIds;
+
+    if (assignedIds && assignedIds.length > 0) {
+      for (const gardenId of assignedIds) {
+        const build = this.buildings[gardenId];
+        if (!build) continue;
+        if (
+          (build.type === BuildingType.Garden ||
+            build.type === BuildingType.Greenhouse) &&
+          build.harvest?.isReady
+        ) {
+          needHarvesting.push(build as Garden | Greenhouse);
+        }
+      }
+    } else {
+      for (const build of Object.values(this.buildings)) {
+        if (
+          (build.type === BuildingType.Garden ||
+            build.type === BuildingType.Greenhouse) &&
+          build.harvest?.isReady
+        ) {
+          needHarvesting.push(build as Garden | Greenhouse);
+        }
       }
     }
 
@@ -489,7 +502,10 @@ class CitizenWorker {
       return false;
     }
 
-    if (resident.workProgress < FARMER_TASK_DURATION.HARVESTING) {
+    const gardenSize = (garden.width || 1) * (garden.length || 1);
+    const harvestDuration = FARMER_TASK_DURATION.HARVESTING * gardenSize;
+
+    if (resident.workProgress < harvestDuration) {
       resident.workProgress += getSpeedWork(
         ProfessionType.Farmer,
         resident.profession.level,
@@ -512,7 +528,7 @@ class CitizenWorker {
       return Math.max(1, total);
     };
 
-    const amount = calculateHarvestAmount(garden.harvest, garden);
+    const amount = calculateHarvestAmount(garden.harvest, garden) * gardenSize;
     this.addItemToInventory(resident, garden.harvest.type, amount);
     resident.workProgress = 0;
     resident.targetId = null;
