@@ -470,6 +470,9 @@ export const BUILDING_SVG: Record<string, string> = {
   BRIDGE: SVGs.bridge,
   ROAD: SVGs.road,
   GARDEN: SVGs.garden,
+  GARDEN_PLANTED: SVGs.gardenPlanted,
+  GARDEN_MED: SVGs.gardenMed,
+  GARDEN_READY: SVGs.gardenReady,
   GRAVEYARD: SVGs.graveyard,
 };
 

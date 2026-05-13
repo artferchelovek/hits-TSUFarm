@@ -1,5 +1,19 @@
-import type { Buildings, Resident } from "../../../engine/Types";
+import {
+  BuildingType,
+  type Buildings,
+  type Garden,
+  type Resident,
+} from "../../../engine/Types";
 import { TILE_SIZE, BUILDING_COLORS } from "../../../engine/Constants";
+
+function getGardenTextureKey(b: Buildings): string {
+  if (b.type !== BuildingType.Garden) return b.type;
+  const g = b as Garden;
+  if (!g.harvest) return "GARDEN";
+  if (g.harvest.isReady) return "GARDEN_READY";
+  if (g.harvest.growthProgress >= 50) return "GARDEN_MED";
+  return "GARDEN_PLANTED";
+}
 
 export const drawBuildings = (
   canvas: HTMLCanvasElement | null,
@@ -23,10 +37,25 @@ export const drawBuildings = (
     if (sx + sw < 0 || sx > canvas.width || sy + sh < 0 || sy > canvas.height)
       return;
 
-    const sprite = textures[b.type];
+    const sprite = textures[getGardenTextureKey(b)];
 
     if (sprite && sprite.complete) {
-      ctx.drawImage(sprite, sx, sy, sw, sh);
+      if (b.type === BuildingType.Garden) {
+        const ts = Math.round(TILE_SIZE * camera.zoom);
+        for (let dx = 0; dx < (b.width || 1); dx++) {
+          for (let dy = 0; dy < (b.length || 1); dy++) {
+            const tx = Math.round(
+              (b.position.x + dx) * TILE_SIZE * camera.zoom + camera.x,
+            );
+            const ty = Math.round(
+              (b.position.y + dy) * TILE_SIZE * camera.zoom + camera.y,
+            );
+            ctx.drawImage(sprite, tx, ty, ts, ts);
+          }
+        }
+      } else {
+        ctx.drawImage(sprite, sx, sy, sw, sh);
+      }
     } else {
       ctx.fillStyle = BUILDING_COLORS[b.type] || "#ccc";
       ctx.fillRect(sx, sy, sw, sh);

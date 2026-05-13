@@ -78,79 +78,103 @@ export const useGameStore = create<GameStore>()(
           cost *= size.width * size.length;
         }
 
-        if (cost <= state.gameState.economy.money) {
-          state.gameState.economy.money -= cost;
-          if (
-            getBuildingLimit(type, state.gameState.economy.level) <=
-              state.gameState.buildingCounts[type] &&
-            type != BuildingType.Main
-          ) {
+        if (type === BuildingType.Garden) {
+          const w = size?.width ?? BUILDING_CONFIG[type].width;
+          const h = size?.length ?? BUILDING_CONFIG[type].length;
+          const newArea = w * h;
+          const limit = getBuildingLimit(type, state.gameState.economy.level);
+          const used = state.gameState.buildingCounts[type];
+          if (used + newArea > limit) {
             report = {
               success: false,
-              message:
-                "Текущий уровень не позволяет поставить больше зданий этого типа",
+              message: "Недостаточно места для грядки такого размера",
             };
             appendLog(
               state,
-              `Уровень не позволяет поставить больше зданий типа ${type}`,
+              `Превышен лимит грядок: необходимо ${newArea} клеток, доступно ${limit - used}`,
               "warning",
             );
             return;
           }
-          const newBuild = createBuilding(type, pos, size);
-          if (type === BuildingType.Graveyard) {
-            state.gameState.meta.graveyardIds.push(newBuild.id);
-          }
-          if (
-            type === BuildingType.Main &&
-            getBuildingLimit(type, state.gameState.economy.level) <=
-              state.gameState.buildingCounts[type]
-          ) {
-            report = {
-              success: false,
-              message: "Главное здание уже существует",
-            };
-            appendLog(state, "Главное здание уже существует", "warning");
-            return;
-          }
-          state.gameState.buildings[newBuild.id] = newBuild;
-          state.gameState.buildingCounts[type] += 1;
-          if (
-            type === BuildingType.House &&
-            state.gameState.buildingCounts[type] === 1
-          ) {
-            state.gameState.residents = INITIAL_RESIDENTS;
-            Object.values(state.gameState.residents).forEach((res) => {
-              res.homeId = newBuild.id;
-              const home = state.gameState.buildings[newBuild.id] as House;
-              res.position = { x: home.position.x - 1, y: home.position.y - 1 };
-              home.residentsId.push(res.id);
-            });
-
-            state.gameState.economy.totalPopulation += 2;
-            workerManager.send("SET_RESIDENTS", {
-              residents: state.gameState.residents,
-            });
-          }
-          workerManager.send("UPDATE_BUILDING", { building: newBuild });
-          state.gameState.buildingRemind[type] -= 1;
+        } else if (
+          getBuildingLimit(type, state.gameState.economy.level) <=
+            state.gameState.buildingCounts[type] &&
+          type != BuildingType.Main
+        ) {
           report = {
-            success: true,
-            message: `${BUILDING_NAMES[type]}(ID-${newBuild.id}) успешно построен`,
+            success: false,
+            message:
+              "Текущий уровень не позволяет поставить больше зданий этого типа",
           };
           appendLog(
             state,
-            `${BUILDING_NAMES[type]}(ID-${newBuild.id}) По координатам: (x: ${newBuild.position.x}, y: ${newBuild.position.y}) успешно построен`,
-            "success",
+            `Уровень не позволяет поставить больше зданий типа ${type}`,
+            "warning",
           );
-        } else {
+          return;
+        }
+
+        if (cost > state.gameState.economy.money) {
           const message = `Недостаточно денег для постройки "${BUILDING_NAMES[type]}"`;
+          report = { success: false, message };
+          appendLog(state, message, "warning");
+          return;
+        }
+        state.gameState.economy.money -= cost;
+
+        const newBuild = createBuilding(type, pos, size);
+        if (type === BuildingType.Graveyard) {
+          state.gameState.meta.graveyardIds.push(newBuild.id);
+        }
+        if (
+          type === BuildingType.Main &&
+          getBuildingLimit(type, state.gameState.economy.level) <=
+            state.gameState.buildingCounts[type]
+        ) {
           report = {
             success: false,
-            message,
+            message: "Главное здание уже существует",
           };
-          appendLog(state, message, "warning");
+          appendLog(state, "Главное здание уже существует", "warning");
+          return;
         }
+        state.gameState.buildings[newBuild.id] = newBuild;
+        if (type === BuildingType.Garden) {
+          const w = size?.width ?? BUILDING_CONFIG[type].width;
+          const h = size?.length ?? BUILDING_CONFIG[type].length;
+          state.gameState.buildingCounts[type] += w * h;
+          state.gameState.buildingRemind[type] -= w * h;
+        } else {
+          state.gameState.buildingCounts[type] += 1;
+          state.gameState.buildingRemind[type] -= 1;
+        }
+        if (
+          type === BuildingType.House &&
+          state.gameState.buildingCounts[type] === 1
+        ) {
+          state.gameState.residents = INITIAL_RESIDENTS;
+          Object.values(state.gameState.residents).forEach((res) => {
+            res.homeId = newBuild.id;
+            const home = state.gameState.buildings[newBuild.id] as House;
+            res.position = { x: home.position.x - 1, y: home.position.y - 1 };
+            home.residentsId.push(res.id);
+          });
+
+          state.gameState.economy.totalPopulation += 2;
+          workerManager.send("SET_RESIDENTS", {
+            residents: state.gameState.residents,
+          });
+        }
+        workerManager.send("UPDATE_BUILDING", { building: newBuild });
+        report = {
+          success: true,
+          message: `${BUILDING_NAMES[type]}(ID-${newBuild.id}) успешно построен`,
+        };
+        appendLog(
+          state,
+          `${BUILDING_NAMES[type]}(ID-${newBuild.id}) По координатам: (x: ${newBuild.position.x}, y: ${newBuild.position.y}) успешно построен`,
+          "success",
+        );
       });
       return report;
     },
