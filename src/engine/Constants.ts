@@ -2,7 +2,6 @@ import {
   BuildingType,
   type CropType,
   type GameState,
-  type Garden,
   Gender,
   type Plant,
   ProfessionType,
@@ -341,34 +340,11 @@ export const WeatherEffects = {
   RAIN_MOISTURE_GAIN: 0.5,
   WINTER_PLANT_DAMAGE: 0.05,
 };
-const testGarden: Garden = {
-  id: "test-garden-001",
-  type: BuildingType.Garden,
-  position: { x: 94, y: 98 },
-  width: 1,
-  length: 1,
-
-  // Поля из PlaceGrow
-  harvest: {
-    type: ResourceType.Tomato,
-    growthProgress: 100,
-    isReady: true,
-  }, // Пока ничего не посажено
-  growthCoefficient: 1.0,
-  moisture: 50, // Начальная влажность 50%
-  lastWateredTime: 0,
-  isWatered: false,
-  health: 100,
-  assignedWorkerId: "res-1", // Пока нет закрепленного фермера
-};
 export const INITIAL_RESIDENTS: Record<string, Resident> = {
   "res-1": {
     id: "res-1",
     profession: {
-      type: ProfessionType.Farmer,
-      level: 1,
-      xp: 100,
-      assignedGardenIds: ["test-garden-001"],
+      type: ProfessionType.Jobless,
     },
     skills: {},
     workProgress: 0,
@@ -382,7 +358,7 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     hunger: 100,
     status: VillagerStatus.Idle,
     homeId: "",
-    workplaceId: "test-garden-001",
+    workplaceId: null,
     inventory: {
       resources: {},
       totalAmount: 0,
@@ -439,7 +415,7 @@ export const initialGameState: GameState = {
     level: 1,
     totalPopulation: 0,
   },
-  buildings: { "test-garden-001": testGarden },
+  buildings: {},
   buildingCounts: Object.fromEntries(
     Object.values(BuildingType).map((type) => [type, 0]),
   ) as Record<BuildingType, number>,
