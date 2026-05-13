@@ -164,6 +164,10 @@ export function useMapCanvas(
   const isPanningRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
   const hoveredTileRef = useRef<{ col: number; row: number } | null>(null);
+  const isDragPlacingRef = useRef(false);
+  const dragStartRef = useRef<{ col: number; row: number } | null>(null);
+  const dragEndRef = useRef<{ col: number; row: number } | null>(null);
+  const wasDragPlacedRef = useRef(false);
 
   const texturesRef = useRef<Record<number, HTMLImageElement>>(
     tileTextures ?? {},
@@ -337,7 +341,14 @@ export function useMapCanvas(
         >
       )[sel as BuildingType];
     }
-    drawFns.drawOverlay(overlay, hovered, cameraRef.current, cfg);
+    drawFns.drawOverlay(
+      overlay,
+      hovered,
+      cameraRef.current,
+      cfg,
+      isDragPlacingRef.current ? dragStartRef.current : null,
+      isDragPlacingRef.current ? dragEndRef.current : null,
+    );
   };
 
   const drawBuildings = (buildings: Record<string, Buildings> | null) =>
@@ -563,6 +574,9 @@ export function useMapCanvas(
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
       hoveredTileRef.current = { col, row };
+      if (isDragPlacingRef.current) {
+        dragEndRef.current = { col, row };
+      }
     } else {
       hoveredTileRef.current = null;
     }
@@ -572,6 +586,10 @@ export function useMapCanvas(
 
   const onClick = (e: React.MouseEvent) => {
     if (isBackground) return;
+    if (wasDragPlacedRef.current) {
+      wasDragPlacedRef.current = false;
+      return;
+    }
     const container = containerRef.current;
     if (!container) return;
 
@@ -693,14 +711,120 @@ export function useMapCanvas(
     infoBoxPos,
     onInfoBoxClose,
     onMouseDown: (e: React.MouseEvent) => {
-      if ((e as any).button !== 1) return;
-      e.preventDefault();
-      isPanningRef.current = true;
-      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+      if ((e as any).button === 1) {
+        e.preventDefault();
+        isPanningRef.current = true;
+        lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+        return;
+      }
+      if ((e as any).button === 0) {
+        const sel = buildSelectionRef.current?.selected ?? null;
+        if (sel === BuildingType.Garden) {
+          const rect = containerRef.current?.getBoundingClientRect();
+          if (!rect) return;
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          const worldX =
+            (mouseX - cameraRef.current.x) / cameraRef.current.zoom;
+          const worldY =
+            (mouseY - cameraRef.current.y) / cameraRef.current.zoom;
+          const col = Math.floor(worldX / TILE_SIZE);
+          const row = Math.floor(worldY / TILE_SIZE);
+          if (
+            col >= 0 &&
+            col < MAP_DIMENSION &&
+            row >= 0 &&
+            row < MAP_DIMENSION
+          ) {
+            isDragPlacingRef.current = true;
+            dragStartRef.current = { col, row };
+            dragEndRef.current = { col, row };
+          }
+        }
+      }
     },
     onMouseUp: (e: React.MouseEvent) => {
-      if ((e as any).button !== 1) return;
-      isPanningRef.current = false;
+      if ((e as any).button === 1) {
+        isPanningRef.current = false;
+        return;
+      }
+      if ((e as any).button === 0 && isDragPlacingRef.current) {
+        isDragPlacingRef.current = false;
+        wasDragPlacedRef.current = true;
+
+        const start = dragStartRef.current;
+        const end = dragEndRef.current;
+        dragStartRef.current = null;
+        dragEndRef.current = null;
+
+        if (!start || !end) {
+          drawOverlay();
+          return;
+        }
+
+        const col = Math.min(start.col, end.col);
+        const row = Math.min(start.row, end.row);
+        const w = Math.abs(end.col - start.col) + 1;
+        const h = Math.abs(end.row - start.row) + 1;
+
+        const state = useGameStore.getState();
+        const existing = Object.values(
+          state.gameState.buildings || ({} as Record<string, Buildings>),
+        ) as Buildings[];
+
+        const overlap = existing.some((b: Buildings) => {
+          const ax1 = col,
+            ay1 = row;
+          const ax2 = col + w - 1,
+            ay2 = row + h - 1;
+          const bx1 = b.position.x,
+            by1 = b.position.y;
+          const bx2 = b.position.x + (b.width || 1) - 1,
+            by2 = b.position.y + (b.length || 1) - 1;
+          return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+        });
+
+        if (overlap) {
+          showPopup("Нельзя разместить здание поверх другого здания", "error");
+          drawOverlay();
+          return;
+        }
+
+        const tiles = new Set<number>();
+        for (let yy = row; yy < row + h; yy++) {
+          for (let xx = col; xx < col + w; xx++) {
+            tiles.add(world.getTile(xx, yy));
+          }
+        }
+
+        if (
+          tiles.has(TileType.Sand) ||
+          tiles.has(TileType.Water) ||
+          tiles.has(TileType.DeepWater)
+        ) {
+          showPopup("Нельзя строить на воде или песке", "error");
+          drawOverlay();
+          return;
+        }
+
+        if (
+          tiles.has(TileType.Hill) &&
+          (tiles.has(TileType.Grass) || tiles.has(TileType.PreHill))
+        ) {
+          showPopup("Рельеф слишком неровный", "warning");
+          drawOverlay();
+          return;
+        }
+
+        useGameStore
+          .getState()
+          .addBuilding(
+            BuildingType.Garden,
+            { x: col, y: row },
+            { width: w, length: h },
+          );
+        drawOverlay();
+      }
     },
   };
 }

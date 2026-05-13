@@ -199,7 +199,7 @@ export interface Farmer {
   type: ProfessionType.Farmer;
   level: number;
   xp: number;
-  assignedGardenIds: string[];
+  assignedGardenIds?: string[];
 }
 export interface Jobless {
   type: ProfessionType.Jobless;
@@ -266,7 +266,11 @@ export interface GameState {
 export interface GameActions {
   applyWorkerUpdate: (message: WorkerToUIMessage) => void;
   tick: () => void;
-  addBuilding: (type: BuildingType, pos: Position) => Result;
+  addBuilding: (
+    type: BuildingType,
+    pos: Position,
+    size?: { width: number; length: number },
+  ) => Result;
   addPlant: (build: Garden | Greenhouse, plant: CropType) => Result;
   giveProfession: (profession: Profession, resident: Resident) => void;
   loadState: (gameState: GameState) => void;
