@@ -106,7 +106,7 @@ class CitizenWorker {
     if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return false;
     }
-    return this.grid[y][x] < TERRAIN_WEIGHTS.OBSTACLE;
+    return this.grid[y][x] <= TERRAIN_WEIGHTS.OBSTACLE;
   }
 
   public setResidents(residents: Record<string, Resident>): void {

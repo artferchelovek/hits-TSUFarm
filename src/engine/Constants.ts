@@ -383,7 +383,7 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     position: { x: 112, y: 101 },
     health: 100,
     hunger: 100,
-    status: VillagerStatus.Moving,
+    status: VillagerStatus.Idle,
     homeId: "main-building",
     workplaceId: null,
     inventory: {
