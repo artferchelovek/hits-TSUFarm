@@ -2,6 +2,7 @@ import {
   type Buildings,
   BuildingType,
   type Position,
+  ResourceType,
 } from "../engine/Types.ts";
 import { BUILDING_CONFIG } from "../engine/Constants.ts";
 
@@ -86,6 +87,24 @@ export const createBuilding = (
         currentAmount: config.maxCapacity,
         maxCapacity: config.maxCapacity,
         refillRate: config.refillRate,
+      };
+    }
+    case BuildingType.Mill: {
+      const config = BUILDING_CONFIG[type];
+      return {
+        ...base,
+        type,
+        maxCapacity: config.maxCapacity,
+        capacity: 0,
+        storage: [],
+        export: [],
+        recipe: {
+          import: ResourceType.Wheat,
+          importCount: 2,
+          export: ResourceType.FLour,
+          exportCount: 1,
+          durationPerTick: 10,
+        },
       };
     }
     case BuildingType.Road:

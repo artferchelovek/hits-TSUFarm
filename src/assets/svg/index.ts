@@ -19,3 +19,4 @@ export { default as graveyard } from "./buildings/graveyard.svg";
 export { default as greenhouse } from "./buildings/greenhouse.svg";
 export { default as man } from "./people/man.svg";
 export { default as woman } from "./people/woman.svg";
+export { default as mill } from "./buildings/mill.svg";

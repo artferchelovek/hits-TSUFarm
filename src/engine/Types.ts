@@ -11,6 +11,7 @@ export enum BuildingType {
   Road = "ROAD",
   Garden = "GARDEN",
   Graveyard = "GRAVEYARD",
+  Mill = "MILL",
 }
 
 export enum VillagerStatus {
@@ -37,8 +38,11 @@ export enum ResourceType {
   Corn = "Corn",
   Pumpkin = "Pumpkin",
   Wheat = "Wheat",
+  FLour = "FLour",
+  Bread = "Bread",
   Empty = "Empty",
 }
+
 export enum Weather {
   Snow = "Snow",
   Rain = "Rain",
@@ -86,6 +90,8 @@ export interface CropState {
   growthProgress: number;
   isReady: boolean;
 }
+
+export type ProductType = ResourceType.FLour | ResourceType.Bread;
 
 export interface Plant {
   type: CropType;
@@ -178,6 +184,21 @@ export interface Graveyard extends BaseBuilding {
   maxCapacity: number;
 }
 
+export interface Mill extends BaseBuilding {
+  type: BuildingType.Mill;
+  export: string[];
+  capacity: number;
+  maxCapacity: number;
+  recipe: {
+    import: ResourceType.Wheat;
+    importCount: number;
+    export: ProductType;
+    exportCount: number;
+    durationPerTick: number;
+  };
+  storage: ResourceType[];
+}
+
 export type Buildings =
   | Main
   | House
@@ -188,7 +209,8 @@ export type Buildings =
   | Market
   | Bridge
   | Road
-  | Graveyard;
+  | Graveyard
+  | Mill;
 
 export enum ProfessionType {
   Farmer = "Farmer",

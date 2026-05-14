@@ -254,6 +254,12 @@ export const BUILDING_CONFIG = {
     maxCapacity: 50,
     cost: 80,
   },
+  [BuildingType.Mill]: {
+    width: 3,
+    length: 5,
+    cost: 300,
+    maxCapacity: 20,
+  },
 };
 export const PLANT_CONFIG: Record<CropType, Plant> = {
   [ResourceType.Wheat]: {
@@ -472,6 +478,7 @@ export const BUILDING_SVG: Record<string, string> = {
   GARDEN_MED: SVGs.gardenMed,
   GARDEN_READY: SVGs.gardenReady,
   GRAVEYARD: SVGs.graveyard,
+  MILL: SVGs.mill,
 };
 
 export const CHARACTERS_SVG: Record<string, string> = {
