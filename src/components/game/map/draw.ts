@@ -1,5 +1,62 @@
-import type { Buildings, Resident } from "../../../engine/Types";
+import {
+  BuildingType,
+  type Buildings,
+  type Garden,
+  type Position,
+  type Resident,
+} from "../../../engine/Types";
 import { TILE_SIZE, BUILDING_COLORS } from "../../../engine/Constants";
+
+function getGardenTextureKey(b: Buildings): string {
+  if (b.type !== BuildingType.Garden) return b.type;
+  const g = b as Garden;
+  if (!g.harvest) return "GARDEN";
+  if (g.harvest.isReady) return "GARDEN_READY";
+  if (g.harvest.growthProgress >= 50) return "GARDEN_MED";
+  return "GARDEN_PLANTED";
+}
+
+const RAIN_DROPS = Array.from({ length: 150 }, () => ({
+  x: Math.random(),
+  y: Math.random(),
+  length: 15 + Math.random() * 25,
+  speed: 250 + Math.random() * 350,
+  opacity: 0.3 + Math.random() * 0.5,
+}));
+
+export function drawRain(canvas: HTMLCanvasElement | null) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const w = canvas.width;
+  const h = canvas.height;
+  const time = performance.now() / 1000;
+
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+
+  for (const drop of RAIN_DROPS) {
+    const offset = (time * drop.speed) % (h + drop.length * 2);
+    const y = ((drop.y * h + offset) % (h + drop.length * 2)) - drop.length * 2;
+    const x = drop.x * w;
+
+    ctx.globalAlpha = drop.opacity;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 8, y + drop.length);
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1;
+
+  ctx.globalAlpha = 1;
+}
 
 export const drawBuildings = (
   canvas: HTMLCanvasElement | null,
@@ -23,10 +80,25 @@ export const drawBuildings = (
     if (sx + sw < 0 || sx > canvas.width || sy + sh < 0 || sy > canvas.height)
       return;
 
-    const sprite = textures[b.type];
+    const sprite = textures[getGardenTextureKey(b)];
 
     if (sprite && sprite.complete) {
-      ctx.drawImage(sprite, sx, sy, sw, sh);
+      if (b.type === BuildingType.Garden) {
+        const ts = Math.round(TILE_SIZE * camera.zoom);
+        for (let dx = 0; dx < (b.width || 1); dx++) {
+          for (let dy = 0; dy < (b.length || 1); dy++) {
+            const tx = Math.round(
+              (b.position.x + dx) * TILE_SIZE * camera.zoom + camera.x,
+            );
+            const ty = Math.round(
+              (b.position.y + dy) * TILE_SIZE * camera.zoom + camera.y,
+            );
+            ctx.drawImage(sprite, tx, ty, ts, ts);
+          }
+        }
+      } else {
+        ctx.drawImage(sprite, sx, sy, sw, sh);
+      }
     } else {
       ctx.fillStyle = BUILDING_COLORS[b.type] || "#ccc";
       ctx.fillRect(sx, sy, sw, sh);
@@ -73,6 +145,64 @@ export const drawResidents = (
     }
   });
 };
+
+export function drawExportRoutes(
+  canvas: HTMLCanvasElement | null,
+  camera: { x: number; y: number; zoom: number },
+  paths: { path: Position[]; targetName: string }[],
+) {
+  if (!canvas || paths.length === 0) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const ts2 = Math.round(TILE_SIZE * camera.zoom) / 2;
+
+  paths.forEach(({ path }) => {
+    if (path.length < 2) return;
+
+    ctx.beginPath();
+    ctx.moveTo(
+      Math.round(path[0].x * TILE_SIZE * camera.zoom + camera.x) + ts2,
+      Math.round(path[0].y * TILE_SIZE * camera.zoom + camera.y) + ts2,
+    );
+    for (let i = 1; i < path.length; i++) {
+      ctx.lineTo(
+        Math.round(path[i].x * TILE_SIZE * camera.zoom + camera.x) + ts2,
+        Math.round(path[i].y * TILE_SIZE * camera.zoom + camera.y) + ts2,
+      );
+    }
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(46, 204, 113, 0.85)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.restore();
+
+    const last = path[path.length - 1];
+    const labX = Math.round(last.x * TILE_SIZE * camera.zoom + camera.x) + ts2;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(46, 204, 113, 0.9)";
+    const sx2 =
+      Math.round(path[0].x * TILE_SIZE * camera.zoom + camera.x) + ts2;
+    const sy2 =
+      Math.round(path[0].y * TILE_SIZE * camera.zoom + camera.y) + ts2;
+    ctx.beginPath();
+    ctx.arc(sx2, sy2, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(
+      labX,
+      Math.round(last.y * TILE_SIZE * camera.zoom + camera.y) + ts2,
+      4,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.restore();
+  });
+}
 
 export function drawOverlay(
   overlayCanvas: HTMLCanvasElement | null,

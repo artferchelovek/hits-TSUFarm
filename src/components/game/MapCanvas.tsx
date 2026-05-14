@@ -1,5 +1,6 @@
 import useMapCanvas from "./useMapCanvas";
 import InfoBox from "../UI/InfoBox/InfoBox";
+import ExportLinkingBanner from "./ExportLinkingBanner";
 import { PALETTE } from "../../engine/Constants";
 import { TileType, type WorldMap } from "../../engine/WorldMap";
 
@@ -26,6 +27,7 @@ export default function MapCanvas({
     buildingsCanvasRef,
     overlayCanvasRef,
     residentCanvasRef,
+    weatherCanvasRef,
     onMouseMove,
     onClick,
     buildInfo,
@@ -58,6 +60,8 @@ export default function MapCanvas({
       onMouseMove={onMouseMove}
       onClick={onClick}
     >
+      <ExportLinkingBanner />
+
       {buildInfo && (
         <InfoBox
           build={buildInfo.build}
@@ -104,6 +108,18 @@ export default function MapCanvas({
 
       <canvas
         ref={overlayCanvasRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transformOrigin: "0 0",
+          willChange: "transform",
+          pointerEvents: "none",
+        }}
+      />
+
+      <canvas
+        ref={weatherCanvasRef}
         style={{
           position: "absolute",
           top: 0,

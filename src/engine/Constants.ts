@@ -1,9 +1,11 @@
 import {
+  type BaseWorker,
   BuildingType,
   type CropType,
   type GameState,
   Gender,
   type Plant,
+  type Profession,
   ProfessionType,
   type Resident,
   ResourceType,
@@ -173,6 +175,14 @@ export function getSpeedWork(
   if (!settings) return 10;
   return settings.baseWorkSpeed + level * settings.workSpeedUpPerLevel;
 }
+export function createProfession(
+  type: ProfessionType,
+  overrides?: Partial<BaseWorker>,
+): Profession {
+  if (type === ProfessionType.Jobless) return { type: ProfessionType.Jobless };
+  return { type, level: 1, xp: 0, ...overrides } as Profession;
+}
+
 export const XP_REWARDS = {
   [ProfessionType.Farmer]: {
     HARVEST: 15,
@@ -184,18 +194,18 @@ export const XP_REWARDS = {
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 3,
-    length: 3,
+    length: 5,
     initialCapacity: 2,
     cost: 0,
   },
   [BuildingType.House]: {
-    width: 2,
-    length: 2,
+    width: 3,
+    length: 3,
     capacity: 3,
     cost: 50,
   },
   [BuildingType.Granary]: {
-    width: 5,
+    width: 4,
     length: 4,
     maxCapacity: 700,
     cost: 120,
@@ -245,18 +255,12 @@ export const BUILDING_CONFIG = {
     maxCapacity: 50,
     cost: 80,
   },
-};
-export const BUILDING_NAMES: Record<BuildingType, string> = {
-  [BuildingType.Main]: "Главное здание",
-  [BuildingType.Market]: "Рынок",
-  [BuildingType.Greenhouse]: "Теплица",
-  [BuildingType.Garden]: "Грядка",
-  [BuildingType.Well]: "Колодец",
-  [BuildingType.Graveyard]: "Кладбище",
-  [BuildingType.Bridge]: "Мост",
-  [BuildingType.Road]: "Дорога",
-  [BuildingType.House]: "Дом для жителей",
-  [BuildingType.Granary]: "Амбар",
+  [BuildingType.Mill]: {
+    width: 3,
+    length: 5,
+    cost: 300,
+    maxCapacity: 20,
+  },
 };
 export const PLANT_CONFIG: Record<CropType, Plant> = {
   [ResourceType.Wheat]: {
@@ -485,12 +489,21 @@ export const BUILDING_SVG: Record<string, string> = {
   BRIDGE: SVGs.bridge,
   ROAD: SVGs.road,
   GARDEN: SVGs.garden,
+  GARDEN_PLANTED: SVGs.gardenPlanted,
+  GARDEN_MED: SVGs.gardenMed,
+  GARDEN_READY: SVGs.gardenReady,
   GRAVEYARD: SVGs.graveyard,
+  MILL: SVGs.mill,
 };
 
 export const CHARACTERS_SVG: Record<string, string> = {
   Male: SVGs.man,
   Female: SVGs.woman,
+};
+
+export const EXPORT_RULES: Partial<Record<BuildingType, BuildingType[]>> = {
+  [BuildingType.Granary]: [BuildingType.Mill],
+  [BuildingType.Mill]: [BuildingType.Granary],
 };
 
 export const TILE_SIZE = 25;

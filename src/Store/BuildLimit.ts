@@ -36,6 +36,6 @@ export const getBuildingLimit = (type: BuildingType, level: number): number => {
       return level * 20;
 
     default:
-      return 0;
+      return 5;
   }
 };

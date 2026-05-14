@@ -4,7 +4,9 @@ import SizeBlock from "../SizeBlock.tsx";
 import { PLANT_CONFIG } from "../../../../engine/Constants.ts";
 import ProgressBlock from "../ProgressBlock.tsx";
 import { useState } from "react";
+import { usePopup } from "../../../../contexts/PopupContext.tsx";
 import { useGameStore } from "../../../../Store/GameStore.ts";
+import { BUILDING_NAMES } from "../../../../engine/localization/locales.ts";
 
 export default function GranaryInfo({ build }: { build: Granary }) {
   const setGranaryResourceType = useGameStore(
@@ -23,6 +25,7 @@ export default function GranaryInfo({ build }: { build: Granary }) {
 
   const isEmpty = build.storage.amount === 0;
 
+  const { showPopup } = usePopup();
   return (
     <div className={styles.InfoBox__body}>
       <SizeBlock build={build} />
@@ -81,6 +84,61 @@ export default function GranaryInfo({ build }: { build: Granary }) {
       )}
       {build.resourceType && (
         <p>Количество: {build.storage.amount} ед.</p>
+      )}
+      <p>Хранится:</p>
+      {Object.values(PLANT_CONFIG).map(({ type, name }) => (
+        <p key={type}>
+          {name}: {build.storage.amount} ед.
+        </p>
+      ))}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          useGameStore.getState().setPendingExportSource(build.id);
+          showPopup("Выберите конечное здание");
+        }}
+      >
+        Экспорт
+      </button>
+      {build.export && build.export.length > 0 && (
+        <div>
+          <p>Экспорт в:</p>
+          {build.export.map((id) => {
+            const target = useGameStore.getState().gameState.buildings[id];
+            const name = target
+              ? BUILDING_NAMES[target.type]
+              : "Неизвестное здание";
+            const pos = target
+              ? `(${target.position.x}, ${target.position.y})`
+              : "";
+            return (
+              <p
+                key={id}
+                style={{ display: "flex", gap: 6, alignItems: "center" }}
+              >
+                <span>{name}</span>
+                <span style={{ opacity: 0.6, fontSize: 12 }}>{pos}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    useGameStore.getState().removeExportLink(build.id, id);
+                    showPopup("Связь экспорта удалена");
+                  }}
+                  style={{
+                    marginLeft: "auto",
+                    border: "none",
+                    background: "none",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                    color: "#c0392b",
+                  }}
+                >
+                  ×
+                </button>
+              </p>
+            );
+          })}
+        </div>
       )}
     </div>
   );
