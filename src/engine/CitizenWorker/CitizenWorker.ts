@@ -4,10 +4,8 @@ import {
   BuildingType,
   type CropState,
   type GameLog,
-  type Garden,
   Gender,
   type Granary,
-  type Greenhouse,
   type House,
   moveStatuses,
   type PlantPlace,
@@ -344,8 +342,12 @@ class CitizenWorker {
       (resident.inventory.resources[ResourceType.Water] ?? 0) > 0 ||
       (resident.inventory.resources[ResourceType.WellWater] ?? 0) > 0;
 
+    const needsWater = (b: PlantPlace) => !!b.harvest && !b.harvest.isReady && !b.isWatered;
+    const isReadyToHarvest = (b: PlantPlace) => !!b.harvest?.isReady;
+    const isEmptyForPlanting = (b: PlantPlace) => !b.harvest && !!b.harvestType;
+
     if (hasWater) {
-      const gardenToWater = this.findNearestGardenToWater(resident);
+      const gardenToWater = this.findNearestPlantPlace(resident, needsWater);
       if (gardenToWater) {
         resident.taskContext = {
           targetId: gardenToWater.id,
@@ -386,7 +388,7 @@ class CitizenWorker {
     }
 
     const gardenForWatering = !hasWater
-      ? this.findNearestGardenToWater(resident)
+      ? this.findNearestPlantPlace(resident, needsWater)
       : undefined;
     if (!hasWater && gardenForWatering) {
       const needWaterAmount =
@@ -416,7 +418,7 @@ class CitizenWorker {
       }
     }
 
-    const gardenForHarvesting = this.findNearestGardenToHarvesting(resident);
+    const gardenForHarvesting = this.findNearestPlantPlace(resident, isReadyToHarvest);
     if (gardenForHarvesting) {
       resident.taskContext = {
         targetId: gardenForHarvesting.id,
@@ -432,7 +434,7 @@ class CitizenWorker {
       );
       return;
     }
-    const gardenForPlanting = this.findNearestGardenToPlanting(resident);
+    const gardenForPlanting = this.findNearestPlantPlace(resident, isEmptyForPlanting);
     if (gardenForPlanting) {
       resident.taskContext = {
         targetId: gardenForPlanting.id,
@@ -451,91 +453,47 @@ class CitizenWorker {
   private getExitPos(build: Buildings): Position {
     return { x: build.position.x, y: build.position.y - 1 };
   }
-  private findNearestGardenToHarvesting(
-    resident: Resident,
-  ): Garden | Greenhouse | undefined {
-    if (resident.profession.type !== ProfessionType.Farmer) {
-      return;
+  private getPlantPlaces(resident: Resident): PlantPlace[] {
+    const prof = resident.profession;
+    const ids = prof.type === ProfessionType.Farmer ? prof.assignedGardenIds : undefined;
+    if (ids && ids.length > 0) {
+      return ids
+        .map((id: string) => this.buildings[id])
+        .filter((b): b is PlantPlace =>
+          !!b &&
+          (b.type === BuildingType.Garden || b.type === BuildingType.Greenhouse)
+        );
     }
-    const needHarvesting: (Garden | Greenhouse)[] = [];
-    const assignedIds = resident.profession.assignedGardenIds;
-
-    if (assignedIds && assignedIds.length > 0) {
-      for (const gardenId of assignedIds) {
-        const build = this.buildings[gardenId];
-        if (!build) continue;
-        if (
-          (build.type === BuildingType.Garden ||
-            build.type === BuildingType.Greenhouse) &&
-          build.harvest?.isReady
-        ) {
-          needHarvesting.push(build as Garden | Greenhouse);
-        }
-      }
-    } else {
-      for (const build of Object.values(this.buildings)) {
-        if (
-          (build.type === BuildingType.Garden ||
-            build.type === BuildingType.Greenhouse) &&
-          build.harvest?.isReady
-        ) {
-          needHarvesting.push(build as Garden | Greenhouse);
-        }
-      }
-    }
-
-    if (needHarvesting.length > 0) {
-      const closest = needHarvesting.reduce((prev, curr) => {
-        const distPrev = prev
-          ? this.getEvcDist(resident.position, prev.position)
-          : Infinity;
-        const distCurr = curr
-          ? this.getEvcDist(resident.position, curr.position)
-          : Infinity;
-        return distCurr < distPrev ? curr : prev;
-      });
-      return closest;
-    }
+    return Object.values(this.buildings).filter(
+      (b): b is PlantPlace =>
+        b.type === BuildingType.Garden || b.type === BuildingType.Greenhouse,
+    );
   }
 
-  private findNearestGardenToPlanting(
+  private findNearestPlantPlace(
     resident: Resident,
-  ): Garden | Greenhouse | undefined {
-    if (resident.profession.type !== ProfessionType.Farmer) {
-      return;
-    }
-    const needPlanting: (Garden | Greenhouse)[] = [];
-    const assignedIds = resident.profession.assignedGardenIds;
+    filter: (b: PlantPlace) => boolean,
+  ): PlantPlace | undefined {
+    return this.closestByDistance(
+      resident.position,
+      this.getPlantPlaces(resident).filter(filter),
+    );
+  }
 
-    const buildingsToCheck =
-      assignedIds && assignedIds.length > 0
-        ? assignedIds.map((id) => this.buildings[id]).filter(Boolean)
-        : Object.values(this.buildings);
-
-    for (const build of buildingsToCheck) {
-      if (!build) continue;
-      if (
-        (build.type === BuildingType.Garden ||
-          build.type === BuildingType.Greenhouse) &&
-        !build.harvest &&
-        build.harvestType
-      ) {
-        needPlanting.push(build as Garden | Greenhouse);
+  private closestByDistance<T extends { position: Position }>(
+    from: Position,
+    candidates: T[],
+  ): T | undefined {
+    let best: T | undefined;
+    let bestDist = Infinity;
+    for (const c of candidates) {
+      const d = this.getEvcDist(from, c.position);
+      if (d < bestDist) {
+        bestDist = d;
+        best = c;
       }
     }
-
-    if (needPlanting.length > 0) {
-      const closest = needPlanting.reduce((prev, curr) => {
-        const distPrev = prev
-          ? this.getEvcDist(resident.position, prev.position)
-          : Infinity;
-        const distCurr = curr
-          ? this.getEvcDist(resident.position, curr.position)
-          : Infinity;
-        return distCurr < distPrev ? curr : prev;
-      });
-      return closest;
-    }
+    return best;
   }
 
   private findNearestGranary(resident: Resident): Granary | null {
@@ -606,6 +564,8 @@ class CitizenWorker {
         const posX = resident.position.x + x;
         const posY = resident.position.y + y;
         if (
+          posX >= 0 && posX < this.width &&
+          posY >= 0 && posY < this.height &&
           this.grid[posY][posX] === TERRAIN_WEIGHTS.WATER &&
           this.isPositionWalkable(posX - 1, posY)
         ) {
@@ -622,47 +582,6 @@ class CitizenWorker {
       }
     }
     return nearestSource;
-  }
-
-  private findNearestGardenToWater(
-    resident: Resident,
-  ): Garden | Greenhouse | undefined {
-    if (resident.profession.type !== ProfessionType.Farmer) {
-      return;
-    }
-    const needWatering: (Garden | Greenhouse)[] = [];
-    const assignedIds = resident.profession.assignedGardenIds;
-
-    const buildingsToCheck =
-      assignedIds && assignedIds.length > 0
-        ? assignedIds.map((id) => this.buildings[id]).filter(Boolean)
-        : Object.values(this.buildings);
-
-    for (const build of buildingsToCheck) {
-      if (!build) continue;
-      if (
-        (build.type === BuildingType.Garden ||
-          build.type === BuildingType.Greenhouse) &&
-        build.harvest &&
-        !build.harvest.isReady &&
-        !build.isWatered
-      ) {
-        needWatering.push(build as Garden | Greenhouse);
-      }
-    }
-
-    if (needWatering.length > 0) {
-      const closest = needWatering.reduce((prev, curr) => {
-        const distPrev = prev
-          ? this.getEvcDist(resident.position, prev.position)
-          : Infinity;
-        const distCurr = curr
-          ? this.getEvcDist(resident.position, curr.position)
-          : Infinity;
-        return distCurr < distPrev ? curr : prev;
-      });
-      return closest;
-    }
   }
 
   private getEvcDist(a: Position, b: Position): number {
