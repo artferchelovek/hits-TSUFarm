@@ -248,7 +248,6 @@ class CitizenWorker {
         payload.weather,
       );
     }
-
     return {
       residents: this.residents,
       deadIds: deadResidentIds,
@@ -318,7 +317,10 @@ class CitizenWorker {
     if (parentFirst.gender === parentSecond.gender) {
       return false;
     }
-
+    const home = this.buildings[parentFirst.homeId ?? ""] as House;
+    if (home && home.residentsId.length >= home.capacity) {
+      return false;
+    }
     const chance =
       this.getBirthChance(parentFirst.age) *
       this.getBirthChance(parentSecond.age);
