@@ -132,7 +132,7 @@ export const syncToStore = (
             profession: { type: ProfessionType.Jobless },
             skills: {},
             workProgress: 0,
-            targetId: null,
+            taskContext: null,
           };
           if (
             home.residentsId.length >=

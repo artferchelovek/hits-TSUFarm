@@ -18,6 +18,7 @@ import {
   Season,
   VillagerStatus,
   Weather,
+  type Well,
 } from "../Types.ts";
 import { TileType } from "../WorldMap.ts";
 import {
@@ -27,6 +28,7 @@ import {
   getSpeedWork,
   getXpForNextLevel,
   PLANT_CONFIG,
+  PLANT_EFFECTS,
   PROFESSION_SETTINGS,
   REPRODUCTION,
   VILLAGER_CONFIG,
@@ -39,6 +41,7 @@ export const TERRAIN_WEIGHTS = {
   ROAD: 1,
   BRIDGE: 2,
   DEFAULT: 5,
+  WATER: 1111,
   OBSTACLE: 999,
 };
 
@@ -75,7 +78,9 @@ class CitizenWorker {
         row.push(
           this.isWalkable(tile)
             ? TERRAIN_WEIGHTS.DEFAULT
-            : TERRAIN_WEIGHTS.OBSTACLE,
+            : tile === TileType.Water
+              ? TERRAIN_WEIGHTS.WATER
+              : TERRAIN_WEIGHTS.OBSTACLE,
         );
       }
       this.grid.push(row);
@@ -159,7 +164,6 @@ class CitizenWorker {
 
     if (type === BuildingType.Road) cost = TERRAIN_WEIGHTS.ROAD;
     if (type === BuildingType.Bridge) cost = TERRAIN_WEIGHTS.BRIDGE;
-
     for (let i = y; i < y + l; i++) {
       for (let j = x; j < x + w; j++) {
         if (i < this.height && j < this.width) {
@@ -335,6 +339,30 @@ class CitizenWorker {
     if (resident.profession.type !== ProfessionType.Farmer) {
       return;
     }
+
+    const hasWater =
+      (resident.inventory.resources[ResourceType.Water] ?? 0) > 0 ||
+      (resident.inventory.resources[ResourceType.WellWater] ?? 0) > 0;
+
+    if (hasWater) {
+      const gardenToWater = this.findNearestGardenToWater(resident);
+      if (gardenToWater) {
+        resident.taskContext = {
+          targetId: gardenToWater.id,
+          resourceType: ResourceType.Water,
+          neededAmount: 0,
+          currentAmount: 0,
+        };
+        resident.pathIndex = 0;
+        resident.status = VillagerStatus.MovingToWatering;
+        resident.path = this.calculatePath(
+          resident.position,
+          this.getExitPos(gardenToWater),
+        );
+        return;
+      }
+    }
+
     if (
       resident.inventory.totalAmount >=
       getMaxInventoryCapacity(ProfessionType.Farmer, resident.profession.level)
@@ -346,19 +374,77 @@ class CitizenWorker {
           x: granary.position.x,
           y: granary.position.y - 1,
         });
-        resident.targetId = granary.id;
+        resident.taskContext = {
+          targetId: granary.id,
+          resourceType: granary.resourceType!,
+          neededAmount: 0,
+          currentAmount: 0,
+        };
         resident.status = VillagerStatus.MovingToStorage;
       }
       return;
     }
+
+    const gardenForWatering = !hasWater
+      ? this.findNearestGardenToWater(resident)
+      : undefined;
+    if (!hasWater && gardenForWatering) {
+      const needWaterAmount =
+        gardenForWatering.length *
+        gardenForWatering.width *
+        PLANT_CONFIG[gardenForWatering.harvest?.type ?? ResourceType.Wheat]
+          .neededWater;
+
+      const waterSource = this.findNearestWaterSource(resident);
+      if (waterSource) {
+        resident.taskContext = {
+          targetId: waterSource.id,
+          resourceType:
+            waterSource.type === "well"
+              ? ResourceType.WellWater
+              : ResourceType.Water,
+          neededAmount: needWaterAmount,
+          currentAmount: 0,
+        };
+        resident.pathIndex = 0;
+        resident.status = VillagerStatus.MovingToWater;
+        resident.path = this.calculatePath(
+          resident.position,
+          waterSource.position,
+        );
+        return;
+      }
+    }
+
     const gardenForHarvesting = this.findNearestGardenToHarvesting(resident);
     if (gardenForHarvesting) {
-      resident.targetId = gardenForHarvesting.id;
+      resident.taskContext = {
+        targetId: gardenForHarvesting.id,
+        resourceType: gardenForHarvesting.harvest!.type,
+        neededAmount: 0,
+        currentAmount: 0,
+      };
       resident.pathIndex = 0;
       resident.status = VillagerStatus.MovingToHarvest;
       resident.path = this.calculatePath(
         resident.position,
         this.getExitPos(gardenForHarvesting),
+      );
+      return;
+    }
+    const gardenForPlanting = this.findNearestGardenToPlanting(resident);
+    if (gardenForPlanting) {
+      resident.taskContext = {
+        targetId: gardenForPlanting.id,
+        resourceType: gardenForPlanting.harvestType!,
+        neededAmount: 0,
+        currentAmount: 0,
+      };
+      resident.pathIndex = 0;
+      resident.status = VillagerStatus.MovingToPlant;
+      resident.path = this.calculatePath(
+        resident.position,
+        this.getExitPos(gardenForPlanting),
       );
     }
   }
@@ -411,6 +497,47 @@ class CitizenWorker {
       return closest;
     }
   }
+
+  private findNearestGardenToPlanting(
+    resident: Resident,
+  ): Garden | Greenhouse | undefined {
+    if (resident.profession.type !== ProfessionType.Farmer) {
+      return;
+    }
+    const needPlanting: (Garden | Greenhouse)[] = [];
+    const assignedIds = resident.profession.assignedGardenIds;
+
+    const buildingsToCheck =
+      assignedIds && assignedIds.length > 0
+        ? assignedIds.map((id) => this.buildings[id]).filter(Boolean)
+        : Object.values(this.buildings);
+
+    for (const build of buildingsToCheck) {
+      if (!build) continue;
+      if (
+        (build.type === BuildingType.Garden ||
+          build.type === BuildingType.Greenhouse) &&
+        !build.harvest &&
+        build.harvestType
+      ) {
+        needPlanting.push(build as Garden | Greenhouse);
+      }
+    }
+
+    if (needPlanting.length > 0) {
+      const closest = needPlanting.reduce((prev, curr) => {
+        const distPrev = prev
+          ? this.getEvcDist(resident.position, prev.position)
+          : Infinity;
+        const distCurr = curr
+          ? this.getEvcDist(resident.position, curr.position)
+          : Infinity;
+        return distCurr < distPrev ? curr : prev;
+      });
+      return closest;
+    }
+  }
+
   private findNearestGranary(resident: Resident): Granary | null {
     let minDist = Infinity;
     let nearestGranary: Granary | null = null;
@@ -441,6 +568,103 @@ class CitizenWorker {
 
     return nearestGranary;
   }
+
+  private findNearestWaterSource(resident: Resident): {
+    id: string;
+    position: Position;
+    type: "well" | "water";
+  } | null {
+    let minDist = Infinity;
+    let nearestSource: {
+      id: string;
+      position: Position;
+      type: "well" | "water";
+    } | null = null;
+
+    for (const build of Object.values(this.buildings)) {
+      if (build.type === BuildingType.Well) {
+        const well = build as Well;
+        if (well.currentAmount > 0) {
+          const dist = this.getEvcDist(resident.position, {
+            x: build.position.x,
+            y: build.position.y - 1,
+          });
+          if (dist < minDist) {
+            minDist = dist;
+            nearestSource = {
+              id: build.id,
+              position: { x: build.position.x, y: build.position.y - 1 },
+              type: "well",
+            };
+          }
+        }
+      }
+    }
+
+    for (let y = -20; y < 20; y++) {
+      for (let x = -20; x < 20; x++) {
+        const posX = resident.position.x + x;
+        const posY = resident.position.y + y;
+        if (
+          this.grid[posY][posX] === TERRAIN_WEIGHTS.WATER &&
+          this.isPositionWalkable(posX - 1, posY)
+        ) {
+          const dist = this.getEvcDist(resident.position, { x: posX, y: posY });
+          if (dist < minDist) {
+            minDist = dist;
+            nearestSource = {
+              id: `water-${posX}-${posY}`,
+              position: { x: posX - 1, y: posY },
+              type: "water",
+            };
+          }
+        }
+      }
+    }
+    return nearestSource;
+  }
+
+  private findNearestGardenToWater(
+    resident: Resident,
+  ): Garden | Greenhouse | undefined {
+    if (resident.profession.type !== ProfessionType.Farmer) {
+      return;
+    }
+    const needWatering: (Garden | Greenhouse)[] = [];
+    const assignedIds = resident.profession.assignedGardenIds;
+
+    const buildingsToCheck =
+      assignedIds && assignedIds.length > 0
+        ? assignedIds.map((id) => this.buildings[id]).filter(Boolean)
+        : Object.values(this.buildings);
+
+    for (const build of buildingsToCheck) {
+      if (!build) continue;
+      if (
+        (build.type === BuildingType.Garden ||
+          build.type === BuildingType.Greenhouse) &&
+        build.harvest &&
+        !build.harvest.isReady &&
+        !build.isWatered
+      ) {
+        needWatering.push(build as Garden | Greenhouse);
+      }
+    }
+
+    if (needWatering.length > 0) {
+      const closest = needWatering.reduce((prev, curr) => {
+        const distPrev = prev
+          ? this.getEvcDist(resident.position, prev.position)
+          : Infinity;
+        const distCurr = curr
+          ? this.getEvcDist(resident.position, curr.position)
+          : Infinity;
+        return distCurr < distPrev ? curr : prev;
+      });
+      return closest;
+    }
+  }
+
   private getEvcDist(a: Position, b: Position): number {
     const dx = Math.abs(a.x - b.x);
     const dy = Math.abs(a.y - b.y);
@@ -451,7 +675,9 @@ class CitizenWorker {
       return false;
     }
 
-    const granary = this.buildings[resident.targetId ?? ""] as Granary;
+    const granary = this.buildings[
+      resident.taskContext?.targetId ?? ""
+    ] as Granary;
     if (!granary) {
       return false;
     }
@@ -463,13 +689,13 @@ class CitizenWorker {
     const availableAmount =
       resident.inventory.resources[granary.resourceType] ?? 0;
     if (availableAmount === 0) {
-      resident.targetId = null;
+      resident.taskContext = null;
       return false;
     }
 
     const freeSpace = granary.storage.maxCapacity - granary.storage.amount;
     if (freeSpace < availableAmount) {
-      resident.targetId = null;
+      resident.taskContext = null;
       return false;
     }
 
@@ -489,7 +715,7 @@ class CitizenWorker {
     ).reduce((sum, amount) => sum + amount, 0);
 
     resident.workProgress = 0;
-    resident.targetId = null;
+    resident.taskContext = null;
     this.addExperience(resident, XP_REWARDS[ProfessionType.Farmer].UNLOADING);
 
     return true;
@@ -499,7 +725,9 @@ class CitizenWorker {
     if (resident.profession.type !== ProfessionType.Farmer) {
       return false;
     }
-    const garden = this.buildings[resident.targetId ?? ""] as PlantPlace;
+    const garden = this.buildings[
+      resident.taskContext?.targetId ?? ""
+    ] as PlantPlace;
     if (!garden) {
       return false;
     }
@@ -533,7 +761,7 @@ class CitizenWorker {
     const amount = calculateHarvestAmount(garden.harvest, garden) * gardenSize;
     this.addItemToInventory(resident, garden.harvest.type, amount);
     resident.workProgress = 0;
-    resident.targetId = null;
+    resident.taskContext = null;
     this.addExperience(resident, XP_REWARDS[ProfessionType.Farmer].HARVEST);
     const targetGarden = this.buildings[garden.id] as PlantPlace;
     targetGarden.harvest = null;
@@ -541,6 +769,148 @@ class CitizenWorker {
     targetGarden.isWatered = false;
     return true;
   }
+
+  private planting(resident: Resident): boolean {
+    if (resident.profession.type !== ProfessionType.Farmer) {
+      return false;
+    }
+    const garden = this.buildings[
+      resident.taskContext?.targetId ?? ""
+    ] as PlantPlace;
+    if (!garden) {
+      return false;
+    }
+
+    if (!garden.harvestType) {
+      resident.taskContext = null;
+      return false;
+    }
+
+    const gardenSize = (garden.width || 1) * (garden.length || 1);
+    const plantDuration = FARMER_TASK_DURATION.PLANTING * gardenSize;
+
+    if (resident.workProgress < plantDuration) {
+      resident.workProgress += getSpeedWork(
+        ProfessionType.Farmer,
+        resident.profession.level,
+      );
+      return false;
+    }
+    garden.harvest = {
+      type: garden.harvestType,
+      growthProgress: 0,
+      isReady: false,
+    };
+    garden.growthCoefficient = 1;
+    garden.moisture = 50;
+    garden.isWatered = true;
+    garden.health = 100;
+
+    resident.workProgress = 0;
+    resident.taskContext = null;
+    this.addExperience(resident, XP_REWARDS[ProfessionType.Farmer].PLANTING);
+
+    return true;
+  }
+
+  private collectWater(resident: Resident): boolean {
+    if (resident.profession.type !== ProfessionType.Farmer) {
+      return false;
+    }
+    const tc = resident.taskContext;
+    if (!tc) return false;
+
+    const isWell = tc.targetId
+      ? this.buildings[tc.targetId]?.type === BuildingType.Well
+      : false;
+    if (resident.workProgress < FARMER_TASK_DURATION.SET_WATER) {
+      resident.workProgress += getSpeedWork(
+        ProfessionType.Farmer,
+        resident.profession.level,
+      );
+      const typeWater = isWell ? ResourceType.WellWater : ResourceType.Water;
+      const stepAmount = Math.round(
+        (resident.taskContext!.neededAmount +
+          resident.taskContext!.currentAmount) /
+          FARMER_TASK_DURATION.SET_WATER,
+      );
+      const remainingNeeded = tc.neededAmount - tc.currentAmount;
+      const taken = Math.min(stepAmount, remainingNeeded);
+
+      const well = isWell ? (this.buildings[tc.targetId] as Well) : null;
+      let canGetWater = true;
+
+      if (well?.type === BuildingType.Well && well.currentAmount < taken) {
+        canGetWater = false;
+      }
+      if (canGetWater && taken > 0) {
+        resident.inventory.resources[typeWater] =
+          taken + (resident.inventory.resources[typeWater] ?? 0);
+        tc.currentAmount += taken;
+
+        if (well) {
+          well.currentAmount -= taken;
+        }
+      }
+      console.log(resident.inventory.resources[typeWater]);
+      return false;
+    }
+
+    resident.workProgress = 0;
+    resident.taskContext = null;
+    return true;
+  }
+
+  private wateringPlant(resident: Resident): boolean {
+    if (resident.profession.type !== ProfessionType.Farmer) {
+      return false;
+    }
+    const garden = this.buildings[
+      resident.taskContext?.targetId ?? ""
+    ] as PlantPlace;
+    if (!garden || !garden.harvest || garden.harvest.isReady) {
+      return false;
+    }
+
+    const gardenSize = (garden.width || 1) * (garden.length || 1);
+    const waterDuration = FARMER_TASK_DURATION.SET_WATER * gardenSize;
+
+    if (resident.workProgress < waterDuration) {
+      resident.workProgress += getSpeedWork(
+        ProfessionType.Farmer,
+        resident.profession.level,
+      );
+      garden.moisture = Math.min(
+        100,
+        100 *
+          (resident.workProgress /
+            (FARMER_TASK_DURATION.SET_WATER * gardenSize)),
+      );
+
+      return false;
+    }
+
+    const wellWaterAmt =
+      resident.inventory.resources[ResourceType.WellWater] ?? 0;
+    const hasWellWater = wellWaterAmt > 0;
+
+    if (hasWellWater) {
+      garden.growthCoefficient *= PLANT_EFFECTS.WELL_WATER_EFFECT;
+      delete resident.inventory.resources[ResourceType.WellWater];
+    } else {
+      delete resident.inventory.resources[ResourceType.Water];
+    }
+    resident.inventory.totalAmount = Object.values(
+      resident.inventory.resources,
+    ).reduce((sum, amount) => sum + amount, 0);
+
+    resident.workProgress = 0;
+    resident.taskContext = null;
+    this.addExperience(resident, XP_REWARDS[ProfessionType.Farmer].WATERING);
+
+    return true;
+  }
+
   private addExperience(resident: Resident, amount: number): void {
     const prof = resident.profession;
     if (prof.type === ProfessionType.Jobless) return;
@@ -656,6 +1026,18 @@ class CitizenWorker {
             resident.status = VillagerStatus.Harvesting;
             return;
           }
+          if (resident.status === VillagerStatus.MovingToPlant) {
+            resident.status = VillagerStatus.Planting;
+            return;
+          }
+          if (resident.status === VillagerStatus.MovingToWater) {
+            resident.status = VillagerStatus.CollectingWater;
+            return;
+          }
+          if (resident.status === VillagerStatus.MovingToWatering) {
+            resident.status = VillagerStatus.Watering;
+            return;
+          }
           resident.status = VillagerStatus.Idle;
         }
       } else {
@@ -673,6 +1055,22 @@ class CitizenWorker {
       if (this.harvesting(resident)) {
         resident.status = VillagerStatus.Idle;
         console.log("ВСЕ СОБРАЛ");
+      }
+    }
+    if (resident.status === VillagerStatus.Planting) {
+      if (this.planting(resident)) {
+        resident.status = VillagerStatus.Idle;
+        console.log("ПОСАДИЛ");
+      }
+    }
+    if (resident.status === VillagerStatus.CollectingWater) {
+      if (this.collectWater(resident)) {
+        resident.status = VillagerStatus.Idle;
+      }
+    }
+    if (resident.status === VillagerStatus.Watering) {
+      if (this.wateringPlant(resident)) {
+        resident.status = VillagerStatus.Idle;
       }
     }
 

@@ -20,6 +20,12 @@ export enum VillagerStatus {
   Unloading = "Unloading",
   Harvesting = "Harvesting",
   MovingToHarvest = "MovingToHarvest",
+  MovingToPlant = "MovingToPlant",
+  Planting = "Planting",
+  MovingToWater = "MovingToWater",
+  CollectingWater = "CollectingWater",
+  MovingToWatering = "MovingToWatering",
+  Watering = "Watering",
   Working = "Working",
   Sleeping = "Sleeping",
   Eating = "Eating",
@@ -27,10 +33,14 @@ export enum VillagerStatus {
 export const moveStatuses: VillagerStatus[] = [
   VillagerStatus.MovingToHarvest,
   VillagerStatus.MovingToStorage,
+  VillagerStatus.MovingToPlant,
+  VillagerStatus.MovingToWater,
+  VillagerStatus.MovingToWatering,
   VillagerStatus.Moving,
 ];
 export enum ResourceType {
   Water = "Water",
+  WellWater = "WellWater",
   Tomato = "Tomato",
   Potato = "Potato",
   Cucumber = "Cucumber",
@@ -86,12 +96,13 @@ export interface CropState {
   growthProgress: number;
   isReady: boolean;
 }
-
+export type WaterResource = ResourceType.Water | ResourceType.WellWater;
 export interface Plant {
   type: CropType;
   name: string;
   growthPerTick: number;
   waterConsumptionPerTick: number;
+  neededWater: number;
   sellPrice: number;
   minYield: number;
   maxYield: number;
@@ -105,6 +116,7 @@ interface BaseBuilding {
 }
 
 interface PlaceGrow extends BaseBuilding {
+  harvestType: CropType | null;
   harvest: CropState | null;
   growthCoefficient: number;
   moisture: number;
@@ -205,12 +217,18 @@ export interface Jobless {
   type: ProfessionType.Jobless;
 }
 export type Profession = Farmer | Jobless;
+export interface TaskContext {
+  targetId: string;
+  resourceType: ResourceType;
+  neededAmount: number;
+  currentAmount: number;
+}
 export interface Resident {
   id: string;
   profession: Profession;
   skills: Record<string, number>;
   workProgress: number;
-  targetId: string | null;
+  taskContext: TaskContext | null;
   name: string;
   surname: string;
   position: Position;

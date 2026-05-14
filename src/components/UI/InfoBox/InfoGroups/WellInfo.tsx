@@ -10,8 +10,8 @@ export default function WellInfo({ build }: { build: Well }) {
       <ProgressBlock
         from={build.currentAmount}
         to={build.maxCapacity}
-        name={"Ëмкость"}
-        isProcent={true}
+        name={"Ëмкость (литров)"}
+        isProcent={false}
       />
     </div>
   );

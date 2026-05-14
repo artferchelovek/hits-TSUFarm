@@ -14,7 +14,7 @@ export default function GardenInfo({ build }: { build: Garden }) {
   return (
     <div className={styles.InfoBox__body}>
       <SizeBlock build={build} />
-      {!build.harvest ? (
+      {!build.harvestType ? (
         <p
           style={{
             fontStyle: "italic",
@@ -24,24 +24,28 @@ export default function GardenInfo({ build }: { build: Garden }) {
         </p>
       ) : (
         <>
-          <p>
-            Посажено:{" "}
-            {build.harvest
-              ? PLANT_CONFIG[build.harvest.type].name
-              : "Отсутствует"}
-          </p>
+          <p> Культура: {PLANT_CONFIG[build.harvestType].name}</p>
+        </>
+      )}{" "}
+      {build.harvest ? (
+        <>
           <ProgressBlock
-            from={build.harvest.growthProgress}
+            from={parseFloat(build.harvest.growthProgress.toFixed(2))}
             to={100}
             name={"Процесс роста"}
           />
+          <p>Коэффицент роста: {build.growthCoefficient}x</p>
+          <p>Состояние: {build.health.toFixed(2)}</p>
+          <p>Требует полива: {build.isWatered ? "Нет" : "Да"}</p>
+          <p>Влажность: {build.moisture.toFixed()}</p>
+        </>
+      ) : (
+        <>
+          <ProgressBlock from={0} to={100} name={"Процесс роста"} />
+          <p>Влажность: {build.moisture.toFixed()}</p>
+          <AddPlant build={build} />
         </>
       )}
-      <p>Коэффицент роста: {build.growthCoefficient}x</p>
-      <p>Состояние: {build.health.toFixed(2)}</p>
-      <p>Требует полива: {build.isWatered ? "Нет" : "Да"}</p>
-      <p>Влажность: {build.moisture.toFixed()}</p>
-      {!build.harvest ? <AddPlant build={build} /> : null}
     </div>
   );
 }
@@ -53,7 +57,7 @@ const AddPlant = ({ build }: { build: Garden }) => {
 
   return (
     <>
-      <p>Выберите культуру</p>
+      <p>Выберите культуру: </p>
       <select
         className={styles.InfoBox__plantSelect}
         value={selection}
