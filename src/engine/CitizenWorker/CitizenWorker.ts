@@ -298,6 +298,14 @@ class CitizenWorker {
         message: `${resident.name} скончался в возрасте ${Math.floor(resident.age)} лет  ${resident.health}.`,
         type: "warning",
       });
+      if (resident.homeId) {
+        const home = this.buildings[resident.homeId] as House | undefined;
+        if (home && "residentsId" in home) {
+          home.residentsId = home.residentsId.filter(
+            (id) => id !== resident.id,
+          );
+        }
+      }
       deadIds.push(resident.id);
       delete this.residents[resident.id];
     }
@@ -342,7 +350,8 @@ class CitizenWorker {
       (resident.inventory.resources[ResourceType.Water] ?? 0) > 0 ||
       (resident.inventory.resources[ResourceType.WellWater] ?? 0) > 0;
 
-    const needsWater = (b: PlantPlace) => !!b.harvest && !b.harvest.isReady && !b.isWatered;
+    const needsWater = (b: PlantPlace) =>
+      !!b.harvest && !b.harvest.isReady && !b.isWatered;
     const isReadyToHarvest = (b: PlantPlace) => !!b.harvest?.isReady;
     const isEmptyForPlanting = (b: PlantPlace) => !b.harvest && !!b.harvestType;
 
@@ -418,7 +427,10 @@ class CitizenWorker {
       }
     }
 
-    const gardenForHarvesting = this.findNearestPlantPlace(resident, isReadyToHarvest);
+    const gardenForHarvesting = this.findNearestPlantPlace(
+      resident,
+      isReadyToHarvest,
+    );
     if (gardenForHarvesting) {
       resident.taskContext = {
         targetId: gardenForHarvesting.id,
@@ -434,7 +446,10 @@ class CitizenWorker {
       );
       return;
     }
-    const gardenForPlanting = this.findNearestPlantPlace(resident, isEmptyForPlanting);
+    const gardenForPlanting = this.findNearestPlantPlace(
+      resident,
+      isEmptyForPlanting,
+    );
     if (gardenForPlanting) {
       resident.taskContext = {
         targetId: gardenForPlanting.id,
@@ -455,13 +470,16 @@ class CitizenWorker {
   }
   private getPlantPlaces(resident: Resident): PlantPlace[] {
     const prof = resident.profession;
-    const ids = prof.type === ProfessionType.Farmer ? prof.assignedGardenIds : undefined;
+    const ids =
+      prof.type === ProfessionType.Farmer ? prof.assignedGardenIds : undefined;
     if (ids && ids.length > 0) {
       return ids
         .map((id: string) => this.buildings[id])
-        .filter((b): b is PlantPlace =>
-          !!b &&
-          (b.type === BuildingType.Garden || b.type === BuildingType.Greenhouse)
+        .filter(
+          (b): b is PlantPlace =>
+            !!b &&
+            (b.type === BuildingType.Garden ||
+              b.type === BuildingType.Greenhouse),
         );
     }
     return Object.values(this.buildings).filter(
@@ -564,8 +582,10 @@ class CitizenWorker {
         const posX = resident.position.x + x;
         const posY = resident.position.y + y;
         if (
-          posX >= 0 && posX < this.width &&
-          posY >= 0 && posY < this.height &&
+          posX >= 0 &&
+          posX < this.width &&
+          posY >= 0 &&
+          posY < this.height &&
           this.grid[posY][posX] === TERRAIN_WEIGHTS.WATER &&
           this.isPositionWalkable(posX - 1, posY)
         ) {
@@ -973,13 +993,11 @@ class CitizenWorker {
     if (resident.status === VillagerStatus.Harvesting) {
       if (this.harvesting(resident)) {
         resident.status = VillagerStatus.Idle;
-        console.log("ВСЕ СОБРАЛ");
       }
     }
     if (resident.status === VillagerStatus.Planting) {
       if (this.planting(resident)) {
         resident.status = VillagerStatus.Idle;
-        console.log("ПОСАДИЛ");
       }
     }
     if (resident.status === VillagerStatus.CollectingWater) {
@@ -1013,6 +1031,7 @@ class CitizenWorker {
           x: entryX,
           y: entryY,
         });
+        resident.pathIndex = 0;
         resident.status = VillagerStatus.Moving;
       }
     }
