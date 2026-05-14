@@ -130,10 +130,10 @@ export interface House extends BaseBuilding {
 
 export interface Granary extends BaseBuilding {
   type: BuildingType.Granary;
+  resourceType: CropType | null;
   storage: {
-    resources: Partial<Record<CropType, number>>;
+    amount: number;
     maxCapacity: number;
-    currentAmount: number;
   };
 }
 export type PlantPlace = Garden | Greenhouse;
@@ -276,6 +276,7 @@ export interface GameActions {
   loadState: (gameState: GameState) => void;
   assignGardenToFarmer: (resident: Resident, place: PlantPlace) => void;
   getResidents: () => Record<string, Resident>;
+  setGranaryResourceType: (granaryId: string, resourceType: CropType) => void;
 }
 
 export type GameStore = { gameState: GameState } & GameActions;

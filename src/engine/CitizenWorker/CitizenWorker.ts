@@ -3,7 +3,6 @@ import {
   type Buildings,
   BuildingType,
   type CropState,
-  type CropType,
   type GameLog,
   type Garden,
   Gender,
@@ -340,10 +339,7 @@ class CitizenWorker {
       resident.inventory.totalAmount >=
       getMaxInventoryCapacity(ProfessionType.Farmer, resident.profession.level)
     ) {
-      const granary = this.findNearestGranary(
-        resident,
-        resident.inventory.totalAmount,
-      );
+      const granary = this.findNearestGranary(resident);
       if (granary) {
         resident.pathIndex = 0;
         resident.path = this.calculatePath(resident.position, {
@@ -415,10 +411,7 @@ class CitizenWorker {
       return closest;
     }
   }
-  private findNearestGranary(
-    resident: Resident,
-    currentAmount: number,
-  ): Granary | null {
+  private findNearestGranary(resident: Resident): Granary | null {
     let minDist = Infinity;
     let nearestGranary: Granary | null = null;
 
@@ -426,9 +419,14 @@ class CitizenWorker {
       if (build.type !== BuildingType.Granary) continue;
 
       const granary = build as Granary;
-      const freeSpace =
-        granary.storage.maxCapacity - granary.storage.currentAmount;
-      if (freeSpace < currentAmount) continue;
+      if (!granary.resourceType) continue;
+
+      const availableAmount =
+        resident.inventory.resources[granary.resourceType] ?? 0;
+      if (availableAmount === 0) continue;
+
+      const freeSpace = granary.storage.maxCapacity - granary.storage.amount;
+      if (freeSpace < availableAmount) continue;
 
       const dist = this.getEvcDist(resident.position, {
         x: granary.position.x,
@@ -458,9 +456,19 @@ class CitizenWorker {
       return false;
     }
 
-    const freeSpace =
-      granary.storage.maxCapacity - granary.storage.currentAmount;
-    if (freeSpace < resident.inventory.totalAmount) {
+    if (!granary.resourceType) {
+      return false;
+    }
+
+    const availableAmount =
+      resident.inventory.resources[granary.resourceType] ?? 0;
+    if (availableAmount === 0) {
+      resident.targetId = null;
+      return false;
+    }
+
+    const freeSpace = granary.storage.maxCapacity - granary.storage.amount;
+    if (freeSpace < availableAmount) {
       resident.targetId = null;
       return false;
     }
@@ -473,19 +481,13 @@ class CitizenWorker {
       return false;
     }
 
-    for (const [resourceType, amount] of Object.entries(
-      resident.inventory.resources,
-    )) {
-      if (amount > 0) {
-        const cropType = resourceType as CropType;
-        granary.storage.resources[cropType] =
-          (granary.storage.resources[cropType] ?? 0) + amount;
-      }
-    }
+    granary.storage.amount += availableAmount;
 
-    granary.storage.currentAmount += resident.inventory.totalAmount;
-    resident.inventory.resources = {};
-    resident.inventory.totalAmount = 0;
+    delete resident.inventory.resources[granary.resourceType];
+    resident.inventory.totalAmount = Object.values(
+      resident.inventory.resources,
+    ).reduce((sum, amount) => sum + amount, 0);
+
     resident.workProgress = 0;
     resident.targetId = null;
     this.addExperience(resident, XP_REWARDS[ProfessionType.Farmer].UNLOADING);

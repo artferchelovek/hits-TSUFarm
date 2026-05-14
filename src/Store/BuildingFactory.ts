@@ -71,10 +71,10 @@ export const createBuilding = (
       return {
         ...base,
         type,
+        resourceType: null,
         storage: {
-          resources: {},
+          amount: 0,
           maxCapacity: config.maxCapacity,
-          currentAmount: 0,
         },
       };
     }

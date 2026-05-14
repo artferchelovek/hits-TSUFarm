@@ -300,5 +300,16 @@ export const useGameStore = create<GameStore>()(
       });
       return report;
     },
+    setGranaryResourceType: (granaryId, resourceType) => {
+      set((state) => {
+        const granary = state.gameState.buildings[granaryId];
+        if (granary && granary.type === BuildingType.Granary) {
+          (granary as any).resourceType = resourceType;
+          workerManager.send("UPDATE_BUILDING", {
+            building: JSON.parse(JSON.stringify(granary)),
+          });
+        }
+      });
+    },
   })),
 );
