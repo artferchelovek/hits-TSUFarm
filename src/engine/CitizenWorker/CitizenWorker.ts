@@ -753,7 +753,7 @@ class CitizenWorker {
       isReady: false,
     };
     garden.growthCoefficient = 1;
-    garden.moisture = 50;
+    garden.moisture = 5;
     garden.isWatered = true;
     garden.health = 100;
 
