@@ -5,14 +5,22 @@ import { usePopup } from "../../contexts/PopupContext";
 import {
   BUILDING_CONFIG,
   BUILDING_SVG,
+  EXPORT_RULES,
   MAP_DIMENSION,
   PALETTE,
   TILE_SIZE,
   TILE_SVG,
 } from "../../engine/Constants";
 import { useGameStore } from "../../Store/GameStore";
-import { BuildingType, type Resident } from "../../engine/Types";
+import {
+  BuildingType,
+  type Position,
+  type Resident,
+  Weather,
+} from "../../engine/Types";
 import type { Buildings, GameStore } from "../../engine/Types";
+import { BUILDING_NAMES } from "../../engine/localization/locales.ts";
+import { PathFinding } from "../../engine/CitizenWorker/pathfinding.ts";
 import * as drawFns from "./map/draw";
 import { workerManager } from "../../Store/WorkerManager.ts";
 
@@ -41,6 +49,7 @@ export function useMapCanvas(
   const buildingsCanvasRef = useRef<HTMLCanvasElement>(null);
   const residentCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const weatherCanvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number | null>(null);
   const renderQueued = useRef(false);
   const lowResCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -132,6 +141,91 @@ export function useMapCanvas(
     renderMap(cam);
     const s = useGameStore.getState();
     drawBuildings(s.gameState.buildings);
+    drawOverlay();
+  };
+
+  const buildClientGrid = (
+    w: WorldMap,
+    builds: Record<string, Buildings>,
+  ): number[][] => {
+    const { width, height, data } = w;
+    const grid: number[][] = [];
+    for (let y = 0; y < height; y++) {
+      const row: number[] = [];
+      for (let x = 0; x < width; x++) {
+        const tile = data[y * width + x];
+        row.push(
+          tile === TileType.Grass ||
+            tile === TileType.Sand ||
+            tile === TileType.PreHill ||
+            tile === TileType.Hill
+            ? 5
+            : 999,
+        );
+      }
+      grid.push(row);
+    }
+    Object.values(builds).forEach((b) => {
+      for (let dy = 0; dy < (b.length || 1); dy++) {
+        for (let dx = 0; dx < (b.width || 1); dx++) {
+          const bx = b.position.x + dx;
+          const by = b.position.y + dy;
+          if (bx >= 0 && bx < width && by >= 0 && by < height) {
+            if (b.type === BuildingType.Road) grid[by][bx] = 1;
+            else if (b.type === BuildingType.Bridge) grid[by][bx] = 2;
+            else grid[by][bx] = 999;
+          }
+        }
+      }
+    });
+    return grid;
+  };
+
+  const getExitPos = (b: Buildings): Position => ({
+    x: b.position.x + Math.floor((b.width || 1) / 2),
+    y: b.position.y + (b.length || 1),
+  });
+
+  const computeExportPaths = (buildingId: string) => {
+    const state = useGameStore.getState();
+    const source = state.gameState.buildings[buildingId];
+    if (
+      !source ||
+      !Array.isArray((source as any).export) ||
+      (source as any).export.length === 0
+    ) {
+      exportPathsRef.current = [];
+      drawOverlay();
+      return;
+    }
+
+    const grid = buildClientGrid(world, state.gameState.buildings);
+    const pf = new PathFinding(grid);
+
+    const srcExit = getExitPos(source);
+
+    const paths: { path: Position[]; targetName: string }[] = [];
+    const exports = (source as any).export as string[];
+
+    exports.forEach((targetId) => {
+      const target = state.gameState.buildings[targetId];
+      if (!target) return;
+
+      const tgtExit = getExitPos(target);
+
+      const raw = pf.findPath(srcExit, tgtExit);
+      if (raw.length < 2) return;
+
+      const path = [srcExit, ...raw, tgtExit];
+
+      paths.push({
+        path,
+        targetName: BUILDING_NAMES[target.type] || target.type,
+      });
+    });
+
+    exportPathsRef.current = paths;
+    drawOverlay();
   };
 
   const getInitialCam = () => {
@@ -164,6 +258,12 @@ export function useMapCanvas(
   const isPanningRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
   const hoveredTileRef = useRef<{ col: number; row: number } | null>(null);
+  const isDragPlacingRef = useRef(false);
+  const dragStartRef = useRef<{ col: number; row: number } | null>(null);
+  const dragEndRef = useRef<{ col: number; row: number } | null>(null);
+  const wasDragPlacedRef = useRef(false);
+  const dragTypeRef = useRef<BuildingType | null>(null);
+  const exportPathsRef = useRef<{ path: Position[]; targetName: string }[]>([]);
 
   const texturesRef = useRef<Record<number, HTMLImageElement>>(
     tileTextures ?? {},
@@ -229,6 +329,12 @@ export function useMapCanvas(
     x: number;
     y: number;
   } | null>(null);
+  const savedStateRef = useRef<{
+    buildId: string;
+    clickOffset: { x: number; y: number } | null;
+  } | null>(null);
+  const clickOffsetRef = useRef<{ x: number; y: number } | null>(null);
+  clickOffsetRef.current = clickOffset;
 
   const [infoBoxPos, setInfoBoxPos] = useState<{
     x: number;
@@ -238,6 +344,43 @@ export function useMapCanvas(
   const activeBuilding = useGameStore((state) =>
     selectedBuildId ? state.gameState.buildings[selectedBuildId] : null,
   );
+
+  useEffect(() => {
+    if (selectedBuildId) {
+      computeExportPaths(selectedBuildId);
+    } else {
+      exportPathsRef.current = [];
+      drawOverlay();
+    }
+  }, [selectedBuildId]);
+
+  useEffect(() => {
+    let prevId: string | null = null;
+
+    const unsub = useGameStore.subscribe((s) => {
+      const currId = s.pendingExportSourceId;
+      if (currId === prevId) return;
+
+      if (currId) {
+        savedStateRef.current = {
+          buildId: currId,
+          clickOffset: clickOffsetRef.current,
+        };
+        setSelectedBuildId(null);
+        setClickOffset(null);
+        setInfoBoxPos(null);
+      } else if (prevId) {
+        const saved = savedStateRef.current;
+        savedStateRef.current = null;
+        if (saved) {
+          setSelectedBuildId(saved.buildId);
+          setClickOffset(saved.clickOffset);
+        }
+      }
+      prevId = currId;
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (tileTextures) return;
@@ -273,7 +416,12 @@ export function useMapCanvas(
       if (ctx) ctx.imageSmoothingEnabled = false;
     }
 
-    [overlayCanvasRef, buildingsCanvasRef, residentCanvasRef].forEach((ref) => {
+    [
+      overlayCanvasRef,
+      buildingsCanvasRef,
+      residentCanvasRef,
+      weatherCanvasRef,
+    ].forEach((ref) => {
       const c = ref.current;
       if (!c) return;
       c.style.width = `${vpW}px`;
@@ -301,6 +449,7 @@ export function useMapCanvas(
         overlayCanvasRef,
         buildingsCanvasRef,
         residentCanvasRef,
+        weatherCanvasRef,
       ].forEach((ref) => {
         const c = ref.current;
         if (!c) return;
@@ -337,7 +486,19 @@ export function useMapCanvas(
         >
       )[sel as BuildingType];
     }
-    drawFns.drawOverlay(overlay, hovered, cameraRef.current, cfg);
+    drawFns.drawOverlay(
+      overlay,
+      hovered,
+      cameraRef.current,
+      cfg,
+      isDragPlacingRef.current ? dragStartRef.current : null,
+      isDragPlacingRef.current ? dragEndRef.current : null,
+    );
+    drawFns.drawExportRoutes(
+      overlay,
+      cameraRef.current,
+      exportPathsRef.current,
+    );
   };
 
   const drawBuildings = (buildings: Record<string, Buildings> | null) =>
@@ -409,6 +570,15 @@ export function useMapCanvas(
       const progress = Math.min(elapsed / TICK_INTERVAL, 1);
       const state = useGameStore.getState();
       drawResidents(state.gameState.residents, progress);
+      if (state.gameState.meta.currentWeather === Weather.Rain) {
+        drawFns.drawRain(weatherCanvasRef.current);
+      } else {
+        const wc = weatherCanvasRef.current;
+        if (wc) {
+          const wctx = wc.getContext("2d");
+          if (wctx) wctx.clearRect(0, 0, wc.width, wc.height);
+        }
+      }
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
@@ -563,6 +733,9 @@ export function useMapCanvas(
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
       hoveredTileRef.current = { col, row };
+      if (isDragPlacingRef.current) {
+        dragEndRef.current = { col, row };
+      }
     } else {
       hoveredTileRef.current = null;
     }
@@ -572,6 +745,10 @@ export function useMapCanvas(
 
   const onClick = (e: React.MouseEvent) => {
     if (isBackground) return;
+    if (wasDragPlacedRef.current) {
+      wasDragPlacedRef.current = false;
+      return;
+    }
     const container = containerRef.current;
     if (!container) return;
 
@@ -586,6 +763,36 @@ export function useMapCanvas(
     const row = Math.floor(worldY / TILE_SIZE);
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
+      const pendingId = useGameStore.getState().pendingExportSourceId;
+      if (pendingId) {
+        const state = useGameStore.getState();
+        const clickedBuild = Object.values(state.gameState.buildings).find(
+          (b) => {
+            return (
+              col >= b.position.x &&
+              col < b.position.x + (b.width || 1) &&
+              row >= b.position.y &&
+              row < b.position.y + (b.length || 1)
+            );
+          },
+        );
+        if (clickedBuild && clickedBuild.id !== pendingId) {
+          const source = state.gameState.buildings[pendingId];
+          const allowed = EXPORT_RULES[source?.type];
+          if (!allowed || !allowed.includes(clickedBuild.type)) {
+            showPopup("Это здание не может принимать экспорт", "error");
+          } else {
+            useGameStore
+              .getState()
+              .linkExportBuildings(pendingId, clickedBuild.id);
+            showPopup("Связь экспорта установлена", "success");
+            computeExportPaths(pendingId);
+          }
+        }
+        useGameStore.getState().setPendingExportSource(null);
+        return;
+      }
+
       const sel = buildSelectionRef.current?.selected ?? null;
       if (!sel) return;
 
@@ -684,6 +891,7 @@ export function useMapCanvas(
     buildingsCanvasRef,
     residentCanvasRef,
     overlayCanvasRef,
+    weatherCanvasRef,
     onMouseMove,
     onClick,
     buildInfo:
@@ -693,14 +901,185 @@ export function useMapCanvas(
     infoBoxPos,
     onInfoBoxClose,
     onMouseDown: (e: React.MouseEvent) => {
-      if ((e as any).button !== 1) return;
-      e.preventDefault();
-      isPanningRef.current = true;
-      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+      if ((e as any).button === 1) {
+        e.preventDefault();
+        isPanningRef.current = true;
+        lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+        return;
+      }
+      if ((e as any).button === 0) {
+        const sel = buildSelectionRef.current?.selected ?? null;
+        if (
+          sel === BuildingType.Garden ||
+          sel === BuildingType.Road ||
+          sel === BuildingType.Bridge
+        ) {
+          const rect = containerRef.current?.getBoundingClientRect();
+          if (!rect) return;
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          const worldX =
+            (mouseX - cameraRef.current.x) / cameraRef.current.zoom;
+          const worldY =
+            (mouseY - cameraRef.current.y) / cameraRef.current.zoom;
+          const col = Math.floor(worldX / TILE_SIZE);
+          const row = Math.floor(worldY / TILE_SIZE);
+          if (
+            col >= 0 &&
+            col < MAP_DIMENSION &&
+            row >= 0 &&
+            row < MAP_DIMENSION
+          ) {
+            isDragPlacingRef.current = true;
+            dragStartRef.current = { col, row };
+            dragEndRef.current = { col, row };
+            dragTypeRef.current = sel;
+          }
+        }
+      }
     },
     onMouseUp: (e: React.MouseEvent) => {
-      if ((e as any).button !== 1) return;
-      isPanningRef.current = false;
+      if ((e as any).button === 1) {
+        isPanningRef.current = false;
+        return;
+      }
+      if ((e as any).button === 0 && isDragPlacingRef.current) {
+        isDragPlacingRef.current = false;
+        wasDragPlacedRef.current = true;
+
+        const start = dragStartRef.current;
+        const end = dragEndRef.current;
+        const dragType = dragTypeRef.current;
+        dragStartRef.current = null;
+        dragEndRef.current = null;
+        dragTypeRef.current = null;
+
+        if (!start || !end || !dragType) {
+          drawOverlay();
+          return;
+        }
+
+        const col = Math.min(start.col, end.col);
+        const row = Math.min(start.row, end.row);
+        const w = Math.abs(end.col - start.col) + 1;
+        const h = Math.abs(end.row - start.row) + 1;
+
+        const state = useGameStore.getState();
+        const existing = Object.values(
+          state.gameState.buildings || ({} as Record<string, Buildings>),
+        ) as Buildings[];
+
+        const overlap = existing.some((b: Buildings) => {
+          const ax1 = col,
+            ay1 = row;
+          const ax2 = col + w - 1,
+            ay2 = row + h - 1;
+          const bx1 = b.position.x,
+            by1 = b.position.y;
+          const bx2 = b.position.x + (b.width || 1) - 1,
+            by2 = b.position.y + (b.length || 1) - 1;
+          return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+        });
+
+        if (overlap) {
+          showPopup("Нельзя разместить здание поверх другого здания", "error");
+          drawOverlay();
+          return;
+        }
+
+        const tiles = new Set<number>();
+        for (let yy = row; yy < row + h; yy++) {
+          for (let xx = col; xx < col + w; xx++) {
+            tiles.add(world.getTile(xx, yy));
+          }
+        }
+
+        if (dragType === BuildingType.Bridge) {
+          const isLand = (t: number) =>
+            t === TileType.Grass ||
+            t === TileType.Hill ||
+            t === TileType.PreHill;
+
+          if (
+            !isLand(world.getTile(start.col, start.row)) ||
+            !isLand(world.getTile(end.col, end.row))
+          ) {
+            showPopup(
+              "Мост должен начинаться и заканчиваться на суше",
+              "error",
+            );
+            drawOverlay();
+            return;
+          }
+
+          for (let yy = row; yy < row + h; yy++) {
+            for (let xx = col; xx < col + w; xx++) {
+              if (
+                (xx === start.col && yy === start.row) ||
+                (xx === end.col && yy === end.row)
+              )
+                continue;
+              const tile = world.getTile(xx, yy);
+              if (
+                tile !== TileType.Water &&
+                tile !== TileType.DeepWater &&
+                tile !== TileType.Sand
+              ) {
+                showPopup(
+                  "Мост можно строить только над водой или песком",
+                  "error",
+                );
+                drawOverlay();
+                return;
+              }
+            }
+          }
+        } else {
+          if (
+            tiles.has(TileType.Sand) ||
+            tiles.has(TileType.Water) ||
+            tiles.has(TileType.DeepWater)
+          ) {
+            showPopup("Нельзя строить на воде или песке", "error");
+            drawOverlay();
+            return;
+          }
+
+          if (
+            tiles.has(TileType.Hill) &&
+            (tiles.has(TileType.Grass) || tiles.has(TileType.PreHill))
+          ) {
+            showPopup("Рельеф слишком неровный", "warning");
+            drawOverlay();
+            return;
+          }
+        }
+
+        if (
+          dragType === BuildingType.Road ||
+          dragType === BuildingType.Bridge
+        ) {
+          const tileCost = BUILDING_CONFIG[dragType].cost;
+          const totalCost = w * h * tileCost;
+          if (state.gameState.economy.money < totalCost) {
+            showPopup("Недостаточно денег", "error");
+            drawOverlay();
+            return;
+          }
+          for (let dy = 0; dy < h; dy++) {
+            for (let dx = 0; dx < w; dx++) {
+              useGameStore
+                .getState()
+                .addBuilding(dragType, { x: col + dx, y: row + dy });
+            }
+          }
+        } else {
+          useGameStore
+            .getState()
+            .addBuilding(dragType, { x: col, y: row }, { width: w, length: h });
+        }
+        drawOverlay();
+      }
     },
   };
 }

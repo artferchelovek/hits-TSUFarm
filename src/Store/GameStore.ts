@@ -14,7 +14,7 @@ import {
 import { immer } from "zustand/middleware/immer";
 import {
   BUILDING_CONFIG,
-  BUILDING_NAMES,
+  EXPORT_RULES,
   INITIAL_RESIDENTS,
   getMaxGardens,
   initialGameState,
@@ -25,6 +25,7 @@ import { processDayTime } from "./Processor.ts";
 import { createBuilding } from "./BuildingFactory.ts";
 import { getBuildingLimit } from "./BuildLimit.ts";
 import { syncToStore, workerManager } from "./WorkerManager.ts";
+import { BUILDING_NAMES } from "../engine/localization/locales.ts";
 
 export const appendLog = (
   state: WritableDraft<GameStore>,
@@ -45,6 +46,7 @@ export const appendLog = (
 export const useGameStore = create<GameStore>()(
   immer((set) => ({
     gameState: initialGameState,
+    pendingExportSourceId: null as string | null,
 
     applyWorkerUpdate: (payload) => {
       set((state) => {
@@ -70,110 +72,138 @@ export const useGameStore = create<GameStore>()(
         });
       });
     },
-    addBuilding: (type, pos): Result => {
+    addBuilding: (type, pos, size?): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {
-        const cost = BUILDING_CONFIG[type].cost;
+        let cost = BUILDING_CONFIG[type].cost;
+        if (type === BuildingType.Garden && size) {
+          cost *= size.width * size.length;
+        }
 
-        if (cost <= state.gameState.economy.money) {
-          state.gameState.economy.money -= cost;
-          if (
-            getBuildingLimit(type, state.gameState.economy.level) <=
-              state.gameState.buildingCounts[type] &&
-            type != BuildingType.Main
-          ) {
+        if (type === BuildingType.Garden) {
+          const w = size?.width ?? BUILDING_CONFIG[type].width;
+          const h = size?.length ?? BUILDING_CONFIG[type].length;
+          const newArea = w * h;
+          const limit = getBuildingLimit(type, state.gameState.economy.level);
+          const used = state.gameState.buildingCounts[type];
+          if (used + newArea > limit) {
             report = {
               success: false,
-              message:
-                "Текущий уровень не позволяет поставить больше зданий этого типа",
+              message: "Недостаточно места для грядки такого размера",
             };
             appendLog(
               state,
-              `Уровень не позволяет поставить больше зданий типа ${type}`,
+              `Превышен лимит грядок: необходимо ${newArea} клеток, доступно ${limit - used}`,
               "warning",
             );
             return;
           }
-          const newBuild = createBuilding(type, pos);
-          if (type === BuildingType.Graveyard) {
-            state.gameState.meta.graveyardIds.push(newBuild.id);
-          }
-          if (
-            type === BuildingType.Main &&
-            getBuildingLimit(type, state.gameState.economy.level) <=
-              state.gameState.buildingCounts[type]
-          ) {
-            report = {
-              success: false,
-              message: "Главное здание уже существует",
-            };
-            appendLog(state, "Главное здание уже существует", "warning");
-            return;
-          }
-          state.gameState.buildings[newBuild.id] = newBuild;
-          state.gameState.buildingCounts[type] += 1;
-          if (
-            type === BuildingType.House &&
-            state.gameState.buildingCounts[type] === 1
-          ) {
-            state.gameState.residents = INITIAL_RESIDENTS;
-            Object.values(state.gameState.residents).forEach((res) => {
-              res.homeId = newBuild.id;
-              const home = state.gameState.buildings[newBuild.id] as House;
-              res.position = { x: home.position.x - 1, y: home.position.y - 1 };
-              home.residentsId.push(res.id);
-            });
-
-            state.gameState.economy.totalPopulation += 2;
-            workerManager.send("SET_RESIDENTS", {
-              residents: state.gameState.residents,
-            });
-          }
-          workerManager.send("UPDATE_BUILDING", { building: newBuild });
-          state.gameState.buildingRemind[type] -= 1;
+        } else if (
+          getBuildingLimit(type, state.gameState.economy.level) <=
+            state.gameState.buildingCounts[type] &&
+          type != BuildingType.Main
+        ) {
           report = {
-            success: true,
-            message: `${BUILDING_NAMES[type]}(ID-${newBuild.id}) успешно построен`,
+            success: false,
+            message:
+              "Текущий уровень не позволяет поставить больше зданий этого типа",
           };
           appendLog(
             state,
-            `${BUILDING_NAMES[type]}(ID-${newBuild.id}) По координатам: (x: ${newBuild.position.x}, y: ${newBuild.position.y}) успешно построен`,
-            "success",
+            `Уровень не позволяет поставить больше зданий типа ${type}`,
+            "warning",
           );
-        } else {
+          return;
+        }
+
+        if (cost > state.gameState.economy.money) {
           const message = `Недостаточно денег для постройки "${BUILDING_NAMES[type]}"`;
+          report = { success: false, message };
+          appendLog(state, message, "warning");
+          return;
+        }
+        state.gameState.economy.money -= cost;
+
+        const newBuild = createBuilding(type, pos, size);
+        if (type === BuildingType.Graveyard) {
+          state.gameState.meta.graveyardIds.push(newBuild.id);
+        }
+        if (
+          type === BuildingType.Main &&
+          getBuildingLimit(type, state.gameState.economy.level) <=
+            state.gameState.buildingCounts[type]
+        ) {
           report = {
             success: false,
-            message,
+            message: "Главное здание уже существует",
           };
-          appendLog(state, message, "warning");
+          appendLog(state, "Главное здание уже существует", "warning");
+          return;
         }
+        state.gameState.buildings[newBuild.id] = newBuild;
+        if (type === BuildingType.Garden) {
+          const w = size?.width ?? BUILDING_CONFIG[type].width;
+          const h = size?.length ?? BUILDING_CONFIG[type].length;
+          state.gameState.buildingCounts[type] += w * h;
+          state.gameState.buildingRemind[type] -= w * h;
+        } else {
+          state.gameState.buildingCounts[type] += 1;
+          state.gameState.buildingRemind[type] -= 1;
+        }
+        if (
+          type === BuildingType.House &&
+          state.gameState.buildingCounts[type] === 1
+        ) {
+          state.gameState.residents = INITIAL_RESIDENTS;
+          Object.values(state.gameState.residents).forEach((res) => {
+            res.homeId = newBuild.id;
+            const home = state.gameState.buildings[newBuild.id] as House;
+            res.position = { x: home.position.x - 1, y: home.position.y - 1 };
+            home.residentsId.push(res.id);
+          });
+
+          state.gameState.economy.totalPopulation += 2;
+          workerManager.send("SET_RESIDENTS", {
+            residents: state.gameState.residents,
+          });
+        }
+        workerManager.send("UPDATE_BUILDING", { building: newBuild });
+        report = {
+          success: true,
+          message: `${BUILDING_NAMES[type]}(ID-${newBuild.id}) успешно построен`,
+        };
+        appendLog(
+          state,
+          `${BUILDING_NAMES[type]}(ID-${newBuild.id}) По координатам: (x: ${newBuild.position.x}, y: ${newBuild.position.y}) успешно построен`,
+          "success",
+        );
       });
       return report;
     },
-    giveProfession: (profession, resident): void => {
+    giveProfession: (profession, resident): boolean => {
+      let success = false;
       set((state) => {
-        if (resident.age < VILLAGER_CONFIG.minAgeForWork) {
+        const r = state.gameState.residents[resident.id];
+        if (!r) return;
+        if (r.age < VILLAGER_CONFIG.minAgeForWork) {
           appendLog(
             state,
-            `${resident.name} ${resident.surname} не достиг минимального возраста для работы`,
+            `${r.name} ${r.surname} не достиг минимального возраста для работы`,
             "warning",
           );
           return;
         }
-        if (resident.status !== VillagerStatus.Idle) {
-          appendLog(
-            state,
-            `${resident.name} ${resident.surname} занят другим делом`,
-            "warning",
-          );
-          return;
+        success = true;
+        if (r.status === VillagerStatus.Idle) {
+          r.profession = profession;
+        } else {
+          r.pendingProfession = profession;
         }
-        resident.profession = profession;
         workerManager.send("SET_RESIDENTS", {
-          residents: state.gameState.residents,
+          residents: JSON.parse(JSON.stringify(state.gameState.residents)),
         });
       });
+      return success;
     },
     assignGardenToFarmer: (resident, selectedPlantPlace): void => {
       set((state) => {
@@ -191,7 +221,7 @@ export const useGameStore = create<GameStore>()(
           return;
         }
         if (
-          resident.profession.assignedGardenIds.includes(selectedPlantPlace.id)
+          resident.profession.assignedGardenIds?.includes(selectedPlantPlace.id)
         ) {
           appendLog(
             state,
@@ -204,13 +234,18 @@ export const useGameStore = create<GameStore>()(
           ProfessionType.Farmer,
           resident.profession.level,
         );
-        if (resident.profession.assignedGardenIds.length >= maxGardens) {
+        if (
+          (resident.profession.assignedGardenIds?.length ?? 0) >= maxGardens
+        ) {
           appendLog(
             state,
             `У фермера максимум ${maxGardens} грядок (уровень ${resident.profession.level})`,
             "warning",
           );
           return;
+        }
+        if (!resident.profession.assignedGardenIds) {
+          resident.profession.assignedGardenIds = [];
         }
         resident.profession.assignedGardenIds.push(selectedPlantPlace.id);
         selectedPlantPlace.assignedWorkerId = resident.id;
@@ -225,6 +260,43 @@ export const useGameStore = create<GameStore>()(
     },
     getResidents: (): Record<string, Resident> => {
       return useGameStore.getState().gameState.residents;
+    },
+    setPendingExportSource: (id: string | null) => {
+      set((state) => {
+        state.pendingExportSourceId = id;
+      });
+    },
+    linkExportBuildings: (sourceId: string, targetId: string) => {
+      set((state) => {
+        const source = state.gameState.buildings[sourceId];
+        const target = state.gameState.buildings[targetId];
+        if (!source || !target) return;
+
+        const allowedTargets = EXPORT_RULES[source.type];
+        if (!allowedTargets || !allowedTargets.includes(target.type)) return;
+
+        if (Array.isArray((source as any).export)) {
+          if (!(source as any).export.includes(targetId)) {
+            (source as any).export.push(targetId);
+            workerManager.send("UPDATE_BUILDING", {
+              building: JSON.parse(JSON.stringify(source)),
+            });
+          }
+        }
+      });
+    },
+    removeExportLink: (sourceId: string, targetId: string) => {
+      set((state) => {
+        const source = state.gameState.buildings[sourceId];
+        if (!source || !Array.isArray((source as any).export)) return;
+
+        (source as any).export = (source as any).export.filter(
+          (id: string) => id !== targetId,
+        );
+        workerManager.send("UPDATE_BUILDING", {
+          building: JSON.parse(JSON.stringify(source)),
+        });
+      });
     },
     loadState: (gameState: GameState) => {
       set((state) => {
