@@ -14,6 +14,7 @@ import {
 import { immer } from "zustand/middleware/immer";
 import {
   BUILDING_CONFIG,
+  EXPORT_RULES,
   INITIAL_RESIDENTS,
   getMaxGardens,
   initialGameState,
@@ -45,6 +46,7 @@ export const appendLog = (
 export const useGameStore = create<GameStore>()(
   immer((set) => ({
     gameState: initialGameState,
+    pendingExportSourceId: null as string | null,
 
     applyWorkerUpdate: (payload) => {
       set((state) => {
@@ -258,6 +260,43 @@ export const useGameStore = create<GameStore>()(
     },
     getResidents: (): Record<string, Resident> => {
       return useGameStore.getState().gameState.residents;
+    },
+    setPendingExportSource: (id: string | null) => {
+      set((state) => {
+        state.pendingExportSourceId = id;
+      });
+    },
+    linkExportBuildings: (sourceId: string, targetId: string) => {
+      set((state) => {
+        const source = state.gameState.buildings[sourceId];
+        const target = state.gameState.buildings[targetId];
+        if (!source || !target) return;
+
+        const allowedTargets = EXPORT_RULES[source.type];
+        if (!allowedTargets || !allowedTargets.includes(target.type)) return;
+
+        if (Array.isArray((source as any).export)) {
+          if (!(source as any).export.includes(targetId)) {
+            (source as any).export.push(targetId);
+            workerManager.send("UPDATE_BUILDING", {
+              building: JSON.parse(JSON.stringify(source)),
+            });
+          }
+        }
+      });
+    },
+    removeExportLink: (sourceId: string, targetId: string) => {
+      set((state) => {
+        const source = state.gameState.buildings[sourceId];
+        if (!source || !Array.isArray((source as any).export)) return;
+
+        (source as any).export = (source as any).export.filter(
+          (id: string) => id !== targetId,
+        );
+        workerManager.send("UPDATE_BUILDING", {
+          building: JSON.parse(JSON.stringify(source)),
+        });
+      });
     },
     loadState: (gameState: GameState) => {
       set((state) => {

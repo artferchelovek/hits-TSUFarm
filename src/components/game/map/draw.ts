@@ -2,6 +2,7 @@ import {
   BuildingType,
   type Buildings,
   type Garden,
+  type Position,
   type Resident,
 } from "../../../engine/Types";
 import { TILE_SIZE, BUILDING_COLORS } from "../../../engine/Constants";
@@ -144,6 +145,64 @@ export const drawResidents = (
     }
   });
 };
+
+export function drawExportRoutes(
+  canvas: HTMLCanvasElement | null,
+  camera: { x: number; y: number; zoom: number },
+  paths: { path: Position[]; targetName: string }[],
+) {
+  if (!canvas || paths.length === 0) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const ts2 = Math.round(TILE_SIZE * camera.zoom) / 2;
+
+  paths.forEach(({ path }) => {
+    if (path.length < 2) return;
+
+    ctx.beginPath();
+    ctx.moveTo(
+      Math.round(path[0].x * TILE_SIZE * camera.zoom + camera.x) + ts2,
+      Math.round(path[0].y * TILE_SIZE * camera.zoom + camera.y) + ts2,
+    );
+    for (let i = 1; i < path.length; i++) {
+      ctx.lineTo(
+        Math.round(path[i].x * TILE_SIZE * camera.zoom + camera.x) + ts2,
+        Math.round(path[i].y * TILE_SIZE * camera.zoom + camera.y) + ts2,
+      );
+    }
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(46, 204, 113, 0.85)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.restore();
+
+    const last = path[path.length - 1];
+    const labX = Math.round(last.x * TILE_SIZE * camera.zoom + camera.x) + ts2;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(46, 204, 113, 0.9)";
+    const sx2 =
+      Math.round(path[0].x * TILE_SIZE * camera.zoom + camera.x) + ts2;
+    const sy2 =
+      Math.round(path[0].y * TILE_SIZE * camera.zoom + camera.y) + ts2;
+    ctx.beginPath();
+    ctx.arc(sx2, sy2, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(
+      labX,
+      Math.round(last.y * TILE_SIZE * camera.zoom + camera.y) + ts2,
+      4,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.restore();
+  });
+}
 
 export function drawOverlay(
   overlayCanvas: HTMLCanvasElement | null,

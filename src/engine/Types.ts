@@ -141,6 +141,7 @@ export interface Granary extends BaseBuilding {
     maxCapacity: number;
     currentAmount: number;
   };
+  export: string[];
 }
 export type PlantPlace = Garden | Greenhouse;
 export interface Garden extends PlaceGrow {
@@ -302,6 +303,12 @@ export interface GameActions {
   loadState: (gameState: GameState) => void;
   assignGardenToFarmer: (resident: Resident, place: PlantPlace) => void;
   getResidents: () => Record<string, Resident>;
+  setPendingExportSource: (id: string | null) => void;
+  linkExportBuildings: (sourceId: string, targetId: string) => void;
+  removeExportLink: (sourceId: string, targetId: string) => void;
 }
 
-export type GameStore = { gameState: GameState } & GameActions;
+export type GameStore = {
+  gameState: GameState;
+  pendingExportSourceId: string | null;
+} & GameActions;

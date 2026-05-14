@@ -1,0 +1,49 @@
+<svg width="56" height="64" viewBox="0 0 56 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- ground -->
+    <path d="M6 58H50V62H6V58Z" fill="#7B7360"/>
+
+    <!-- side walls -->
+    <path d="M10 30H46V58H10V30Z" fill="#ECDCB8"/>
+    <path d="M10 30L6 42V58H10V30Z" fill="#CBBE9D"/>
+    <path d="M46 30L50 42V58H46V30Z" fill="#CBBE9D"/>
+
+    <!-- roof -->
+    <path d="M6 30L28 10L50 30H6Z" fill="#E27952"/>
+    <path d="M28 6L2 28V30H6L28 10L50 30H54V28L28 6Z" fill="#A6583C"/>
+    <path d="M14 22H18V26H14V22ZM22 16H26V20H22V16ZM30 16H34V20H30V16ZM38 22H42V26H38V22Z" fill="#F5D693"/>
+
+    <!-- bakery sign -->
+    <path d="M20 26H36V34H20V26Z" fill="#BB8044"/>
+    <path d="M22 28C22 26.9 22.9 26 24 26H26C27.1 26 28 26.9 28 28V30C28 31.1 27.1 32 26 32H24C22.9 32 22 31.1 22 30V28Z" fill="#FFDF99"/>
+    <path d="M28 30C28 27.8 29.8 26 32 26C34.2 26 36 27.8 36 30V32H28V30Z" fill="#FFDF99"/>
+
+    <!-- door -->
+    <path d="M24 42H32V58H24V42Z" fill="#A6583C"/>
+    <path d="M26 46H30V58H26V46Z" fill="#D2704C"/>
+
+    <!-- windows -->
+    <path d="M14 38H20V44H14V38Z" fill="#ACB8B8"/>
+    <path d="M36 38H42V44H36V38Z" fill="#ACB8B8"/>
+    <path d="M16 38V44" stroke="#8B9595" stroke-width="1"/>
+    <path d="M18 38V44" stroke="#8B9595" stroke-width="1"/>
+    <path d="M14 40H20" stroke="#8B9595" stroke-width="1"/>
+    <path d="M38 38V44" stroke="#8B9595" stroke-width="1"/>
+    <path d="M40 38V44" stroke="#8B9595" stroke-width="1"/>
+    <path d="M36 40H42" stroke="#8B9595" stroke-width="1"/>
+
+    <!-- awnings -->
+    <path d="M12 34H22L20 38H14L12 34Z" fill="#E27952"/>
+    <path d="M34 34H44L42 38H36L34 34Z" fill="#E27952"/>
+    <path d="M14 34H16V38H14V34ZM18 34H20V38H18V34ZM36 34H38V38H36V34ZM40 34H42V38H40V34Z" fill="#ECDCB8"/>
+
+    <!-- chimney -->
+    <path d="M40 12H46V24H40V12Z" fill="#CBBE9D"/>
+    <path d="M42 8H44V12H42V8Z" fill="#7B7360"/>
+
+    <!-- bread on roof -->
+    <path d="M22 8C22 5.8 23.8 4 26 4C28.2 4 30 5.8 30 8C30 10.2 28.2 12 26 12C23.8 12 22 10.2 22 8Z" fill="#F5D693"/>
+    <path d="M28 8C28 5.8 29.8 4 32 4C34.2 4 36 5.8 36 8C36 10.2 34.2 12 32 12C29.8 12 28 10.2 28 8Z" fill="#FFDF99"/>
+
+    <!-- outlines -->
+    <path d="M28 6L2 28V30V58C2 59.1 2.9 60 4 60H52C53.1 60 54 59.1 54 58V28L28 6ZM6 30L28 10L50 30V58H6V30Z" fill="#7B7360"/>
+</svg>

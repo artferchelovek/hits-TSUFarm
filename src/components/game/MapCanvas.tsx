@@ -1,5 +1,6 @@
 import useMapCanvas from "./useMapCanvas";
 import InfoBox from "../UI/InfoBox/InfoBox";
+import ExportLinkingBanner from "./ExportLinkingBanner";
 import { PALETTE } from "../../engine/Constants";
 import { TileType, type WorldMap } from "../../engine/WorldMap";
 
@@ -59,6 +60,8 @@ export default function MapCanvas({
       onMouseMove={onMouseMove}
       onClick={onClick}
     >
+      <ExportLinkingBanner />
+
       {buildInfo && (
         <InfoBox
           build={buildInfo.build}

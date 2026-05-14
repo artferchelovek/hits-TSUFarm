@@ -1,5 +1,6 @@
 import styles from "./CenteredPopup.module.css";
 import type { LogType } from "../../../engine/Types";
+import { useGameStore } from "../../../Store/GameStore";
 
 export default function CenteredPopup({
   visible,
@@ -11,6 +12,8 @@ export default function CenteredPopup({
   type?: LogType;
   onClose?: () => void;
 }) {
+  const bannerVisible = !!useGameStore((s) => s.pendingExportSourceId);
+
   const cls = [
     styles.popup,
     type ? styles[`popup--${type}`] : "",
@@ -20,7 +23,15 @@ export default function CenteredPopup({
     .join(" ");
 
   return (
-    <div className={cls} role="alert">
+    <div
+      className={cls}
+      role="alert"
+      style={
+        visible && bannerVisible
+          ? { transform: "translateX(-50%) translateY(60px)" }
+          : undefined
+      }
+    >
       <p className={styles.popup__msg}>{message}</p>
     </div>
   );

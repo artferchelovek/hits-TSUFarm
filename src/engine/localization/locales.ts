@@ -11,6 +11,7 @@ export const BUILDING_NAMES: Record<BuildingType, string> = {
   [BuildingType.Road]: "Дорога",
   [BuildingType.House]: "Дом для жителей",
   [BuildingType.Granary]: "Амбар",
+  [BuildingType.Mill]: "Мельница",
 };
 export const PROFESSION_NAMES: Record<ProfessionType, string> = {
   Farmer: "Фермер",

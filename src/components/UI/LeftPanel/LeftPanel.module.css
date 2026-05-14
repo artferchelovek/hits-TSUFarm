@@ -3,6 +3,8 @@
   top: 15px;
   left: 15px;
 
+  max-height: calc(100vh - 30px);
+
   background: #e2c0a0;
   color: #2e2c2c;
 
@@ -17,6 +19,26 @@
 
 .leftPanel__body {
   padding: 12px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c4a482 #e2c0a0;
+}
+
+.leftPanel__body::-webkit-scrollbar {
+  height: 6px;
+}
+
+.leftPanel__body::-webkit-scrollbar-track {
+  background: #e2c0a0;
+}
+
+.leftPanel__body::-webkit-scrollbar-thumb {
+  background: #c4a482;
+  border-radius: 3px;
+}
+
+.leftPanel__body::-webkit-scrollbar-thumb:hover {
+  background: #b09070;
 }
 
 .leftPanelSelect {
@@ -31,7 +53,8 @@
   color: #2e2c2c;
 }
 
-.buildingsList, .residentsList {
+.buildingsList,
+.residentsList {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;

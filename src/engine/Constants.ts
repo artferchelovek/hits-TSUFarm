@@ -486,5 +486,10 @@ export const CHARACTERS_SVG: Record<string, string> = {
   Female: SVGs.woman,
 };
 
+export const EXPORT_RULES: Partial<Record<BuildingType, BuildingType[]>> = {
+  [BuildingType.Granary]: [BuildingType.Mill],
+  [BuildingType.Mill]: [BuildingType.Granary],
+};
+
 export const TILE_SIZE = 25;
 export const MAP_DIMENSION = 500;

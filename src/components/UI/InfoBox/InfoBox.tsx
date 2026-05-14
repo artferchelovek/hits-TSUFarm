@@ -10,6 +10,7 @@ import BridgeInfo from "./InfoGroups/BridgeInfo.tsx";
 import RoadInfo from "./InfoGroups/RoadInfo.tsx";
 import HouseInfo from "./InfoGroups/HouseInfo.tsx";
 import GranaryInfo from "./InfoGroups/GranaryInfo.tsx";
+import MillInfo from "./InfoGroups/MillInfo.tsx";
 import { BUILDING_NAMES } from "../../../engine/localization/locales.ts";
 
 export default function InfoBox({
@@ -70,6 +71,9 @@ function renderBuildingInfo(build: Buildings) {
 
     case BuildingType.Granary:
       return <GranaryInfo build={build} />;
+
+    case BuildingType.Mill:
+      return <MillInfo build={build} />;
 
     default:
       return <p>Нет данных</p>;

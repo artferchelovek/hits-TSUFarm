@@ -1,38 +1,42 @@
 import styles from "../InfoBox.module.css";
-import type { Granary } from "../../../../engine/Types.ts";
+import type { Mill } from "../../../../engine/Types.ts";
+import { ResourceType } from "../../../../engine/Types.ts";
 import SizeBlock from "../SizeBlock.tsx";
-import { PLANT_CONFIG } from "../../../../engine/Constants.ts";
 import ProgressBlock from "../ProgressBlock.tsx";
 import { usePopup } from "../../../../contexts/PopupContext.tsx";
 import { useGameStore } from "../../../../Store/GameStore.ts";
 import { BUILDING_NAMES } from "../../../../engine/localization/locales.ts";
 
-export default function GranaryInfo({ build }: { build: Granary }) {
+const RESOURCE_NAMES: Partial<Record<ResourceType, string>> = {
+  [ResourceType.Wheat]: "Пшеница",
+  [ResourceType.FLour]: "Мука",
+  [ResourceType.Bread]: "Хлеб",
+};
+
+export default function MillInfo({ build }: { build: Mill }) {
   const { showPopup } = usePopup();
-  const sumResources = Object.values(PLANT_CONFIG).reduce((acc, { type }) => {
-    const amount = build.storage.resources[type] ?? 0;
-    return acc + amount;
-  }, 0);
   return (
     <div className={styles.InfoBox__body}>
       <SizeBlock build={build} />
       <ProgressBlock
-        from={sumResources}
-        to={build.storage.maxCapacity}
-        name={"Занято"}
+        from={build.capacity}
+        to={build.maxCapacity}
+        name={"Загружено"}
         isProcent={true}
       />
-      <p>Хранится:</p>
-      {Object.values(PLANT_CONFIG).map(({ type, name }) => (
-        <p key={type}>
-          {name}: {build.storage.resources[type] ?? 0} ед.
-        </p>
-      ))}
+      <p>Рецепт:</p>
+      <p>
+        {RESOURCE_NAMES[build.recipe.import] ?? build.recipe.import} (
+        {build.recipe.importCount}) →{" "}
+        {RESOURCE_NAMES[build.recipe.export] ?? build.recipe.export} (
+        {build.recipe.exportCount})
+      </p>
+      <p>Длительность: {build.recipe.durationPerTick} тиков</p>
+      {build.storage.length > 0 && <p>Внутри: {build.storage.length} ед.</p>}
       <button
         onClick={(e) => {
           e.stopPropagation();
           useGameStore.getState().setPendingExportSource(build.id);
-          showPopup("Выберите конечное здание");
         }}
       >
         Экспорт

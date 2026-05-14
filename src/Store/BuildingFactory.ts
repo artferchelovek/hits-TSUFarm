@@ -77,6 +77,7 @@ export const createBuilding = (
           maxCapacity: config.maxCapacity,
           currentAmount: 0,
         },
+        export: [],
       };
     }
     case BuildingType.Well: {
