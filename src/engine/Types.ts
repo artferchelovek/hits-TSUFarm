@@ -306,6 +306,8 @@ export interface GameActions {
   setPendingExportSource: (id: string | null) => void;
   linkExportBuildings: (sourceId: string, targetId: string) => void;
   removeExportLink: (sourceId: string, targetId: string) => void;
+  removeBuilding: (id: string) => Result;
+  moveBuilding: (id: string, newPos: Position) => Result;
 }
 
 export type GameStore = {

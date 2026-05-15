@@ -262,7 +262,7 @@ export function useMapCanvas(
   const dragStartRef = useRef<{ col: number; row: number } | null>(null);
   const dragEndRef = useRef<{ col: number; row: number } | null>(null);
   const wasDragPlacedRef = useRef(false);
-  const dragTypeRef = useRef<BuildingType | null>(null);
+  const dragTypeRef = useRef<BuildingType | "remove" | null>(null);
   const exportPathsRef = useRef<{ path: Position[]; targetName: string }[]>([]);
 
   const texturesRef = useRef<Record<number, HTMLImageElement>>(
@@ -339,6 +339,17 @@ export function useMapCanvas(
   const [infoBoxPos, setInfoBoxPos] = useState<{
     x: number;
     y: number;
+  } | null>(null);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPreview, setDragPreview] = useState<{
+    building: Buildings;
+    position: Position;
+    isValid: boolean;
+  } | null>(null);
+  const draggedBuildingRef = useRef<{
+    id: string;
+    building: Buildings;
   } | null>(null);
 
   const activeBuilding = useGameStore((state) =>
@@ -465,18 +476,16 @@ export function useMapCanvas(
   }, []);
 
   const { selected } = useBuildSelection();
-  const buildSelectionRef = useRef<{ selected: BuildingType | null } | null>(
-    null,
-  );
+  const buildSelectionRef = useRef<BuildingType | "remove" | null>(null);
   const { showPopup } = usePopup();
   useEffect(() => {
-    buildSelectionRef.current = { selected };
+    buildSelectionRef.current = selected;
   }, [selected]);
 
   const drawOverlay = () => {
     const overlay = overlayCanvasRef.current;
     const hovered = hoveredTileRef.current;
-    const sel = buildSelectionRef.current?.selected ?? null;
+    const sel = buildSelectionRef.current;
     let cfg;
     if (sel) {
       cfg = (
@@ -499,6 +508,16 @@ export function useMapCanvas(
       cameraRef.current,
       exportPathsRef.current,
     );
+
+    if (dragPreview && overlay) {
+      drawFns.drawDragPreview(
+        overlay,
+        cameraRef.current,
+        dragPreview.building,
+        dragPreview.position,
+        dragPreview.isValid,
+      );
+    }
   };
 
   const drawBuildings = (buildings: Record<string, Buildings> | null) =>
@@ -731,6 +750,17 @@ export function useMapCanvas(
     const col = Math.floor(worldX / TILE_SIZE);
     const row = Math.floor(worldY / TILE_SIZE);
 
+    if (isDragging && draggedBuildingRef.current) {
+      if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
+        const isValid = checkPlacementValid(col, row, draggedBuildingRef.current.building, draggedBuildingRef.current.id);
+        setDragPreview({
+          building: draggedBuildingRef.current.building,
+          position: { x: col, y: row },
+          isValid,
+        });
+      }
+    }
+
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
       hoveredTileRef.current = { col, row };
       if (isDragPlacingRef.current) {
@@ -743,12 +773,102 @@ export function useMapCanvas(
     drawOverlay();
   };
 
-  const onClick = (e: React.MouseEvent) => {
-    if (isBackground) return;
-    if (wasDragPlacedRef.current) {
-      wasDragPlacedRef.current = false;
+  const checkPlacementValid = (
+    col: number,
+    row: number,
+    building: Buildings,
+    excludeId?: string,
+  ): boolean => {
+    const w = building.width || 1;
+    const h = building.length || 1;
+
+    if (col < 0 || col + w > MAP_DIMENSION || row < 0 || row + h > MAP_DIMENSION) {
+      return false;
+    }
+
+    const state = useGameStore.getState();
+    const existing = Object.values(state.gameState.buildings).filter(
+      (b) => b.id !== excludeId,
+    );
+
+    const overlap = existing.some((b: Buildings) => {
+      const ax1 = col;
+      const ay1 = row;
+      const ax2 = col + w - 1;
+      const ay2 = row + h - 1;
+
+      const bx1 = b.position.x;
+      const by1 = b.position.y;
+      const bx2 = b.position.x + (b.width || 1) - 1;
+      const by2 = b.position.y + (b.length || 1) - 1;
+
+      return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+    });
+
+    if (overlap) return false;
+
+    const tiles = new Set<number>();
+    for (let yy = row; yy < row + h; yy++) {
+      for (let xx = col; xx < col + w; xx++) {
+        tiles.add(world.getTile(xx, yy));
+      }
+    }
+
+    return (
+      !tiles.has(TileType.Sand) &&
+      !tiles.has(TileType.Water) &&
+      !tiles.has(TileType.DeepWater) &&
+      !(
+        tiles.has(TileType.Hill) &&
+        (tiles.has(TileType.Grass) || tiles.has(TileType.PreHill))
+      )
+    );
+  };
+
+  const startDrag = (build: Buildings) => {
+    setIsDragging(true);
+    draggedBuildingRef.current = { id: build.id, building: build };
+    setDragPreview({
+      building: build,
+      position: build.position,
+      isValid: true,
+    });
+    setSelectedBuildId(null);
+    setClickOffset(null);
+    setInfoBoxPos(null);
+  };
+
+const handleToolAction = (col: number, row: number, mode: "remove") => {
+    const state = useGameStore.getState();
+
+    const clickedBuild = Object.values(state.gameState.buildings).find((b) => {
+      return (
+        col >= b.position.x &&
+        col < b.position.x + (b.width || 1) &&
+        row >= b.position.y &&
+        row < b.position.y + (b.length || 1)
+      );
+    });
+
+    if (mode === "remove") {
+      if (clickedBuild) {
+        const result = useGameStore.getState().removeBuilding(clickedBuild.id);
+        if (result.success) {
+          showPopup(result.message, "success");
+          setSelectedBuildId(null);
+          setClickOffset(null);
+          setInfoBoxPos(null);
+        } else {
+          showPopup(result.message, "error");
+        }
+      } else {
+        showPopup("Здание не найдено", "warning");
+      }
       return;
     }
+  };
+
+const onClick = (e: React.MouseEvent) => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -793,7 +913,18 @@ export function useMapCanvas(
         return;
       }
 
-      const sel = buildSelectionRef.current?.selected ?? null;
+      const sel = buildSelectionRef.current;
+
+      if (isDragPlacingRef.current || wasDragPlacedRef.current) {
+        wasDragPlacedRef.current = false;
+        return;
+      }
+
+      if (sel === "remove") {
+        handleToolAction(col, row, sel);
+        return;
+      }
+
       if (!sel) return;
 
       const cfg = (
@@ -900,6 +1031,8 @@ export function useMapCanvas(
         : null,
     infoBoxPos,
     onInfoBoxClose,
+    onMoveStart: startDrag,
+    isDragging,
     onMouseDown: (e: React.MouseEvent) => {
       if ((e as any).button === 1) {
         e.preventDefault();
@@ -908,11 +1041,12 @@ export function useMapCanvas(
         return;
       }
       if ((e as any).button === 0) {
-        const sel = buildSelectionRef.current?.selected ?? null;
+        const sel = buildSelectionRef.current;
         if (
           sel === BuildingType.Garden ||
           sel === BuildingType.Road ||
-          sel === BuildingType.Bridge
+          sel === BuildingType.Bridge ||
+          sel === "remove"
         ) {
           const rect = containerRef.current?.getBoundingClientRect();
           if (!rect) return;
@@ -943,9 +1077,29 @@ export function useMapCanvas(
         isPanningRef.current = false;
         return;
       }
-      if ((e as any).button === 0 && isDragPlacingRef.current) {
-        isDragPlacingRef.current = false;
-        wasDragPlacedRef.current = true;
+      if ((e as any).button === 0) {
+        if (isDragging && draggedBuildingRef.current && dragPreview) {
+          if (dragPreview.isValid) {
+            const result = useGameStore.getState().moveBuilding(
+              draggedBuildingRef.current.id,
+              dragPreview.position,
+            );
+            if (result.success) {
+              showPopup(result.message, "success");
+            } else {
+              showPopup(result.message, "error");
+            }
+          }
+          setIsDragging(false);
+          setDragPreview(null);
+          draggedBuildingRef.current = null;
+          drawOverlay();
+          return;
+        }
+
+        if (isDragPlacingRef.current) {
+          isDragPlacingRef.current = false;
+          wasDragPlacedRef.current = true;
 
         const start = dragStartRef.current;
         const end = dragEndRef.current;
@@ -965,26 +1119,34 @@ export function useMapCanvas(
         const h = Math.abs(end.row - start.row) + 1;
 
         const state = useGameStore.getState();
-        const existing = Object.values(
-          state.gameState.buildings || ({} as Record<string, Buildings>),
-        ) as Buildings[];
 
-        const overlap = existing.some((b: Buildings) => {
-          const ax1 = col,
-            ay1 = row;
-          const ax2 = col + w - 1,
-            ay2 = row + h - 1;
-          const bx1 = b.position.x,
-            by1 = b.position.y;
-          const bx2 = b.position.x + (b.width || 1) - 1,
-            by2 = b.position.y + (b.length || 1) - 1;
-          return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
-        });
+        if (
+          dragType !== "remove" &&
+          dragType !== BuildingType.Road &&
+          dragType !== BuildingType.Bridge &&
+          dragType !== BuildingType.Garden
+        ) {
+          const existing = Object.values(
+            state.gameState.buildings || ({} as Record<string, Buildings>),
+          ) as Buildings[];
 
-        if (overlap) {
-          showPopup("Нельзя разместить здание поверх другого здания", "error");
-          drawOverlay();
-          return;
+          const overlap = existing.some((b: Buildings) => {
+            const ax1 = col,
+              ay1 = row;
+            const ax2 = col + w - 1,
+              ay2 = row + h - 1;
+            const bx1 = b.position.x,
+              by1 = b.position.y;
+            const bx2 = b.position.x + (b.width || 1) - 1,
+              by2 = b.position.y + (b.length || 1) - 1;
+            return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+          });
+
+          if (overlap) {
+            showPopup("Нельзя разместить здание поверх другого здания", "error");
+            drawOverlay();
+            return;
+          }
         }
 
         const tiles = new Set<number>();
@@ -1034,38 +1196,7 @@ export function useMapCanvas(
               }
             }
           }
-        } else {
-          if (
-            tiles.has(TileType.Sand) ||
-            tiles.has(TileType.Water) ||
-            tiles.has(TileType.DeepWater)
-          ) {
-            showPopup("Нельзя строить на воде или песке", "error");
-            drawOverlay();
-            return;
-          }
 
-          if (
-            tiles.has(TileType.Hill) &&
-            (tiles.has(TileType.Grass) || tiles.has(TileType.PreHill))
-          ) {
-            showPopup("Рельеф слишком неровный", "warning");
-            drawOverlay();
-            return;
-          }
-        }
-
-        if (
-          dragType === BuildingType.Road ||
-          dragType === BuildingType.Bridge
-        ) {
-          const tileCost = BUILDING_CONFIG[dragType].cost;
-          const totalCost = w * h * tileCost;
-          if (state.gameState.economy.money < totalCost) {
-            showPopup("Недостаточно денег", "error");
-            drawOverlay();
-            return;
-          }
           for (let dy = 0; dy < h; dy++) {
             for (let dx = 0; dx < w; dx++) {
               useGameStore
@@ -1073,15 +1204,55 @@ export function useMapCanvas(
                 .addBuilding(dragType, { x: col + dx, y: row + dy });
             }
           }
-        } else {
-          useGameStore
-            .getState()
-            .addBuilding(dragType, { x: col, y: row }, { width: w, length: h });
+          drawOverlay();
+        } else if (
+          dragType === BuildingType.Road ||
+          dragType === BuildingType.Garden
+        ) {
+          for (let dy = 0; dy < h; dy++) {
+            for (let dx = 0; dx < w; dx++) {
+              useGameStore
+                .getState()
+                .addBuilding(dragType, { x: col + dx, y: row + dy });
+            }
+          }
+          drawOverlay();
+        } else if (dragType === "remove") {
+            const buildingsToRemove = Object.values(
+              state.gameState.buildings,
+            ).filter((b) => {
+              const bx1 = b.position.x;
+              const by1 = b.position.y;
+              const bx2 = b.position.x + (b.width || 1) - 1;
+              const by2 = b.position.y + (b.length || 1) - 1;
+              return !(bx2 < col || bx1 > col + w - 1 || by2 < row || by1 > row + h - 1);
+            });
+
+            let removedCount = 0;
+            let failCount = 0;
+            for (const building of buildingsToRemove) {
+              const result = useGameStore.getState().removeBuilding(building.id);
+              if (result.success) {
+                removedCount++;
+              } else {
+                failCount++;
+              }
+            }
+            if (removedCount > 0) {
+              showPopup(`Удалено: ${removedCount} зданий`, "success");
+            }
+            if (failCount > 0) {
+              showPopup(`Не удалось удалить: ${failCount} зданий`, "warning");
+            }
+            drawOverlay();
+          } else {
+            useGameStore
+              .getState()
+              .addBuilding(dragType, { x: col, y: row }, { width: w, length: h });
+            drawOverlay();
+          }
         }
-        drawOverlay();
       }
     },
   };
-}
-
-export default useMapCanvas;
+};

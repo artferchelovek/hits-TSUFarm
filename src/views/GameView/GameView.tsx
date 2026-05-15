@@ -12,7 +12,7 @@ import {
 } from "../../Store/SaveManager.ts";
 import { useGameStore } from "../../Store/GameStore.ts";
 import MapCanvas from "../../components/game/MapCanvas.tsx";
-import InfoPanel from "../../components/UI/InfoPanel/InfoPanel.tsx";
+import RightPanel from "../../components/UI/RightPanel/RightPanel.tsx";
 import LeftPanel from "../../components/UI/LeftPanel/LeftPanel.tsx";
 import { BuildSelectionProvider } from "../../contexts/BuildSelectionContext";
 import { PopupProvider } from "../../contexts/PopupContext";
@@ -165,7 +165,7 @@ export default function GameView() {
                 centerCamera={loadedFromSave}
               />
             )}
-            {ready && <InfoPanel />}
+            {ready && <RightPanel />}
             {ready && <LeftPanel />}
           </div>
         </PopupProvider>

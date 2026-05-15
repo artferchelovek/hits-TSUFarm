@@ -169,6 +169,19 @@ class CitizenWorker {
       }
     }
   }
+  public removeBuilding(id: string): void {
+    const building = this.buildings[id];
+    if (!building) return;
+
+    for (let i = building.position.y; i < building.position.y + building.length; i++) {
+      for (let j = building.position.x; j < building.position.x + building.width; j++) {
+        if (i < this.height && j < this.width) {
+          this.grid[i][j] = TERRAIN_WEIGHTS.DEFAULT;
+        }
+      }
+    }
+    delete this.buildings[id];
+  }
   public tick(payload: {
     isNight: boolean;
     weather: Weather;

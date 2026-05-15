@@ -13,15 +13,20 @@ import GranaryInfo from "./InfoGroups/GranaryInfo.tsx";
 import MillInfo from "./InfoGroups/MillInfo.tsx";
 import { BUILDING_NAMES } from "../../../engine/localization/locales.ts";
 
+interface InfoBoxProps {
+  build: Buildings;
+  position: { x: number; y: number };
+  onClose: () => void;
+  onMoveStart: (build: Buildings) => void;
+}
+
 export default function InfoBox({
   build,
   position,
   onClose,
-}: {
-  build: Buildings;
-  position: { x: number; y: number };
-  onClose: () => void;
-}) {
+  onMoveStart,
+}: InfoBoxProps) {
+  const isMain = build.type === BuildingType.Main;
   return (
     <div
       className={styles.InfoBox}
@@ -36,6 +41,15 @@ export default function InfoBox({
       </div>
 
       {renderBuildingInfo(build)}
+
+      {!isMain && (
+        <button
+          className={styles.moveButton}
+          onClick={() => onMoveStart(build)}
+        >
+          Переместить
+        </button>
+      )}
     </div>
   );
 }

@@ -6,6 +6,8 @@ import {
   type GameStore,
   type House,
   type LogType,
+  type Position,
+  type PlantPlace,
   ProfessionType,
   type Resident,
   type Result,
@@ -18,6 +20,8 @@ import {
   INITIAL_RESIDENTS,
   getMaxGardens,
   initialGameState,
+  MOVE_COST_MULTIPLIER,
+  MOVE_COST_PER_TILE,
   PLANT_CONFIG,
   VILLAGER_CONFIG,
 } from "../engine/Constants.ts";
@@ -361,6 +365,184 @@ export const useGameStore = create<GameStore>()(
               break;
           }
         }
+      });
+      return report;
+    },
+    removeBuilding: (id: string): Result => {
+      let report: Result = { success: false, message: "" };
+      set((state) => {
+        const building = state.gameState.buildings[id];
+        if (!building) {
+          report = { success: false, message: "Здание не найдено" };
+          return;
+        }
+
+        if (building.type === BuildingType.Main) {
+          report = { success: false, message: "Нельзя удалить главное здание" };
+          appendLog(state, "Нельзя удалить главное здание", "warning");
+          return;
+        }
+
+        if (building.type === BuildingType.Granary) {
+          const granary = building as any;
+          if (granary.storage && granary.storage.currentAmount > 0) {
+            report = {
+              success: false,
+              message: "Нельзя удалить амбар с ресурсами",
+            };
+            appendLog(
+              state,
+              "Нельзя удалить амбар с ресурсами",
+              "warning",
+            );
+            return;
+          }
+        }
+
+        if (building.type === BuildingType.House) {
+          const house = building as House;
+          if (house.residentsId && house.residentsId.length > 0) {
+            report = { success: false, message: "Нельзя удалить дом с жителями" };
+            appendLog(state, "Нельзя удалить дом с жителями", "warning");
+            return;
+          }
+        }
+
+        if (
+          building.type === BuildingType.Garden ||
+          building.type === BuildingType.Greenhouse
+        ) {
+          const plantPlace = building as PlantPlace;
+          if (plantPlace.assignedWorkerId) {
+            const worker = state.gameState.residents[plantPlace.assignedWorkerId];
+            if (worker && worker.profession.type === ProfessionType.Farmer) {
+              worker.profession.assignedGardenIds = (
+                worker.profession.assignedGardenIds || []
+              ).filter((gId) => gId !== id);
+            }
+          }
+        }
+
+        let refund = BUILDING_CONFIG[building.type].cost;
+        if (building.type === BuildingType.Garden) {
+          refund *= building.width * building.length;
+        }
+        refund = Math.floor(refund * 0.5);
+
+        state.gameState.economy.money += refund;
+
+        if (building.type === BuildingType.Garden) {
+          state.gameState.buildingCounts[building.type] -= building.width * building.length;
+          state.gameState.buildingRemind[building.type] += building.width * building.length;
+        } else {
+          state.gameState.buildingCounts[building.type] -= 1;
+          state.gameState.buildingRemind[building.type] += 1;
+        }
+
+        delete state.gameState.buildings[id];
+        workerManager.send("REMOVE_BUILDING", { id });
+
+        report = {
+          success: true,
+          message: `${BUILDING_NAMES[building.type]} удалён. Возврат: ${refund}`,
+        };
+        appendLog(
+          state,
+          `${BUILDING_NAMES[building.type]} удалён. Возврат: ${refund}`,
+          "success",
+        );
+      });
+      return report;
+    },
+    moveBuilding: (id: string, newPos: Position): Result => {
+      let report: Result = { success: false, message: "" };
+      set((state) => {
+        const building = state.gameState.buildings[id];
+        if (!building) {
+          report = { success: false, message: "Здание не найдено" };
+          return;
+        }
+
+        if (building.type === BuildingType.Main) {
+          report = { success: false, message: "Нельзя переместить главное здание" };
+          appendLog(state, "Нельзя переместить главное здание", "warning");
+          return;
+        }
+
+        const dx = Math.abs(newPos.x - building.position.x);
+        const dy = Math.abs(newPos.y - building.position.y);
+        const distance = dx + dy;
+
+        if (distance === 0) {
+          report = { success: false, message: "Здание уже на этом месте" };
+          return;
+        }
+
+        const cost = Math.floor(
+          MOVE_COST_PER_TILE * distance * Math.pow(MOVE_COST_MULTIPLIER, distance),
+        );
+
+        if (cost > state.gameState.economy.money) {
+          report = {
+            success: false,
+            message: `Недостаточно денег. Нужно: ${cost}`,
+          };
+          appendLog(
+            state,
+            `Недостаточно денег для перемещения здания. Нужно: ${cost}`,
+            "warning",
+          );
+          return;
+        }
+
+        const w = building.width || 1;
+        const h = building.length || 1;
+        const existing = Object.values(state.gameState.buildings).filter(
+          (b) => b.id !== id,
+        );
+        const overlap = existing.some((b: any) => {
+          const ax1 = newPos.x;
+          const ay1 = newPos.y;
+          const ax2 = newPos.x + w - 1;
+          const ay2 = newPos.y + h - 1;
+
+          const bx1 = b.position.x;
+          const by1 = b.position.y;
+          const bx2 = b.position.x + (b.width || 1) - 1;
+          const by2 = b.position.y + (b.length || 1) - 1;
+
+          return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+        });
+
+        if (overlap) {
+          report = {
+            success: false,
+            message: "На новом месте есть другое здание",
+          };
+          appendLog(
+            state,
+            "На новом месте есть другое здание",
+            "warning",
+          );
+          return;
+        }
+
+        state.gameState.economy.money -= cost;
+        building.position = { ...newPos };
+
+        workerManager.send("UPDATE_BUILDING", {
+          building: JSON.parse(JSON.stringify(building)),
+        });
+
+        report = {
+          success: true,
+          message: `${BUILDING_NAMES[building.type]} перемещено. Потрачено: ${cost}`,
+        };
+        appendLog(
+          state,
+          `${BUILDING_NAMES[building.type]} перемещено на (${newPos.x}, ${newPos.y}). Потрачено: ${cost}`,
+          "success",
+        );
       });
       return report;
     },

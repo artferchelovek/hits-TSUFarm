@@ -190,6 +190,9 @@ export const XP_REWARDS = {
     UNLOADING: 5,
   },
 };
+export const MOVE_COST_PER_TILE = 10;
+export const MOVE_COST_MULTIPLIER = 1.05;
+
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 3,
