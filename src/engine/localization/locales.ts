@@ -16,6 +16,7 @@ export const BUILDING_NAMES: Record<BuildingType, string> = {
 export const PROFESSION_NAMES: Record<ProfessionType, string> = {
   Farmer: "Фермер",
   Jobless: "Безработный",
+  Transporter: "Логист",
 };
 
 export const WEATHER_NAMES: Record<Weather, string> = {

@@ -1,7 +1,7 @@
 import styles from "../InfoBox.module.css";
-import type { Granary, CropType } from "../../../../engine/Types.ts";
+import { ResourceType, type Granary } from "../../../../engine/Types.ts";
 import SizeBlock from "../SizeBlock.tsx";
-import { PLANT_CONFIG } from "../../../../engine/Constants.ts";
+import { RESOURCE_DISPLAY_NAMES } from "../../../../engine/Constants.ts";
 import ProgressBlock from "../ProgressBlock.tsx";
 import { useState } from "react";
 import { usePopup } from "../../../../contexts/PopupContext.tsx";
@@ -10,14 +10,14 @@ import { BUILDING_NAMES } from "../../../../engine/localization/locales.ts";
 
 export default function GranaryInfo({ build }: { build: Granary }) {
   const setGranaryResourceType = useGameStore(
-    (state) => state.setGranaryResourceType
+    (state) => state.setGranaryResourceType,
   );
-  const [selection, setSelection] = useState<CropType | null>(
-    build.resourceType
+  const [selection, setSelection] = useState<ResourceType | null>(
+    build.resourceType,
   );
   const [isChanging, setIsChanging] = useState(false);
 
-  const handleSelect = (type: CropType) => {
+  const handleSelect = (type: ResourceType) => {
     setSelection(type);
     setGranaryResourceType(build.id, type);
     setIsChanging(false);
@@ -38,7 +38,7 @@ export default function GranaryInfo({ build }: { build: Granary }) {
       <p>Хранимый ресурс:</p>
       {build.resourceType ? (
         <div className={styles.InfoBox__resourceRow}>
-          <p>{PLANT_CONFIG[build.resourceType].name}</p>
+          <p>{RESOURCE_DISPLAY_NAMES[build.resourceType] ?? build.resourceType}</p>
           {isEmpty && (
             <button
               className={styles.InfoBox__changeBtn}
@@ -50,7 +50,9 @@ export default function GranaryInfo({ build }: { build: Granary }) {
         </div>
       ) : (
         <div className={styles.InfoBox__selector}>
-          {Object.values(PLANT_CONFIG).map(({ type, name }) => (
+          {(Object.keys(RESOURCE_DISPLAY_NAMES) as ResourceType[]).filter(
+            (t) => t !== ResourceType.Water && t !== ResourceType.WellWater && t !== ResourceType.Empty,
+          ).map((type) => (
             <button
               key={type}
               onClick={() => handleSelect(type)}
@@ -60,14 +62,16 @@ export default function GranaryInfo({ build }: { build: Granary }) {
                   : styles.InfoBox__selectorBtn
               }
             >
-              {name}
+              {RESOURCE_DISPLAY_NAMES[type]}
             </button>
           ))}
         </div>
       )}
       {isChanging && (
         <div className={styles.InfoBox__selector}>
-          {Object.values(PLANT_CONFIG).map(({ type, name }) => (
+          {(Object.keys(RESOURCE_DISPLAY_NAMES) as ResourceType[]).filter(
+            (t) => t !== ResourceType.Water && t !== ResourceType.WellWater && t !== ResourceType.Empty,
+          ).map((type) => (
             <button
               key={type}
               onClick={() => handleSelect(type)}
@@ -77,20 +81,12 @@ export default function GranaryInfo({ build }: { build: Granary }) {
                   : styles.InfoBox__selectorBtn
               }
             >
-              {name}
+              {RESOURCE_DISPLAY_NAMES[type]}
             </button>
           ))}
         </div>
       )}
-      {build.resourceType && (
-        <p>Количество: {build.storage.amount} ед.</p>
-      )}
-      <p>Хранится:</p>
-      {Object.values(PLANT_CONFIG).map(({ type, name }) => (
-        <p key={type}>
-          {name}: {build.storage.amount} ед.
-        </p>
-      ))}
+      {build.resourceType && <p>Количество: {build.storage.amount} ед.</p>}
       <button
         onClick={(e) => {
           e.stopPropagation();

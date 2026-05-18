@@ -7,6 +7,7 @@ import {
   Gender,
   type Granary,
   type House,
+  type Mill,
   moveStatuses,
   type PlantPlace,
   type Position,
@@ -14,6 +15,8 @@ import {
   type Resident,
   ResourceType,
   Season,
+  type TaskContext,
+  type Transporter,
   VillagerStatus,
   Weather,
   type Well,
@@ -29,6 +32,7 @@ import {
   PLANT_EFFECTS,
   PROFESSION_SETTINGS,
   REPRODUCTION,
+  TRANSPORTER_TASK_DURATION,
   VILLAGER_CONFIG,
   WeatherEffects,
   XP_REWARDS,
@@ -256,6 +260,13 @@ class CitizenWorker {
         payload.season,
         payload.weather,
       );
+    }
+
+    const mills = Object.values(this.buildings).filter(
+      (b): b is Mill => b.type === BuildingType.Mill,
+    );
+    for (const mill of mills) {
+      this.processMill(mill);
     }
 
     return {
@@ -861,7 +872,6 @@ class CitizenWorker {
 
     return true;
   }
-
   private addExperience(resident: Resident, amount: number): void {
     const prof = resident.profession;
     if (prof.type === ProfessionType.Jobless) return;
@@ -891,7 +901,37 @@ class CitizenWorker {
     resident.inventory.resources[type]! += amount;
     resident.inventory.totalAmount += amount;
   };
+  private processMill(mill: Mill) {
+    if (
+      (mill.storage[ResourceType.Flour] ?? 0) >= mill.maxCapacity ||
+      (mill.storage[ResourceType.Wheat] ?? 0) <= 0
+    ) {
+      mill.progress = 0;
+      return;
+    }
 
+    if (mill.progress < 1) {
+      mill.progress += 1 / mill.recipe.durationPerTick;
+
+      if (mill.storage[ResourceType.Wheat]) {
+        const step = mill.recipe.importCount / mill.recipe.durationPerTick;
+        mill.storage[ResourceType.Wheat] = Math.max(
+          mill.storage[ResourceType.Wheat] - step,
+          0,
+        );
+        mill.capacity -= step;
+        mill.capacity += mill.recipe.exportCount / mill.recipe.durationPerTick;
+        mill.storage[ResourceType.Flour] =
+          (mill.storage[ResourceType.Flour] ?? 0) +
+          mill.recipe.exportCount / mill.recipe.durationPerTick;
+      } else {
+        mill.storage[ResourceType.Wheat] = 0;
+      }
+      return;
+    }
+
+    mill.progress = 0;
+  }
   private processPlantGrowth(
     building: PlantPlace,
     isNight: boolean,
@@ -952,6 +992,486 @@ class CitizenWorker {
       }
     }
   }
+  private findBestExportSource(resident: Resident): {
+    source: Buildings;
+    resourceType: ResourceType;
+    takeAmount: number;
+  } | null {
+    let bestSource: Buildings | null = null;
+    let bestResourceType: ResourceType | null = null;
+    let bestScore = -Infinity;
+    let bestAmount = 0;
+
+    for (const build of Object.values(this.buildings)) {
+      const exportArr = (build as any).export;
+      if (!Array.isArray(exportArr) || exportArr.length === 0) continue;
+
+      const availableResources: {
+        type: ResourceType;
+        amount: number;
+        max: number;
+      }[] = [];
+
+      if (build.type === BuildingType.Granary) {
+        const g = build as Granary;
+        if (g.resourceType && g.storage.amount > 0) {
+          availableResources.push({
+            type: g.resourceType,
+            amount: g.storage.amount,
+            max: g.storage.maxCapacity,
+          });
+        }
+      } else if (build.type === BuildingType.Mill) {
+        const m = build as Mill;
+        const exportKey = m.recipe.export;
+        const amount = m.storage[exportKey] ?? 0;
+        if (amount > 0) {
+          availableResources.push({
+            type: exportKey,
+            amount: amount,
+            max: m.maxCapacity,
+          });
+        }
+      }
+
+      for (const res of availableResources) {
+        const hasValidDest = this.findBestExportDestination(
+          exportArr,
+          res.type,
+          build.position,
+        );
+        if (!hasValidDest) continue;
+
+        const dist = this.getEvcDist(resident.position, build.position);
+
+        const fullness = res.amount / res.max;
+        const score = fullness / (dist + 1);
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestSource = build;
+          bestResourceType = res.type;
+          bestAmount = res.amount;
+        }
+      }
+    }
+
+    if (!bestSource || !bestResourceType) return null;
+
+    const transporterLevel = (resident.profession as Transporter).level;
+    const maxCarry = getMaxInventoryCapacity(
+      ProfessionType.Transporter,
+      transporterLevel,
+    );
+    const freeInv = maxCarry - resident.inventory.totalAmount;
+    const takeAmount = Math.min(bestAmount, freeInv);
+
+    if (takeAmount <= 0) return null;
+
+    bestSource.incoming[bestResourceType] =
+      (bestSource.incoming[bestResourceType] ?? 0) + 1;
+
+    return {
+      source: bestSource,
+      resourceType: bestResourceType,
+      takeAmount,
+    };
+  }
+
+  private getDestinationNeed(
+    dest: Buildings,
+    resourceType: ResourceType,
+  ): number {
+    if (dest.type === BuildingType.Mill) {
+      const m = dest as Mill;
+      if (m.recipe.import !== resourceType) return 0;
+      return m.maxCapacity - m.capacity;
+    }
+    if (dest.type === BuildingType.Granary) {
+      const g = dest as Granary;
+      if (!g.resourceType || g.resourceType !== resourceType) return 0;
+      return g.storage.maxCapacity - g.storage.amount;
+    }
+    return 0;
+  }
+
+  private findBestExportDestination(
+    exportArr: string[],
+    resourceType: ResourceType,
+    pos: Position,
+  ): Buildings | null {
+    let bestDest: Buildings | null = null;
+    let bestScore = -Infinity;
+
+    for (const destId of exportArr) {
+      const dest = this.buildings[destId];
+      if (!dest) continue;
+      if ((dest.incoming[resourceType] ?? 0) > 0) continue;
+
+      const need = this.getDestinationNeed(dest, resourceType);
+      if (need <= 0) continue;
+
+      let maxCapacity = 100;
+      if (dest.type === BuildingType.Mill)
+        maxCapacity = (dest as Mill).maxCapacity;
+      if (dest.type === BuildingType.Granary)
+        maxCapacity = (dest as Granary).storage.maxCapacity;
+
+      const dist = this.getEvcDist(pos, dest.position);
+
+      const deficitRatio = need / maxCapacity;
+      const score = Math.pow(deficitRatio, 2) / (dist + 1);
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestDest = dest;
+      }
+    }
+
+    return bestDest;
+  }
+
+  private routeRemainder(resident: Resident, tc: TaskContext): void {
+    if (tc.sourceId) {
+      const source = this.buildings[tc.sourceId];
+      if (source && Array.isArray((source as any).export)) {
+        const next = this.findBestExportDestination(
+          (source as any).export,
+          tc.resourceType,
+          resident.position,
+        );
+        if (next) {
+          next.incoming[tc.resourceType] =
+            (next.incoming[tc.resourceType] ?? 0) + 1;
+          tc.targetId = next.id;
+          return;
+        }
+      }
+      if (source) {
+        let canAccept = false;
+        if (source.type === BuildingType.Granary) {
+          canAccept =
+            (source as Granary).storage.amount <
+            (source as Granary).storage.maxCapacity;
+        } else if (source.type === BuildingType.Mill) {
+          canAccept = (source as Mill).capacity < (source as Mill).maxCapacity;
+        }
+        if (canAccept) {
+          tc.targetId = tc.sourceId;
+          return;
+        }
+      }
+    }
+    tc.targetId = "";
+  }
+
+  private updateTransporter(resident: Resident): void {
+    if (resident.profession.type !== ProfessionType.Transporter) return;
+
+    const tc = resident.taskContext;
+
+    if (resident.inventory.totalAmount > 0) {
+      if (tc?.targetId && this.buildings[tc.targetId]) {
+        const dest = this.buildings[tc.targetId];
+        resident.path = this.calculatePath(
+          resident.position,
+          this.getExitPos(dest),
+        );
+        resident.pathIndex = 0;
+        resident.status = VillagerStatus.MovingToExportTarget;
+        return;
+      }
+
+      const carriedType = (
+        Object.keys(resident.inventory.resources) as ResourceType[]
+      ).find((k) => (resident.inventory.resources[k] ?? 0) > 0);
+      if (!carriedType) return;
+
+      if (tc?.sourceId) {
+        const source = this.buildings[tc.sourceId];
+        if (source && Array.isArray((source as any).export)) {
+          const dest = this.findBestExportDestination(
+            (source as any).export,
+            carriedType,
+            resident.position,
+          );
+          if (dest) {
+            dest.incoming[carriedType] = (dest.incoming[carriedType] ?? 0) + 1;
+            tc.targetId = dest.id;
+            resident.path = this.calculatePath(
+              resident.position,
+              this.getExitPos(dest),
+            );
+            resident.pathIndex = 0;
+            resident.status = VillagerStatus.MovingToExportTarget;
+            return;
+          }
+
+          let canAccept = false;
+          if (source.type === BuildingType.Granary) {
+            canAccept =
+              (source as Granary).storage.amount <
+              (source as Granary).storage.maxCapacity;
+          } else if (source.type === BuildingType.Mill) {
+            canAccept =
+              (source as Mill).capacity < (source as Mill).maxCapacity;
+          }
+          if (canAccept) {
+            tc.targetId = tc.sourceId;
+            resident.path = this.calculatePath(
+              resident.position,
+              this.getExitPos(source),
+            );
+            resident.pathIndex = 0;
+            resident.status = VillagerStatus.MovingToExportTarget;
+            return;
+          }
+        }
+      }
+
+      if (tc) tc.targetId = "";
+      return;
+    }
+
+    const result = this.findBestExportSource(resident);
+    if (!result) return;
+
+    resident.taskContext = {
+      targetId: result.source.id,
+      sourceId: result.source.id,
+      resourceType: result.resourceType,
+      neededAmount: result.takeAmount,
+      currentAmount: 0,
+    };
+    resident.path = this.calculatePath(
+      resident.position,
+      this.getExitPos(result.source),
+    );
+    resident.pathIndex = 0;
+    resident.status = VillagerStatus.MovingToExportSource;
+  }
+
+  private loadingExport(resident: Resident): boolean {
+    if (resident.profession.type !== ProfessionType.Transporter) return false;
+
+    const tc = resident.taskContext;
+    if (!tc) return false;
+
+    const source = this.buildings[tc.targetId];
+    if (!source) {
+      resident.taskContext = null;
+      return true;
+    }
+
+    let availableAmount = 0;
+    if (source.type === BuildingType.Granary) {
+      const g = source as Granary;
+      if (!g.resourceType || g.storage.amount <= 0) return false;
+      availableAmount = g.storage.amount;
+    } else if (source.type === BuildingType.Mill) {
+      const m = source as Mill;
+      const millKey = tc.resourceType as
+        | ResourceType.Flour
+        | ResourceType.Bread;
+      availableAmount = m.storage[millKey] ?? 0;
+      if (availableAmount <= 0) return false;
+    } else {
+      return false;
+    }
+
+    const transporterLevel = (resident.profession as Transporter).level;
+    const maxCarry = getMaxInventoryCapacity(
+      ProfessionType.Transporter,
+      transporterLevel,
+    );
+    const freeInv = maxCarry - resident.inventory.totalAmount;
+    const toTake = Math.min(availableAmount, tc.neededAmount, freeInv);
+    if (toTake <= 0) return false;
+
+    if (resident.workProgress < TRANSPORTER_TASK_DURATION.LOADING) {
+      resident.workProgress += getSpeedWork(
+        ProfessionType.Transporter,
+        transporterLevel,
+      );
+      return false;
+    }
+
+    if (source.type === BuildingType.Granary) {
+      (source as Granary).storage.amount -= toTake;
+    } else if (source.type === BuildingType.Mill) {
+      const m = source as Mill;
+      const millKey = tc.resourceType as
+        | ResourceType.Flour
+        | ResourceType.Bread;
+      m.storage[millKey] = (m.storage[millKey] ?? 0) - toTake;
+      if (m.storage[millKey]! <= 0) delete m.storage[millKey];
+      m.capacity -= toTake;
+    }
+
+    resident.inventory.resources[tc.resourceType] =
+      (resident.inventory.resources[tc.resourceType] ?? 0) + toTake;
+    resident.inventory.totalAmount += toTake;
+
+    const exportArr = (source as any).export as string[];
+    const dest = this.findBestExportDestination(
+      exportArr,
+      tc.resourceType,
+      resident.position,
+    );
+
+    if (!dest) {
+      if (source.type === BuildingType.Granary) {
+        (source as Granary).storage.amount += toTake;
+      } else if (source.type === BuildingType.Mill) {
+        const m = source as Mill;
+        const millKey = tc.resourceType as
+          | ResourceType.Flour
+          | ResourceType.Bread;
+        m.storage[millKey] = (m.storage[millKey] ?? 0) + toTake;
+        m.capacity += toTake;
+      }
+      delete resident.inventory.resources[tc.resourceType];
+      resident.inventory.totalAmount = Math.max(
+        0,
+        resident.inventory.totalAmount - toTake,
+      );
+      resident.workProgress = 0;
+      resident.taskContext = null;
+      return true;
+    }
+
+    this.addExperience(
+      resident,
+      XP_REWARDS[ProfessionType.Transporter].LOADING,
+    );
+
+    dest.incoming[tc.resourceType] = (dest.incoming[tc.resourceType] ?? 0) + 1;
+    tc.targetId = dest.id;
+    tc.neededAmount = toTake;
+    tc.currentAmount = 0;
+    resident.workProgress = 0;
+    return true;
+  }
+
+  private unloadingExport(resident: Resident): boolean {
+    if (resident.profession.type !== ProfessionType.Transporter) return false;
+
+    const tc = resident.taskContext;
+    if (!tc) return false;
+
+    const dest = this.buildings[tc.targetId];
+    if (!dest) {
+      resident.taskContext = null;
+      return true;
+    }
+
+    const availableAmount = resident.inventory.resources[tc.resourceType] ?? 0;
+    if (availableAmount <= 0) {
+      resident.taskContext = null;
+      return true;
+    }
+
+    let freeSpace = 0;
+
+    if (dest.id === tc.sourceId) {
+      if (dest.type === BuildingType.Granary) {
+        freeSpace =
+          (dest as Granary).storage.maxCapacity -
+          (dest as Granary).storage.amount;
+      } else if (dest.type === BuildingType.Mill) {
+        freeSpace = (dest as Mill).maxCapacity - (dest as Mill).capacity;
+      } else {
+        resident.taskContext = null;
+        return true;
+      }
+    } else {
+      if (dest.type === BuildingType.Mill) {
+        const m = dest as Mill;
+        if (m.recipe.import !== tc.resourceType) {
+          resident.taskContext = null;
+          return true;
+        }
+        freeSpace = m.maxCapacity - m.capacity;
+      } else if (dest.type === BuildingType.Granary) {
+        const g = dest as Granary;
+        if (g.resourceType && g.resourceType !== tc.resourceType) {
+          resident.taskContext = null;
+          return true;
+        }
+        freeSpace = g.storage.maxCapacity - g.storage.amount;
+      } else {
+        resident.taskContext = null;
+        return true;
+      }
+    }
+
+    const toUnload = Math.min(availableAmount, freeSpace);
+    if (toUnload <= 0) {
+      if (
+        dest.id !== tc.sourceId &&
+        (dest.incoming[tc.resourceType] ?? 0) > 0
+      ) {
+        dest.incoming[tc.resourceType]! -= 1;
+      }
+      this.routeRemainder(resident, tc);
+      return true;
+    }
+
+    const transporterLevel = (resident.profession as Transporter).level;
+    if (resident.workProgress < TRANSPORTER_TASK_DURATION.UNLOADING) {
+      resident.workProgress += getSpeedWork(
+        ProfessionType.Transporter,
+        transporterLevel,
+      );
+      return false;
+    }
+
+    if (dest.type === BuildingType.Granary) {
+      (dest as Granary).storage.amount += toUnload;
+    } else if (dest.type === BuildingType.Mill) {
+      const m = dest as Mill;
+      const millKey = tc.resourceType as
+        | ResourceType.Wheat
+        | ResourceType.Flour
+        | ResourceType.Bread;
+      m.storage[millKey] = (m.storage[millKey] ?? 0) + toUnload;
+      m.capacity += toUnload;
+    }
+
+    resident.inventory.resources[tc.resourceType]! -= toUnload;
+    resident.inventory.totalAmount -= toUnload;
+    if (resident.inventory.resources[tc.resourceType]! <= 0) {
+      delete resident.inventory.resources[tc.resourceType];
+    }
+    if (dest.id !== tc.sourceId && (dest.incoming[tc.resourceType] ?? 0) > 0) {
+      dest.incoming[tc.resourceType]! -= 1;
+    }
+    if ((resident.inventory.resources[tc.resourceType] ?? 0) > 0) {
+      this.routeRemainder(resident, tc);
+      if (tc.targetId) {
+        const nextDest = this.buildings[tc.targetId];
+        resident.path = this.calculatePath(
+          resident.position,
+          this.getExitPos(nextDest),
+        );
+        resident.pathIndex = 0;
+        resident.status = VillagerStatus.MovingToExportTarget;
+        resident.workProgress = 0;
+        return true;
+      }
+      resident.taskContext = null;
+    } else {
+      this.addExperience(
+        resident,
+        XP_REWARDS[ProfessionType.Transporter].UNLOADING,
+      );
+      resident.taskContext = null;
+    }
+
+    resident.workProgress = 0;
+    return true;
+  }
+
   private updateMovement(resident: Resident, isNight: boolean): void {
     if (
       moveStatuses.includes(resident.status) &&
@@ -989,6 +1509,22 @@ class CitizenWorker {
             resident.status = VillagerStatus.Watering;
             return;
           }
+          if (resident.status === VillagerStatus.MovingToExportSource) {
+            const tc = resident.taskContext;
+            if (tc) {
+              const src = this.buildings[tc.sourceId ?? ""];
+              if (src) {
+                src.incoming[tc.resourceType] =
+                  (src.incoming[tc.resourceType] ?? 1) - 1;
+              }
+            }
+            resident.status = VillagerStatus.LoadingExport;
+            return;
+          }
+          if (resident.status === VillagerStatus.MovingToExportTarget) {
+            resident.status = VillagerStatus.UnloadingExport;
+            return;
+          }
           resident.status = VillagerStatus.Idle;
         }
       } else {
@@ -1023,6 +1559,19 @@ class CitizenWorker {
       }
     }
 
+    if (resident.status === VillagerStatus.LoadingExport) {
+      if (this.loadingExport(resident)) {
+        resident.status = VillagerStatus.Idle;
+      }
+    }
+    if (resident.status === VillagerStatus.UnloadingExport) {
+      if (this.unloadingExport(resident)) {
+        if (resident.status === VillagerStatus.UnloadingExport) {
+          resident.status = VillagerStatus.Idle;
+        }
+      }
+    }
+
     if (isNight && resident.homeId) {
       const home = this.buildings[resident.homeId];
       if (home) {
@@ -1052,6 +1601,12 @@ class CitizenWorker {
       resident.profession.type === ProfessionType.Farmer
     ) {
       this.updateFarmer(resident);
+    }
+    if (
+      resident.status === VillagerStatus.Idle &&
+      resident.profession.type === ProfessionType.Transporter
+    ) {
+      this.updateTransporter(resident);
     }
     if (
       resident.status === VillagerStatus.Idle &&

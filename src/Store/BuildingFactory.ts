@@ -18,6 +18,7 @@ export const createBuilding = (
     position: pos,
     width: size?.width ?? config.width,
     length: size?.length ?? config.length,
+    incoming: {},
   };
 
   switch (type) {
@@ -99,12 +100,13 @@ export const createBuilding = (
         type,
         maxCapacity: config.maxCapacity,
         capacity: 0,
-        storage: [],
+        storage: {},
+        progress: 0,
         export: [],
         recipe: {
           import: ResourceType.Wheat,
           importCount: 2,
-          export: ResourceType.FLour,
+          export: ResourceType.Flour,
           exportCount: 1,
           durationPerTick: 10,
         },

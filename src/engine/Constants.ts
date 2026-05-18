@@ -4,6 +4,7 @@ import {
   type CropType,
   type GameState,
   Gender,
+  type Granary,
   type Plant,
   type Profession,
   ProfessionType,
@@ -132,12 +133,29 @@ export const PROFESSION_SETTINGS: Partial<
     baseInventoryCapacity: 10,
     inventoryCapacityPerLevel: 2,
   },
+  [ProfessionType.Transporter]: {
+    assignmentCost: 200,
+    baseWorkSpeed: 1.0,
+    workSpeedUpPerLevel: 0.5,
+    xpGainPerTick: 0.1,
+    baseSalary: 0,
+    xpPerLevel: 100,
+    baseMaxGardens: 0,
+    gardensPerLevel: 0,
+    maxLevel: 5,
+    baseInventoryCapacity: 20,
+    inventoryCapacityPerLevel: 5,
+  },
 };
 export const FARMER_TASK_DURATION = {
   SET_WATER: 1,
   HARVESTING: 3,
   PLANTING: 4,
   UNLOADING: 5,
+};
+export const TRANSPORTER_TASK_DURATION = {
+  LOADING: 3,
+  UNLOADING: 3,
 };
 export function getMaxGardens(
   professionType: ProfessionType,
@@ -189,6 +207,10 @@ export const XP_REWARDS = {
     WATERING: 10,
     UNLOADING: 5,
     PLANTING: 8,
+  },
+  [ProfessionType.Transporter]: {
+    LOADING: 8,
+    UNLOADING: 10,
   },
 };
 export const BUILDING_CONFIG = {
@@ -417,6 +439,31 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     },
   },
 };
+const fullWheatGranary: Granary = {
+  // === Поля из интерфейса BaseBuilding ===
+  id: "granary_wheat_01",
+  position: { x: 105, y: 90 },
+  width: 4, // Например, размер здания 3х3 клетки
+  length: 4,
+
+  // Наш новый Partial-рекорд для счётчиков брони.
+  // Показывает, сколько транспортеров СЕЙЧАС взаимодействуют с этим зданием по конкретному ресурсу.
+  incoming: {
+    [ResourceType.Wheat]: 0, // К самому амбару сейчас никто не идёт разгружать пшеницу (он и так полон)
+  },
+
+  // === Специфичные поля интерфейса Granary ===
+  type: BuildingType.Granary,
+  resourceType: ResourceType.Wheat, // Амбар залочен под пшеницу
+
+  storage: {
+    amount: 500, // Текущее количество (полный)
+    maxCapacity: 500, // Максимальная вместимость
+  },
+
+  // Массив экспортных связей (куда логисты должны тащить пшеницу)
+  export: [],
+};
 export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
@@ -430,18 +477,18 @@ export const initialGameState: GameState = {
     isNight: false,
   },
   economy: {
-    money: 1000,
-    level: 1,
+    money: 100000,
+    level: 10,
     totalPopulation: 0,
   },
-  buildings: {},
+  buildings: { granary_wheat_01: fullWheatGranary },
   buildingCounts: Object.fromEntries(
     Object.values(BuildingType).map((type) => [type, 0]),
   ) as Record<BuildingType, number>,
   buildingRemind: Object.fromEntries(
     Object.values(BuildingType).map((type) => [
       type,
-      getBuildingLimit(type, 1),
+      getBuildingLimit(type, 10),
     ]),
   ) as Record<BuildingType, number>,
   residents: {},
@@ -499,6 +546,20 @@ export const BUILDING_SVG: Record<string, string> = {
 export const CHARACTERS_SVG: Record<string, string> = {
   Male: SVGs.man,
   Female: SVGs.woman,
+};
+
+export const RESOURCE_DISPLAY_NAMES: Partial<Record<ResourceType, string>> = {
+  [ResourceType.Tomato]: "Помидор",
+  [ResourceType.Potato]: "Картофель",
+  [ResourceType.Cucumber]: "Огурец",
+  [ResourceType.Corn]: "Кукуруза",
+  [ResourceType.Pumpkin]: "Тыква",
+  [ResourceType.Wheat]: "Пшеница",
+  [ResourceType.Flour]: "Мука",
+  [ResourceType.Bread]: "Хлеб",
+  [ResourceType.Water]: "Вода",
+  [ResourceType.WellWater]: "Колодезная вода",
+  [ResourceType.Empty]: "Пусто",
 };
 
 export const EXPORT_RULES: Partial<Record<BuildingType, BuildingType[]>> = {
