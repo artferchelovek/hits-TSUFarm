@@ -449,7 +449,6 @@ export function useMapCanvas(
         overlayCanvasRef,
         buildingsCanvasRef,
         residentCanvasRef,
-        weatherCanvasRef,
       ].forEach((ref) => {
         const c = ref.current;
         if (!c) return;
