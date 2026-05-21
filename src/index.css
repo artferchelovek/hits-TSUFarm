@@ -1,6 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
+:root {
+  /* Z-Index Layers */
+  --z-map: 0;
+  --z-ui-panels: 100;
+  --z-popups: 500;
+  --z-overlays: 1000;
+  --z-loading: 9999;
+
+  /* Global Colors */
+  --color-bg-panel: #e2c0a0;
+  --color-bg-item: #fbf0e5;
+  --color-text-main: #2e2c2c;
+  --color-border: rgba(46, 44, 44, 0.12);
+}
+
 * {
   padding: 0;
   margin: 0;

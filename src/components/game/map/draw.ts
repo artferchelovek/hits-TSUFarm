@@ -83,7 +83,11 @@ export const drawBuildings = (
     const sprite = textures[getGardenTextureKey(b)];
 
     if (sprite && sprite.complete) {
-      if (b.type === BuildingType.Garden) {
+      if (
+        b.type === BuildingType.Garden ||
+        b.type === BuildingType.Road ||
+        b.type === BuildingType.Bridge
+      ) {
         const ts = Math.round(TILE_SIZE * camera.zoom);
         for (let dx = 0; dx < (b.width || 1); dx++) {
           for (let dy = 0; dy < (b.length || 1); dy++) {

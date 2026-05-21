@@ -140,6 +140,17 @@ class CitizenWorker {
     return data;
   }
   public updateBuilding(building: Buildings): void {
+    const oldBuilding = this.buildings[building.id];
+    if (oldBuilding) {
+      for (let i = oldBuilding.position.y; i < oldBuilding.position.y + oldBuilding.length; i++) {
+        for (let j = oldBuilding.position.x; j < oldBuilding.position.x + oldBuilding.width; j++) {
+          if (i < this.height && j < this.width) {
+            this.grid[i][j] = TERRAIN_WEIGHTS.DEFAULT;
+          }
+        }
+      }
+    }
+
     this.buildings[building.id] = building;
     this.updateObstacle(
       building.position.x,

@@ -20,7 +20,6 @@ import {
   INITIAL_RESIDENTS,
   getMaxGardens,
   initialGameState,
-  MOVE_COST_MULTIPLIER,
   MOVE_COST_PER_TILE,
   PLANT_CONFIG,
   VILLAGER_CONFIG,
@@ -79,32 +78,30 @@ export const useGameStore = create<GameStore>()(
     addBuilding: (type, pos, size?): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {
-        let cost = BUILDING_CONFIG[type].cost;
-        if (type === BuildingType.Garden && size) {
-          cost *= size.width * size.length;
-        }
+        const w = size?.width ?? BUILDING_CONFIG[type].width;
+        const h = size?.length ?? BUILDING_CONFIG[type].length;
+        const area = w * h;
+
+        let cost = BUILDING_CONFIG[type].cost * area;
 
         if (type === BuildingType.Garden) {
-          const w = size?.width ?? BUILDING_CONFIG[type].width;
-          const h = size?.length ?? BUILDING_CONFIG[type].length;
-          const newArea = w * h;
           const limit = getBuildingLimit(type, state.gameState.economy.level);
           const used = state.gameState.buildingCounts[type];
-          if (used + newArea > limit) {
+          if (used + area > limit) {
             report = {
               success: false,
               message: "Недостаточно места для грядки такого размера",
             };
             appendLog(
               state,
-              `Превышен лимит грядок: необходимо ${newArea} клеток, доступно ${limit - used}`,
+              `Превышен лимит грядок: необходимо ${area} клеток, доступно ${limit - used}`,
               "warning",
             );
             return;
           }
         } else if (
-          getBuildingLimit(type, state.gameState.economy.level) <=
-            state.gameState.buildingCounts[type] &&
+          getBuildingLimit(type, state.gameState.economy.level) <
+            state.gameState.buildingCounts[type] + (area > 1 ? area : 1) &&
           type != BuildingType.Main
         ) {
           report = {
@@ -145,15 +142,16 @@ export const useGameStore = create<GameStore>()(
           return;
         }
         state.gameState.buildings[newBuild.id] = newBuild;
-        if (type === BuildingType.Garden) {
-          const w = size?.width ?? BUILDING_CONFIG[type].width;
-          const h = size?.length ?? BUILDING_CONFIG[type].length;
-          state.gameState.buildingCounts[type] += w * h;
-          state.gameState.buildingRemind[type] -= w * h;
-        } else {
-          state.gameState.buildingCounts[type] += 1;
-          state.gameState.buildingRemind[type] -= 1;
-        }
+
+        const isTiled =
+          type === BuildingType.Garden ||
+          type === BuildingType.Road ||
+          type === BuildingType.Bridge;
+
+        const countToAdd = isTiled ? area : 1;
+        state.gameState.buildingCounts[type] += countToAdd;
+        state.gameState.buildingRemind[type] -= countToAdd;
+
         if (
           type === BuildingType.House &&
           state.gameState.buildingCounts[type] === 1
@@ -423,21 +421,23 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
+        const isTiled =
+          building.type === BuildingType.Garden ||
+          building.type === BuildingType.Road ||
+          building.type === BuildingType.Bridge;
+
         let refund = BUILDING_CONFIG[building.type].cost;
-        if (building.type === BuildingType.Garden) {
-          refund *= building.width * building.length;
+        const area = building.width * building.length;
+        if (isTiled) {
+          refund *= area;
         }
         refund = Math.floor(refund * 0.5);
 
         state.gameState.economy.money += refund;
 
-        if (building.type === BuildingType.Garden) {
-          state.gameState.buildingCounts[building.type] -= building.width * building.length;
-          state.gameState.buildingRemind[building.type] += building.width * building.length;
-        } else {
-          state.gameState.buildingCounts[building.type] -= 1;
-          state.gameState.buildingRemind[building.type] += 1;
-        }
+        const countToRemove = isTiled ? area : 1;
+        state.gameState.buildingCounts[building.type] -= countToRemove;
+        state.gameState.buildingRemind[building.type] += countToRemove;
 
         delete state.gameState.buildings[id];
         workerManager.send("REMOVE_BUILDING", { id });
@@ -478,9 +478,11 @@ export const useGameStore = create<GameStore>()(
           return;
         }
 
-        const cost = Math.floor(
-          MOVE_COST_PER_TILE * distance * Math.pow(MOVE_COST_MULTIPLIER, distance),
-        );
+        const w = building.width || 1;
+        const h = building.length || 1;
+        const area = w * h;
+
+        const cost = Math.floor(MOVE_COST_PER_TILE * distance * area);
 
         if (cost > state.gameState.economy.money) {
           report = {
@@ -495,8 +497,6 @@ export const useGameStore = create<GameStore>()(
           return;
         }
 
-        const w = building.width || 1;
-        const h = building.length || 1;
         const existing = Object.values(state.gameState.buildings).filter(
           (b) => b.id !== id,
         );

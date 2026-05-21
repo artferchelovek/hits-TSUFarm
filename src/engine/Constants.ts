@@ -419,7 +419,7 @@ export const initialGameState: GameState = {
   },
   economy: {
     money: 10330,
-    level: 1,
+    level: 100,
     totalPopulation: 0,
   },
   buildings: {},
@@ -429,7 +429,7 @@ export const initialGameState: GameState = {
   buildingRemind: Object.fromEntries(
     Object.values(BuildingType).map((type) => [
       type,
-      getBuildingLimit(type, 1),
+      getBuildingLimit(type, 100),
     ]),
   ) as Record<BuildingType, number>,
   residents: {},

@@ -752,7 +752,12 @@ export function useMapCanvas(
 
     if (isDragging && draggedBuildingRef.current) {
       if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
-        const isValid = checkPlacementValid(col, row, draggedBuildingRef.current.building, draggedBuildingRef.current.id);
+        const isValid = checkPlacementValid(
+          col,
+          row,
+          draggedBuildingRef.current.building,
+          draggedBuildingRef.current.id,
+        );
         setDragPreview({
           building: draggedBuildingRef.current.building,
           position: { x: col, y: row },
@@ -782,7 +787,12 @@ export function useMapCanvas(
     const w = building.width || 1;
     const h = building.length || 1;
 
-    if (col < 0 || col + w > MAP_DIMENSION || row < 0 || row + h > MAP_DIMENSION) {
+    if (
+      col < 0 ||
+      col + w > MAP_DIMENSION ||
+      row < 0 ||
+      row + h > MAP_DIMENSION
+    ) {
       return false;
     }
 
@@ -838,7 +848,7 @@ export function useMapCanvas(
     setInfoBoxPos(null);
   };
 
-const handleToolAction = (col: number, row: number, mode: "remove") => {
+  const handleToolAction = (col: number, row: number, mode: "remove") => {
     const state = useGameStore.getState();
 
     const clickedBuild = Object.values(state.gameState.buildings).find((b) => {
@@ -868,7 +878,7 @@ const handleToolAction = (col: number, row: number, mode: "remove") => {
     }
   };
 
-const onClick = (e: React.MouseEvent) => {
+  const onClick = (e: React.MouseEvent) => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -1080,10 +1090,12 @@ const onClick = (e: React.MouseEvent) => {
       if ((e as any).button === 0) {
         if (isDragging && draggedBuildingRef.current && dragPreview) {
           if (dragPreview.isValid) {
-            const result = useGameStore.getState().moveBuilding(
-              draggedBuildingRef.current.id,
-              dragPreview.position,
-            );
+            const result = useGameStore
+              .getState()
+              .moveBuilding(
+                draggedBuildingRef.current.id,
+                dragPreview.position,
+              );
             if (result.success) {
               showPopup(result.message, "success");
             } else {
@@ -1101,123 +1113,126 @@ const onClick = (e: React.MouseEvent) => {
           isDragPlacingRef.current = false;
           wasDragPlacedRef.current = true;
 
-        const start = dragStartRef.current;
-        const end = dragEndRef.current;
-        const dragType = dragTypeRef.current;
-        dragStartRef.current = null;
-        dragEndRef.current = null;
-        dragTypeRef.current = null;
+          const start = dragStartRef.current;
+          const end = dragEndRef.current;
+          const dragType = dragTypeRef.current;
+          dragStartRef.current = null;
+          dragEndRef.current = null;
+          dragTypeRef.current = null;
 
-        if (!start || !end || !dragType) {
-          drawOverlay();
-          return;
-        }
-
-        const col = Math.min(start.col, end.col);
-        const row = Math.min(start.row, end.row);
-        const w = Math.abs(end.col - start.col) + 1;
-        const h = Math.abs(end.row - start.row) + 1;
-
-        const state = useGameStore.getState();
-
-        if (
-          dragType !== "remove" &&
-          dragType !== BuildingType.Road &&
-          dragType !== BuildingType.Bridge &&
-          dragType !== BuildingType.Garden
-        ) {
-          const existing = Object.values(
-            state.gameState.buildings || ({} as Record<string, Buildings>),
-          ) as Buildings[];
-
-          const overlap = existing.some((b: Buildings) => {
-            const ax1 = col,
-              ay1 = row;
-            const ax2 = col + w - 1,
-              ay2 = row + h - 1;
-            const bx1 = b.position.x,
-              by1 = b.position.y;
-            const bx2 = b.position.x + (b.width || 1) - 1,
-              by2 = b.position.y + (b.length || 1) - 1;
-            return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
-          });
-
-          if (overlap) {
-            showPopup("Нельзя разместить здание поверх другого здания", "error");
-            drawOverlay();
-            return;
-          }
-        }
-
-        const tiles = new Set<number>();
-        for (let yy = row; yy < row + h; yy++) {
-          for (let xx = col; xx < col + w; xx++) {
-            tiles.add(world.getTile(xx, yy));
-          }
-        }
-
-        if (dragType === BuildingType.Bridge) {
-          const isLand = (t: number) =>
-            t === TileType.Grass ||
-            t === TileType.Hill ||
-            t === TileType.PreHill;
-
-          if (
-            !isLand(world.getTile(start.col, start.row)) ||
-            !isLand(world.getTile(end.col, end.row))
-          ) {
-            showPopup(
-              "Мост должен начинаться и заканчиваться на суше",
-              "error",
-            );
+          if (!start || !end || !dragType) {
             drawOverlay();
             return;
           }
 
-          for (let yy = row; yy < row + h; yy++) {
-            for (let xx = col; xx < col + w; xx++) {
+          const col = Math.min(start.col, end.col);
+          const row = Math.min(start.row, end.row);
+          const w = Math.abs(end.col - start.col) + 1;
+          const h = Math.abs(end.row - start.row) + 1;
+
+          const state = useGameStore.getState();
+
+          if (dragType !== "remove") {
+            const existing = Object.values(
+              state.gameState.buildings || ({} as Record<string, Buildings>),
+            ) as Buildings[];
+
+            const overlap = existing.some((b: Buildings) => {
+              const ax1 = col,
+                ay1 = row;
+              const ax2 = col + w - 1,
+                ay2 = row + h - 1;
+              const bx1 = b.position.x,
+                by1 = b.position.y;
+              const bx2 = b.position.x + (b.width || 1) - 1,
+                by2 = b.position.y + (b.length || 1) - 1;
+              return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+            });
+
+            if (overlap) {
+              showPopup(
+                "Нельзя разместить здание поверх другого здания",
+                "error",
+              );
+              drawOverlay();
+              return;
+            }
+
+            const tiles = new Set<number>();
+            for (let yy = row; yy < row + h; yy++) {
+              for (let xx = col; xx < col + w; xx++) {
+                tiles.add(world.getTile(xx, yy));
+              }
+            }
+
+            if (dragType === BuildingType.Bridge) {
+              const isLand = (t: number) =>
+                t === TileType.Grass ||
+                t === TileType.Hill ||
+                t === TileType.PreHill;
+
               if (
-                (xx === start.col && yy === start.row) ||
-                (xx === end.col && yy === end.row)
-              )
-                continue;
-              const tile = world.getTile(xx, yy);
-              if (
-                tile !== TileType.Water &&
-                tile !== TileType.DeepWater &&
-                tile !== TileType.Sand
+                !isLand(world.getTile(start.col, start.row)) ||
+                !isLand(world.getTile(end.col, end.row))
               ) {
                 showPopup(
-                  "Мост можно строить только над водой или песком",
+                  "Мост должен начинаться и заканчиваться на суше",
                   "error",
                 );
                 drawOverlay();
                 return;
               }
-            }
-          }
 
-          for (let dy = 0; dy < h; dy++) {
-            for (let dx = 0; dx < w; dx++) {
-              useGameStore
-                .getState()
-                .addBuilding(dragType, { x: col + dx, y: row + dy });
+              for (let yy = row; yy < row + h; yy++) {
+                for (let xx = col; xx < col + w; xx++) {
+                  if (
+                    (xx === start.col && yy === start.row) ||
+                    (xx === end.col && yy === end.row)
+                  )
+                    continue;
+                  const tile = world.getTile(xx, yy);
+                  if (
+                    tile !== TileType.Water &&
+                    tile !== TileType.DeepWater &&
+                    tile !== TileType.Sand
+                  ) {
+                    showPopup(
+                      "Мост можно строить только над водой или песком",
+                      "error",
+                    );
+                    drawOverlay();
+                    return;
+                  }
+                }
+              }
+            } else {
+              if (
+                tiles.has(TileType.Sand) ||
+                tiles.has(TileType.Water) ||
+                tiles.has(TileType.DeepWater)
+              ) {
+                showPopup("Нельзя строить на воде или песке", "error");
+                drawOverlay();
+                return;
+              }
+
+              if (
+                tiles.has(TileType.Hill) &&
+                (tiles.has(TileType.Grass) || tiles.has(TileType.PreHill))
+              ) {
+                showPopup("Рельеф слишком нерoвный", "warning");
+                drawOverlay();
+                return;
+              }
             }
-          }
-          drawOverlay();
-        } else if (
-          dragType === BuildingType.Road ||
-          dragType === BuildingType.Garden
-        ) {
-          for (let dy = 0; dy < h; dy++) {
-            for (let dx = 0; dx < w; dx++) {
-              useGameStore
-                .getState()
-                .addBuilding(dragType, { x: col + dx, y: row + dy });
-            }
-          }
-          drawOverlay();
-        } else if (dragType === "remove") {
+
+            useGameStore.getState().addBuilding(
+              dragType,
+              { x: col, y: row },
+              { width: w, length: h },
+            );
+            drawOverlay();
+          } else {
             const buildingsToRemove = Object.values(
               state.gameState.buildings,
             ).filter((b) => {
@@ -1225,13 +1240,20 @@ const onClick = (e: React.MouseEvent) => {
               const by1 = b.position.y;
               const bx2 = b.position.x + (b.width || 1) - 1;
               const by2 = b.position.y + (b.length || 1) - 1;
-              return !(bx2 < col || bx1 > col + w - 1 || by2 < row || by1 > row + h - 1);
+              return !(
+                bx2 < col ||
+                bx1 > col + w - 1 ||
+                by2 < row ||
+                by1 > row + h - 1
+              );
             });
 
             let removedCount = 0;
             let failCount = 0;
             for (const building of buildingsToRemove) {
-              const result = useGameStore.getState().removeBuilding(building.id);
+              const result = useGameStore
+                .getState()
+                .removeBuilding(building.id);
               if (result.success) {
                 removedCount++;
               } else {
@@ -1245,14 +1267,9 @@ const onClick = (e: React.MouseEvent) => {
               showPopup(`Не удалось удалить: ${failCount} зданий`, "warning");
             }
             drawOverlay();
-          } else {
-            useGameStore
-              .getState()
-              .addBuilding(dragType, { x: col, y: row }, { width: w, length: h });
-            drawOverlay();
           }
         }
       }
     },
   };
-};
+}
