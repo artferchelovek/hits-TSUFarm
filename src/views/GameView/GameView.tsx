@@ -45,6 +45,7 @@ export default function GameView() {
       console.log(
         `тик номер ${useGameStore.getState().gameState.meta.gameTick}`,
       );
+      console.log(useGameStore.getState().gameState.residents);
     }, 100);
 
     return () => clearInterval(gameLoop);
