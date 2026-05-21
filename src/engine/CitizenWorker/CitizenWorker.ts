@@ -2,6 +2,7 @@ import {
   type Birth,
   type Buildings,
   BuildingType,
+  type Bakery,
   type CropState,
   type GameLog,
   Gender,
@@ -146,6 +147,17 @@ class CitizenWorker {
     return data;
   }
   public updateBuilding(building: Buildings): void {
+    const oldBuilding = this.buildings[building.id];
+    if (oldBuilding) {
+      for (let i = oldBuilding.position.y; i < oldBuilding.position.y + oldBuilding.length; i++) {
+        for (let j = oldBuilding.position.x; j < oldBuilding.position.x + oldBuilding.width; j++) {
+          if (i < this.height && j < this.width) {
+            this.grid[i][j] = TERRAIN_WEIGHTS.DEFAULT;
+          }
+        }
+      }
+    }
+
     this.buildings[building.id] = building;
     this.updateObstacle(
       building.position.x,
@@ -174,6 +186,19 @@ class CitizenWorker {
         }
       }
     }
+  }
+  public removeBuilding(id: string): void {
+    const building = this.buildings[id];
+    if (!building) return;
+
+    for (let i = building.position.y; i < building.position.y + building.length; i++) {
+      for (let j = building.position.x; j < building.position.x + building.width; j++) {
+        if (i < this.height && j < this.width) {
+          this.grid[i][j] = TERRAIN_WEIGHTS.DEFAULT;
+        }
+      }
+    }
+    delete this.buildings[id];
   }
   public tick(payload: {
     isNight: boolean;
@@ -267,6 +292,13 @@ class CitizenWorker {
     );
     for (const mill of mills) {
       this.processMill(mill);
+    }
+
+    const bakeries = Object.values(this.buildings).filter(
+      (b): b is Bakery => b.type === BuildingType.Bakery,
+    );
+    for (const bakery of bakeries) {
+      this.processBakery(bakery);
     }
 
     return {
@@ -902,35 +934,61 @@ class CitizenWorker {
     resident.inventory.totalAmount += amount;
   };
   private processMill(mill: Mill) {
+    const currentWheat = mill.storage[ResourceType.Wheat] ?? 0;
+    const currentFlour = mill.storage[ResourceType.Flour] ?? 0;
+
     if (
-      (mill.storage[ResourceType.Flour] ?? 0) >= mill.maxCapacity ||
-      (mill.storage[ResourceType.Wheat] ?? 0) <= 0
+      currentWheat < mill.recipe.importCount ||
+      currentFlour + mill.recipe.exportCount > mill.maxCapacity
     ) {
       mill.progress = 0;
       return;
     }
 
-    if (mill.progress < 1) {
-      mill.progress += 1 / mill.recipe.durationPerTick;
+    mill.progress += 1 / mill.recipe.durationPerTick;
 
-      if (mill.storage[ResourceType.Wheat]) {
-        const step = mill.recipe.importCount / mill.recipe.durationPerTick;
-        mill.storage[ResourceType.Wheat] = Math.max(
-          mill.storage[ResourceType.Wheat] - step,
-          0,
-        );
-        mill.capacity -= step;
-        mill.capacity += mill.recipe.exportCount / mill.recipe.durationPerTick;
-        mill.storage[ResourceType.Flour] =
-          (mill.storage[ResourceType.Flour] ?? 0) +
-          mill.recipe.exportCount / mill.recipe.durationPerTick;
-      } else {
-        mill.storage[ResourceType.Wheat] = 0;
+    if (mill.progress >= 1) {
+      mill.storage[ResourceType.Wheat] = currentWheat - mill.recipe.importCount;
+      if (mill.storage[ResourceType.Wheat]! <= 0) {
+        delete mill.storage[ResourceType.Wheat];
       }
+      mill.storage[ResourceType.Flour] = currentFlour + mill.recipe.exportCount;
+      
+      mill.capacity =
+        (mill.storage[ResourceType.Wheat] ?? 0) +
+        (mill.storage[ResourceType.Flour] ?? 0);
+      
+      mill.progress = 0;
+    }
+  }
+
+  private processBakery(bakery: Bakery) {
+    const currentFlour = bakery.storage[ResourceType.Flour] ?? 0;
+    const currentBread = bakery.storage[ResourceType.Bread] ?? 0;
+
+    if (
+      currentFlour < bakery.recipe.importCount ||
+      currentBread + bakery.recipe.exportCount > bakery.maxCapacity
+    ) {
+      bakery.progress = 0;
       return;
     }
 
-    mill.progress = 0;
+    bakery.progress += 1 / bakery.recipe.durationPerTick;
+
+    if (bakery.progress >= 1) {
+      bakery.storage[ResourceType.Flour] = currentFlour - bakery.recipe.importCount;
+      if (bakery.storage[ResourceType.Flour]! <= 0) {
+        delete bakery.storage[ResourceType.Flour];
+      }
+      bakery.storage[ResourceType.Bread] = currentBread + bakery.recipe.exportCount;
+      
+      bakery.capacity =
+        (bakery.storage[ResourceType.Flour] ?? 0) +
+        (bakery.storage[ResourceType.Bread] ?? 0);
+      
+      bakery.progress = 0;
+    }
   }
   private processPlantGrowth(
     building: PlantPlace,
@@ -1032,6 +1090,17 @@ class CitizenWorker {
             max: m.maxCapacity,
           });
         }
+      } else if (build.type === BuildingType.Bakery) {
+        const b = build as Bakery;
+        const exportKey = b.recipe.export;
+        const amount = b.storage[exportKey] ?? 0;
+        if (amount > 0) {
+          availableResources.push({
+            type: exportKey,
+            amount: amount,
+            max: b.maxCapacity,
+          });
+        }
       }
 
       for (const res of availableResources) {
@@ -1087,6 +1156,11 @@ class CitizenWorker {
       if (m.recipe.import !== resourceType) return 0;
       return m.maxCapacity - m.capacity;
     }
+    if (dest.type === BuildingType.Bakery) {
+      const b = dest as Bakery;
+      if (b.recipe.import !== resourceType) return 0;
+      return b.maxCapacity - b.capacity;
+    }
     if (dest.type === BuildingType.Granary) {
       const g = dest as Granary;
       if (!g.resourceType || g.resourceType !== resourceType) return 0;
@@ -1114,6 +1188,8 @@ class CitizenWorker {
       let maxCapacity = 100;
       if (dest.type === BuildingType.Mill)
         maxCapacity = (dest as Mill).maxCapacity;
+      if (dest.type === BuildingType.Bakery)
+        maxCapacity = (dest as Bakery).maxCapacity;
       if (dest.type === BuildingType.Granary)
         maxCapacity = (dest as Granary).storage.maxCapacity;
 
@@ -1155,6 +1231,9 @@ class CitizenWorker {
             (source as Granary).storage.maxCapacity;
         } else if (source.type === BuildingType.Mill) {
           canAccept = (source as Mill).capacity < (source as Mill).maxCapacity;
+        } else if (source.type === BuildingType.Bakery) {
+          canAccept =
+            (source as Bakery).capacity < (source as Bakery).maxCapacity;
         }
         if (canAccept) {
           tc.targetId = tc.sourceId;
@@ -1275,6 +1354,10 @@ class CitizenWorker {
         | ResourceType.Bread;
       availableAmount = m.storage[millKey] ?? 0;
       if (availableAmount <= 0) return false;
+    } else if (source.type === BuildingType.Bakery) {
+      const b = source as Bakery;
+      availableAmount = b.storage[ResourceType.Bread] ?? 0;
+      if (availableAmount <= 0) return false;
     } else {
       return false;
     }
@@ -1306,6 +1389,13 @@ class CitizenWorker {
       m.storage[millKey] = (m.storage[millKey] ?? 0) - toTake;
       if (m.storage[millKey]! <= 0) delete m.storage[millKey];
       m.capacity -= toTake;
+    } else if (source.type === BuildingType.Bakery) {
+      const b = source as Bakery;
+      b.storage[ResourceType.Bread] =
+        (b.storage[ResourceType.Bread] ?? 0) - toTake;
+      if (b.storage[ResourceType.Bread]! <= 0)
+        delete b.storage[ResourceType.Bread];
+      b.capacity -= toTake;
     }
 
     resident.inventory.resources[tc.resourceType] =
@@ -1329,6 +1419,11 @@ class CitizenWorker {
           | ResourceType.Bread;
         m.storage[millKey] = (m.storage[millKey] ?? 0) + toTake;
         m.capacity += toTake;
+      } else if (source.type === BuildingType.Bakery) {
+        const b = source as Bakery;
+        b.storage[ResourceType.Bread] =
+          (b.storage[ResourceType.Bread] ?? 0) + toTake;
+        b.capacity += toTake;
       }
       delete resident.inventory.resources[tc.resourceType];
       resident.inventory.totalAmount = Math.max(
@@ -1380,6 +1475,8 @@ class CitizenWorker {
           (dest as Granary).storage.amount;
       } else if (dest.type === BuildingType.Mill) {
         freeSpace = (dest as Mill).maxCapacity - (dest as Mill).capacity;
+      } else if (dest.type === BuildingType.Bakery) {
+        freeSpace = (dest as Bakery).maxCapacity - (dest as Bakery).capacity;
       } else {
         resident.taskContext = null;
         return true;
@@ -1392,6 +1489,13 @@ class CitizenWorker {
           return true;
         }
         freeSpace = m.maxCapacity - m.capacity;
+      } else if (dest.type === BuildingType.Bakery) {
+        const b = dest as Bakery;
+        if (b.recipe.import !== tc.resourceType) {
+          resident.taskContext = null;
+          return true;
+        }
+        freeSpace = b.maxCapacity - b.capacity;
       } else if (dest.type === BuildingType.Granary) {
         const g = dest as Granary;
         if (g.resourceType && g.resourceType !== tc.resourceType) {
@@ -1436,6 +1540,13 @@ class CitizenWorker {
         | ResourceType.Bread;
       m.storage[millKey] = (m.storage[millKey] ?? 0) + toUnload;
       m.capacity += toUnload;
+    } else if (dest.type === BuildingType.Bakery) {
+      const b = dest as Bakery;
+      const bakeryKey = tc.resourceType as
+        | ResourceType.Flour
+        | ResourceType.Bread;
+      b.storage[bakeryKey] = (b.storage[bakeryKey] ?? 0) + toUnload;
+      b.capacity += toUnload;
     }
 
     resident.inventory.resources[tc.resourceType]! -= toUnload;

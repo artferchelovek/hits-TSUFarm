@@ -83,7 +83,11 @@ export const drawBuildings = (
     const sprite = textures[getGardenTextureKey(b)];
 
     if (sprite && sprite.complete) {
-      if (b.type === BuildingType.Garden) {
+      if (
+        b.type === BuildingType.Garden ||
+        b.type === BuildingType.Road ||
+        b.type === BuildingType.Bridge
+      ) {
         const ts = Math.round(TILE_SIZE * camera.zoom);
         for (let dx = 0; dx < (b.width || 1); dx++) {
           for (let dy = 0; dy < (b.length || 1); dy++) {
@@ -262,4 +266,31 @@ export function drawOverlay(
     const cs = Math.round(TILE_SIZE * camera.zoom);
     ctx.strokeRect(cx + 1, cy + 1, cs - 2, cs - 2);
   }
+}
+
+export function drawDragPreview(
+  canvas: HTMLCanvasElement | null,
+  camera: { x: number; y: number; zoom: number },
+  building: Buildings,
+  position: Position,
+  isValid: boolean,
+) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const sx = Math.round(position.x * TILE_SIZE * camera.zoom + camera.x);
+  const sy = Math.round(position.y * TILE_SIZE * camera.zoom + camera.y);
+  const sw = Math.round((building.width || 1) * TILE_SIZE * camera.zoom);
+  const sh = Math.round((building.length || 1) * TILE_SIZE * camera.zoom);
+
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = isValid ? "rgba(92, 184, 92, 0.3)" : "rgba(217, 83, 79, 0.3)";
+  ctx.fillRect(sx, sy, sw, sh);
+  ctx.strokeStyle = isValid ? "#5cb85c" : "#d9534f";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(sx + 1, sy + 1, sw - 2, sh - 2);
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }

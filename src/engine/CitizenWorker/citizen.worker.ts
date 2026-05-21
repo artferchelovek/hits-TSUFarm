@@ -54,5 +54,10 @@ self.onmessage = (e: MessageEvent<UItoWorkerMessage>) => {
       self.postMessage(response);
       break;
     }
+
+    case "REMOVE_BUILDING": {
+      cw.removeBuilding(payload.id);
+      break;
+    }
   }
 };

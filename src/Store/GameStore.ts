@@ -6,6 +6,8 @@ import {
   type GameStore,
   type House,
   type LogType,
+  type Position,
+  type PlantPlace,
   ProfessionType,
   type Resident,
   type Result,
@@ -18,6 +20,7 @@ import {
   INITIAL_RESIDENTS,
   getMaxGardens,
   initialGameState,
+  MOVE_COST_PER_TILE,
   PLANT_CONFIG,
   VILLAGER_CONFIG,
 } from "../engine/Constants.ts";
@@ -75,32 +78,37 @@ export const useGameStore = create<GameStore>()(
     addBuilding: (type, pos, size?): Result => {
       let report: Result = { success: false, message: "" };
       set((state) => {
-        let cost = BUILDING_CONFIG[type].cost;
-        if (type === BuildingType.Garden && size) {
-          cost *= size.width * size.length;
-        }
+        const w = size?.width ?? BUILDING_CONFIG[type].width;
+        const h = size?.length ?? BUILDING_CONFIG[type].length;
+        const area = w * h;
+
+        let cost = BUILDING_CONFIG[type].cost * area;
+
+        const isTiled =
+          type === BuildingType.Garden ||
+          type === BuildingType.Road ||
+          type === BuildingType.Bridge;
+
+        const countToAdd = isTiled ? area : 1;
 
         if (type === BuildingType.Garden) {
-          const w = size?.width ?? BUILDING_CONFIG[type].width;
-          const h = size?.length ?? BUILDING_CONFIG[type].length;
-          const newArea = w * h;
           const limit = getBuildingLimit(type, state.gameState.economy.level);
           const used = state.gameState.buildingCounts[type];
-          if (used + newArea > limit) {
+          if (used + area > limit) {
             report = {
               success: false,
               message: "Недостаточно места для грядки такого размера",
             };
             appendLog(
               state,
-              `Превышен лимит грядок: необходимо ${newArea} клеток, доступно ${limit - used}`,
+              `Превышен лимит грядок: необходимо ${area} клеток, доступно ${limit - used}`,
               "warning",
             );
             return;
           }
         } else if (
-          getBuildingLimit(type, state.gameState.economy.level) <=
-            state.gameState.buildingCounts[type] &&
+          getBuildingLimit(type, state.gameState.economy.level) <
+            state.gameState.buildingCounts[type] + countToAdd &&
           type != BuildingType.Main
         ) {
           report = {
@@ -141,15 +149,10 @@ export const useGameStore = create<GameStore>()(
           return;
         }
         state.gameState.buildings[newBuild.id] = newBuild;
-        if (type === BuildingType.Garden) {
-          const w = size?.width ?? BUILDING_CONFIG[type].width;
-          const h = size?.length ?? BUILDING_CONFIG[type].length;
-          state.gameState.buildingCounts[type] += w * h;
-          state.gameState.buildingRemind[type] -= w * h;
-        } else {
-          state.gameState.buildingCounts[type] += 1;
-          state.gameState.buildingRemind[type] -= 1;
-        }
+
+        state.gameState.buildingCounts[type] += countToAdd;
+        state.gameState.buildingRemind[type] -= countToAdd;
+
         if (
           type === BuildingType.House &&
           state.gameState.buildingCounts[type] === 1
@@ -353,6 +356,186 @@ export const useGameStore = create<GameStore>()(
               break;
           }
         }
+      });
+      return report;
+    },
+    removeBuilding: (id: string): Result => {
+      let report: Result = { success: false, message: "" };
+      set((state) => {
+        const building = state.gameState.buildings[id];
+        if (!building) {
+          report = { success: false, message: "Здание не найдено" };
+          return;
+        }
+
+        if (building.type === BuildingType.Main) {
+          report = { success: false, message: "Нельзя удалить главное здание" };
+          appendLog(state, "Нельзя удалить главное здание", "warning");
+          return;
+        }
+
+        if (building.type === BuildingType.Granary) {
+          const granary = building as any;
+          if (granary.storage && granary.storage.currentAmount > 0) {
+            report = {
+              success: false,
+              message: "Нельзя удалить амбар с ресурсами",
+            };
+            appendLog(
+              state,
+              "Нельзя удалить амбар с ресурсами",
+              "warning",
+            );
+            return;
+          }
+        }
+
+        if (building.type === BuildingType.House) {
+          const house = building as House;
+          if (house.residentsId && house.residentsId.length > 0) {
+            report = { success: false, message: "Нельзя удалить дом с жителями" };
+            appendLog(state, "Нельзя удалить дом с жителями", "warning");
+            return;
+          }
+        }
+
+        if (
+          building.type === BuildingType.Garden ||
+          building.type === BuildingType.Greenhouse
+        ) {
+          const plantPlace = building as PlantPlace;
+          if (plantPlace.assignedWorkerId) {
+            const worker = state.gameState.residents[plantPlace.assignedWorkerId];
+            if (worker && worker.profession.type === ProfessionType.Farmer) {
+              worker.profession.assignedGardenIds = (
+                worker.profession.assignedGardenIds || []
+              ).filter((gId) => gId !== id);
+            }
+          }
+        }
+
+        const isTiled =
+          building.type === BuildingType.Garden ||
+          building.type === BuildingType.Road ||
+          building.type === BuildingType.Bridge;
+
+        let refund = BUILDING_CONFIG[building.type].cost;
+        const area = building.width * building.length;
+        if (isTiled) {
+          refund *= area;
+        }
+        refund = Math.floor(refund * 0.5);
+
+        state.gameState.economy.money += refund;
+
+        const countToRemove = isTiled ? area : 1;
+        state.gameState.buildingCounts[building.type] -= countToRemove;
+        state.gameState.buildingRemind[building.type] += countToRemove;
+
+        delete state.gameState.buildings[id];
+        workerManager.send("REMOVE_BUILDING", { id });
+
+        report = {
+          success: true,
+          message: `${BUILDING_NAMES[building.type]} удалён. Возврат: ${refund}`,
+        };
+        appendLog(
+          state,
+          `${BUILDING_NAMES[building.type]} удалён. Возврат: ${refund}`,
+          "success",
+        );
+      });
+      return report;
+    },
+    moveBuilding: (id: string, newPos: Position): Result => {
+      let report: Result = { success: false, message: "" };
+      set((state) => {
+        const building = state.gameState.buildings[id];
+        if (!building) {
+          report = { success: false, message: "Здание не найдено" };
+          return;
+        }
+
+        if (building.type === BuildingType.Main) {
+          report = { success: false, message: "Нельзя переместить главное здание" };
+          appendLog(state, "Нельзя переместить главное здание", "warning");
+          return;
+        }
+
+        const dx = Math.abs(newPos.x - building.position.x);
+        const dy = Math.abs(newPos.y - building.position.y);
+        const distance = dx + dy;
+
+        if (distance === 0) {
+          report = { success: false, message: "Здание уже на этом месте" };
+          return;
+        }
+
+        const w = building.width || 1;
+        const h = building.length || 1;
+        const area = w * h;
+
+        const cost = Math.floor(MOVE_COST_PER_TILE * distance * area);
+
+        if (cost > state.gameState.economy.money) {
+          report = {
+            success: false,
+            message: `Недостаточно денег. Нужно: ${cost}`,
+          };
+          appendLog(
+            state,
+            `Недостаточно денег для перемещения здания. Нужно: ${cost}`,
+            "warning",
+          );
+          return;
+        }
+
+        const existing = Object.values(state.gameState.buildings).filter(
+          (b) => b.id !== id,
+        );
+        const overlap = existing.some((b: any) => {
+          const ax1 = newPos.x;
+          const ay1 = newPos.y;
+          const ax2 = newPos.x + w - 1;
+          const ay2 = newPos.y + h - 1;
+
+          const bx1 = b.position.x;
+          const by1 = b.position.y;
+          const bx2 = b.position.x + (b.width || 1) - 1;
+          const by2 = b.position.y + (b.length || 1) - 1;
+
+          return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+        });
+
+        if (overlap) {
+          report = {
+            success: false,
+            message: "На новом месте есть другое здание",
+          };
+          appendLog(
+            state,
+            "На новом месте есть другое здание",
+            "warning",
+          );
+          return;
+        }
+
+        state.gameState.economy.money -= cost;
+        building.position = { ...newPos };
+
+        workerManager.send("UPDATE_BUILDING", {
+          building: JSON.parse(JSON.stringify(building)),
+        });
+
+        report = {
+          success: true,
+          message: `${BUILDING_NAMES[building.type]} перемещено. Потрачено: ${cost}`,
+        };
+        appendLog(
+          state,
+          `${BUILDING_NAMES[building.type]} перемещено на (${newPos.x}, ${newPos.y}). Потрачено: ${cost}`,
+          "success",
+        );
       });
       return report;
     },
