@@ -84,6 +84,13 @@ export const useGameStore = create<GameStore>()(
 
         let cost = BUILDING_CONFIG[type].cost * area;
 
+        const isTiled =
+          type === BuildingType.Garden ||
+          type === BuildingType.Road ||
+          type === BuildingType.Bridge;
+
+        const countToAdd = isTiled ? area : 1;
+
         if (type === BuildingType.Garden) {
           const limit = getBuildingLimit(type, state.gameState.economy.level);
           const used = state.gameState.buildingCounts[type];
@@ -101,7 +108,7 @@ export const useGameStore = create<GameStore>()(
           }
         } else if (
           getBuildingLimit(type, state.gameState.economy.level) <
-            state.gameState.buildingCounts[type] + (area > 1 ? area : 1) &&
+            state.gameState.buildingCounts[type] + countToAdd &&
           type != BuildingType.Main
         ) {
           report = {
@@ -143,12 +150,6 @@ export const useGameStore = create<GameStore>()(
         }
         state.gameState.buildings[newBuild.id] = newBuild;
 
-        const isTiled =
-          type === BuildingType.Garden ||
-          type === BuildingType.Road ||
-          type === BuildingType.Bridge;
-
-        const countToAdd = isTiled ? area : 1;
         state.gameState.buildingCounts[type] += countToAdd;
         state.gameState.buildingRemind[type] -= countToAdd;
 

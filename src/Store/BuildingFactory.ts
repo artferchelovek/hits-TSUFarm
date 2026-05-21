@@ -101,12 +101,31 @@ export const createBuilding = (
         maxCapacity: config.maxCapacity,
         capacity: 0,
         storage: {},
-        progress: 0,
         export: [],
+        progress: 0,
         recipe: {
           import: ResourceType.Wheat,
           importCount: 2,
           export: ResourceType.Flour,
+          exportCount: 1,
+          durationPerTick: 10,
+        },
+      };
+    }
+    case BuildingType.Bakery: {
+      const config = BUILDING_CONFIG[type];
+      return {
+        ...base,
+        type,
+        maxCapacity: config.maxCapacity,
+        capacity: 0,
+        storage: {},
+        export: [],
+        progress: 0,
+        recipe: {
+          import: ResourceType.Flour,
+          importCount: 2,
+          export: ResourceType.Bread,
           exportCount: 1,
           durationPerTick: 10,
         },

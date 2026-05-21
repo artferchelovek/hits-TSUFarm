@@ -12,6 +12,7 @@ export enum BuildingType {
   Garden = "GARDEN",
   Graveyard = "GRAVEYARD",
   Mill = "MILL",
+  Bakery = "BAKERY",
 }
 
 export enum VillagerStatus {
@@ -221,6 +222,22 @@ export interface Mill extends BaseBuilding {
   storage: Partial<Record<ResourceType.Wheat | ProductType, number>>;
 }
 
+export interface Bakery extends BaseBuilding {
+  type: BuildingType.Bakery;
+  export: string[];
+  capacity: number;
+  maxCapacity: number;
+  progress: number;
+  recipe: {
+    import: ResourceType.Flour;
+    importCount: number;
+    export: ResourceType.Bread;
+    exportCount: number;
+    durationPerTick: number;
+  };
+  storage: Partial<Record<ResourceType.Flour | ResourceType.Bread, number>>;
+}
+
 export type Buildings =
   | Main
   | House
@@ -232,7 +249,8 @@ export type Buildings =
   | Bridge
   | Road
   | Graveyard
-  | Mill;
+  | Mill
+  | Bakery;
 
 export enum ProfessionType {
   Farmer = "Farmer",

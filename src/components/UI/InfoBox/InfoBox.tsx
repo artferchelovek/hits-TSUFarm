@@ -11,6 +11,7 @@ import RoadInfo from "./InfoGroups/RoadInfo.tsx";
 import HouseInfo from "./InfoGroups/HouseInfo.tsx";
 import GranaryInfo from "./InfoGroups/GranaryInfo.tsx";
 import MillInfo from "./InfoGroups/MillInfo.tsx";
+import BakeryInfo from "./InfoGroups/BakeryInfo.tsx";
 import { BUILDING_NAMES } from "../../../engine/localization/locales.ts";
 
 interface InfoBoxProps {
@@ -37,19 +38,23 @@ export default function InfoBox({
     >
       <div className={styles.InfoBox__label}>
         <p>{BUILDING_NAMES[build.type]}</p>
-        <button onClick={onClose}>Закрыть</button>
+        <div className={styles.InfoBox__headerActions}>
+          {!isMain && (
+            <button
+              className={styles.moveIconBtn}
+              onClick={() => onMoveStart(build)}
+              title="Переместить"
+            >
+              <span className="material-symbols-outlined">open_with</span>
+            </button>
+          )}
+          <button className={styles.closeBtn} onClick={onClose}>
+            Закрыть
+          </button>
+        </div>
       </div>
 
       {renderBuildingInfo(build)}
-
-      {!isMain && (
-        <button
-          className={styles.moveButton}
-          onClick={() => onMoveStart(build)}
-        >
-          Переместить
-        </button>
-      )}
     </div>
   );
 }
@@ -88,6 +93,9 @@ function renderBuildingInfo(build: Buildings) {
 
     case BuildingType.Mill:
       return <MillInfo build={build} />;
+
+    case BuildingType.Bakery:
+      return <BakeryInfo build={build} />;
 
     default:
       return <p>Нет данных</p>;
