@@ -8,7 +8,6 @@ import {
 import {
   applySave,
   getPendingLoad,
-  saveGame,
 } from "../../Store/SaveManager.ts";
 import { useGameStore } from "../../Store/GameStore.ts";
 import MapCanvas from "../../components/game/MapCanvas.tsx";
@@ -165,22 +164,11 @@ export default function GameView() {
                 centerCamera={loadedFromSave}
               />
             )}
-            {ready && <RightPanel />}
+            {ready && <RightPanel world={world} />}
             {ready && <LeftPanel />}
           </div>
         </PopupProvider>
       </BuildSelectionProvider>
-
-      <button
-        onClick={() => {
-          if (world) {
-            saveGame(useGameStore.getState().gameState, world);
-          }
-        }}
-        className={styles.saveBtn}
-      >
-        Сохранить
-      </button>
 
       {isLoading && (
         <div className={styles.loadingOverlay}>

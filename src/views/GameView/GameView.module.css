@@ -5,25 +5,6 @@
   overflow: hidden;
 }
 
-.saveBtn {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  z-index: var(--z-ui-panels);
-  padding: 8px 20px;
-  font-size: 16px;
-  background: var(--color-bg-panel);
-  color: var(--color-text-main);
-  border: 2px solid var(--color-border);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.saveBtn:hover {
-  background: #d4ae8a;
-}
-
 .loadingOverlay {
   position: fixed;
   inset: 0;
