@@ -9,7 +9,7 @@ import { BUILDING_NAMES } from "../../../../engine/localization/locales.ts";
 
 const RESOURCE_NAMES: Partial<Record<ResourceType, string>> = {
   [ResourceType.Wheat]: "Пшеница",
-  [ResourceType.FLour]: "Мука",
+  [ResourceType.Flour]: "Мука",
   [ResourceType.Bread]: "Хлеб",
 };
 
@@ -19,9 +19,15 @@ export default function MillInfo({ build }: { build: Mill }) {
     <div className={styles.InfoBox__body}>
       <SizeBlock build={build} />
       <ProgressBlock
-        from={build.capacity}
+        from={build.storage[ResourceType.Wheat] ?? 0}
         to={build.maxCapacity}
-        name={"Загружено"}
+        name={"Пшеница"}
+        isProcent={true}
+      />
+      <ProgressBlock
+        from={build.storage[ResourceType.Flour] ?? 0}
+        to={build.maxCapacity}
+        name={"Мука"}
         isProcent={true}
       />
       <p>Рецепт:</p>
@@ -32,7 +38,6 @@ export default function MillInfo({ build }: { build: Mill }) {
         {build.recipe.exportCount})
       </p>
       <p>Длительность: {build.recipe.durationPerTick} тиков</p>
-      {build.storage.length > 0 && <p>Внутри: {build.storage.length} ед.</p>}
       <button
         onClick={(e) => {
           e.stopPropagation();

@@ -313,11 +313,7 @@ export const useGameStore = create<GameStore>()(
         if (rightBuild) {
           switch (rightBuild.type) {
             case BuildingType.Garden:
-              rightBuild.harvest = {
-                isReady: false,
-                type: plant,
-                growthProgress: 0,
-              };
+              rightBuild.harvestType = plant;
               report = {
                 success: true,
                 message: `${PLANT_CONFIG[plant].name} успешно посажен`,
@@ -332,11 +328,7 @@ export const useGameStore = create<GameStore>()(
               });
               break;
             case BuildingType.Greenhouse:
-              rightBuild.harvest = {
-                growthProgress: 0,
-                isReady: false,
-                type: plant,
-              };
+              rightBuild.harvestType = plant;
               report = {
                 success: true,
                 message: `${PLANT_CONFIG[plant].name} успешно посажен`,
@@ -545,6 +537,17 @@ export const useGameStore = create<GameStore>()(
         );
       });
       return report;
+    },
+    setGranaryResourceType: (granaryId, resourceType) => {
+      set((state) => {
+        const granary = state.gameState.buildings[granaryId];
+        if (granary && granary.type === BuildingType.Granary) {
+          (granary as any).resourceType = resourceType;
+          workerManager.send("UPDATE_BUILDING", {
+            building: JSON.parse(JSON.stringify(granary)),
+          });
+        }
+      });
     },
   })),
 );

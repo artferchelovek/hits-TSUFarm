@@ -121,7 +121,7 @@ export class PathFinding {
             const weight = this.grid[ny][nx];
 
             if (
-              weight >= TERRAIN_WEIGHTS.OBSTACLE ||
+              weight > TERRAIN_WEIGHTS.OBSTACLE ||
               closedSet.has(`${nx},${ny}`)
             )
               continue;

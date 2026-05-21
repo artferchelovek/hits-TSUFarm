@@ -16,14 +16,15 @@ export default function HouseInfo({ build }: { build: House }) {
           }}
         >
           <p>Проживают:</p>
-          {build.residentsId.map((id, index) => (
-            <p key={index}>
-              {useGameStore.getState().gameState.residents[id].name +
-                " " +
-                useGameStore.getState().gameState.residents[id].surname +
-                ` (Возраст: ${useGameStore.getState().gameState.residents[id].age.toFixed(0)})`}
-            </p>
-          ))}
+          {build.residentsId.map((id, index) => {
+            const r = useGameStore.getState().gameState.residents[id];
+            if (!r) return null;
+            return (
+              <p key={index}>
+                {r.name} {r.surname} (Возраст: {r.age.toFixed(0)})
+              </p>
+            );
+          })}
         </div>
       ) : (
         <p

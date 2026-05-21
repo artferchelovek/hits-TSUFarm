@@ -21,24 +21,40 @@ export enum VillagerStatus {
   Unloading = "Unloading",
   Harvesting = "Harvesting",
   MovingToHarvest = "MovingToHarvest",
+  MovingToPlant = "MovingToPlant",
+  Planting = "Planting",
+  MovingToWater = "MovingToWater",
+  CollectingWater = "CollectingWater",
+  MovingToWatering = "MovingToWatering",
+  Watering = "Watering",
   Working = "Working",
   Sleeping = "Sleeping",
   Eating = "Eating",
+  MovingToExportSource = "MovingToExportSource",
+  LoadingExport = "LoadingExport",
+  MovingToExportTarget = "MovingToExportTarget",
+  UnloadingExport = "UnloadingExport",
 }
 export const moveStatuses: VillagerStatus[] = [
   VillagerStatus.MovingToHarvest,
   VillagerStatus.MovingToStorage,
+  VillagerStatus.MovingToPlant,
+  VillagerStatus.MovingToWater,
+  VillagerStatus.MovingToWatering,
   VillagerStatus.Moving,
+  VillagerStatus.MovingToExportSource,
+  VillagerStatus.MovingToExportTarget,
 ];
 export enum ResourceType {
   Water = "Water",
+  WellWater = "WellWater",
   Tomato = "Tomato",
   Potato = "Potato",
   Cucumber = "Cucumber",
   Corn = "Corn",
   Pumpkin = "Pumpkin",
   Wheat = "Wheat",
-  FLour = "FLour",
+  Flour = "Flour",
   Bread = "Bread",
   Empty = "Empty",
 }
@@ -90,14 +106,16 @@ export interface CropState {
   growthProgress: number;
   isReady: boolean;
 }
+export type WaterResource = ResourceType.Water | ResourceType.WellWater;
 
-export type ProductType = ResourceType.FLour | ResourceType.Bread;
+export type ProductType = ResourceType.Flour | ResourceType.Bread;
 
 export interface Plant {
   type: CropType;
   name: string;
   growthPerTick: number;
   waterConsumptionPerTick: number;
+  neededWater: number;
   sellPrice: number;
   minYield: number;
   maxYield: number;
@@ -108,9 +126,11 @@ interface BaseBuilding {
   position: Position;
   width: number;
   length: number;
+  incoming: Partial<Record<ResourceType, number>>;
 }
 
 interface PlaceGrow extends BaseBuilding {
+  harvestType: CropType | null;
   harvest: CropState | null;
   growthCoefficient: number;
   moisture: number;
@@ -136,10 +156,10 @@ export interface House extends BaseBuilding {
 
 export interface Granary extends BaseBuilding {
   type: BuildingType.Granary;
+  resourceType: CropType | null;
   storage: {
-    resources: Partial<Record<CropType, number>>;
+    amount: number;
     maxCapacity: number;
-    currentAmount: number;
   };
   export: string[];
 }
@@ -190,6 +210,7 @@ export interface Mill extends BaseBuilding {
   export: string[];
   capacity: number;
   maxCapacity: number;
+  progress: number;
   recipe: {
     import: ResourceType.Wheat;
     importCount: number;
@@ -197,7 +218,7 @@ export interface Mill extends BaseBuilding {
     exportCount: number;
     durationPerTick: number;
   };
-  storage: ResourceType[];
+  storage: Partial<Record<ResourceType.Wheat | ProductType, number>>;
 }
 
 export type Buildings =
@@ -215,14 +236,24 @@ export type Buildings =
 
 export enum ProfessionType {
   Farmer = "Farmer",
+  Transporter = "Transporter",
   Jobless = "Jobless",
 }
 
 export interface BaseWorker {
   level: number;
   xp: number;
+  assignedGardenIds?: string[];
 }
-
+export interface Transporter extends BaseWorker {
+  type: ProfessionType.Transporter;
+  task: {
+    sourceBuildingId: string | null;
+    targetBuildingId: string | null;
+    resourceType: ResourceType | null;
+    amount: number;
+  } | null;
+}
 export interface Farmer extends BaseWorker {
   type: ProfessionType.Farmer;
   assignedGardenIds?: string[];
@@ -230,14 +261,21 @@ export interface Farmer extends BaseWorker {
 export interface Jobless {
   type: ProfessionType.Jobless;
 }
-export type Profession = Farmer | Jobless;
+export type Profession = Farmer | Transporter | Jobless;
+export interface TaskContext {
+  targetId: string;
+  sourceId?: string;
+  resourceType: ResourceType;
+  neededAmount: number;
+  currentAmount: number;
+}
 export interface Resident {
   id: string;
   profession: Profession;
   pendingProfession?: Profession;
   skills: Record<string, number>;
   workProgress: number;
-  targetId: string | null;
+  taskContext: TaskContext | null;
   name: string;
   surname: string;
   position: Position;
@@ -303,6 +341,10 @@ export interface GameActions {
   loadState: (gameState: GameState) => void;
   assignGardenToFarmer: (resident: Resident, place: PlantPlace) => void;
   getResidents: () => Record<string, Resident>;
+  setGranaryResourceType: (
+    granaryId: string,
+    resourceType: ResourceType,
+  ) => void;
   setPendingExportSource: (id: string | null) => void;
   linkExportBuildings: (sourceId: string, targetId: string) => void;
   removeExportLink: (sourceId: string, targetId: string) => void;

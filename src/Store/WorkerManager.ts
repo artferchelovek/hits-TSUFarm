@@ -132,7 +132,7 @@ export const syncToStore = (
             profession: { type: ProfessionType.Jobless },
             skills: {},
             workProgress: 0,
-            targetId: null,
+            taskContext: null,
           };
           if (
             home.residentsId.length >=
@@ -166,6 +166,7 @@ export const syncToStore = (
                 home.residentsId = home.residentsId.filter(
                   (id) => id !== evictCandidate.id,
                 );
+                console.log("нашел дом");
                 appendLog(
                   state,
                   `${evictCandidate.name} ${evictCandidate.surname} переехал в новый дом`,
@@ -197,13 +198,13 @@ export const syncToStore = (
               `Родился новый житель - ${baby.name} ${baby.surname}`,
               "info",
             );
-            workerManager.send("SET_RESIDENTS", {
-              residents: JSON.parse(JSON.stringify(state.gameState.residents)),
-            });
-            workerManager.send("UPDATE_BUILDING", {
-              building: JSON.parse(JSON.stringify(home)),
-            });
           }
+          workerManager.send("SET_RESIDENTS", {
+            residents: JSON.parse(JSON.stringify(state.gameState.residents)),
+          });
+          workerManager.send("UPDATE_BUILDING", {
+            building: JSON.parse(JSON.stringify(home)),
+          });
         }
       });
     }

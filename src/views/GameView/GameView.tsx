@@ -44,7 +44,7 @@ export default function GameView() {
       console.log(
         `тик номер ${useGameStore.getState().gameState.meta.gameTick}`,
       );
-    }, 1000);
+    }, 100);
 
     return () => clearInterval(gameLoop);
   }, []);

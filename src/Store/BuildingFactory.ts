@@ -18,6 +18,7 @@ export const createBuilding = (
     position: pos,
     width: size?.width ?? config.width,
     length: size?.length ?? config.length,
+    incoming: {},
   };
 
   switch (type) {
@@ -42,6 +43,7 @@ export const createBuilding = (
         ...base,
         type,
         harvest: null,
+        harvestType: null,
         moisture: config.moisture,
         growthCoefficient: config.growthCoefficient,
         lastWateredTime: Date.now(),
@@ -56,6 +58,7 @@ export const createBuilding = (
         ...base,
         type,
         harvest: null,
+        harvestType: null,
         growthCoefficient: config.growthCoefficient,
         lastWateredTime: Date.now(),
         moisture: config.moisture,
@@ -72,10 +75,10 @@ export const createBuilding = (
       return {
         ...base,
         type,
+        resourceType: null,
         storage: {
-          resources: {},
+          amount: 0,
           maxCapacity: config.maxCapacity,
-          currentAmount: 0,
         },
         export: [],
       };
@@ -97,12 +100,13 @@ export const createBuilding = (
         type,
         maxCapacity: config.maxCapacity,
         capacity: 0,
-        storage: [],
+        storage: {},
+        progress: 0,
         export: [],
         recipe: {
           import: ResourceType.Wheat,
           importCount: 2,
-          export: ResourceType.FLour,
+          export: ResourceType.Flour,
           exportCount: 1,
           durationPerTick: 10,
         },
