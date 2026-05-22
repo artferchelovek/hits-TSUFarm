@@ -17,59 +17,74 @@
 - **Авторизация:** JWT (Bearer token) → localStorage
 - **Сохранения:** 5 фиксированных слотов на пользователя
 - **Автосохранение:** каждый игровой день (~100 сек реального времени) в слот 1
+- **Автосохранение при закрытии:** при скрытии вкладки — в `localStorage`, при следующем запуске подхватывается
+- **Название фермы:** задаётся в MainMenu перед стартом, отображается в слотах сохранений
 
 ---
 
 ## 1. Локальная разработка
 
-### 1.1 Быстрый старт
+### 1.1 Быстрый старт (Весь бэкенд в Docker)
 
 ```bash
-# 1. Поднять только PostgreSQL в Docker
+# Создать .env из примера
+cp .env.example .env          # отредактировать JWT_SECRET
+
+# Поднять PostgreSQL + API (Express с hot-reload через tsx watch)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# Доступны:
+#   - API:       http://localhost:3001
+#   - PostgreSQL: localhost:5432
+
+# В другом терминале — фронтенд (из корня)
+npm run dev
+# Фронтенд: http://localhost:8000
+```
+
+### 1.2 Быстрый старт (Только БД в Docker, API локально)
+
+```bash
+# 1. Поднять только PostgreSQL
 docker compose up db -d
 
-# 2. Сгенерировать миграции (если менял schema.ts)
+# 2. Запустить сервер локально
 cd server
-npx drizzle-kit generate
-
-# 3. Запустить миграции (создаст таблицы)
-npx drizzle-kit migrate
-
-# 4. Запустить сервер в режиме watch
 JWT_SECRET=dev-secret \
 DATABASE_URL=postgres://tsufarm:tsufarm_pass@localhost:5432/tsufarm \
 npm run dev
 
-# 5. В другом терминале — фронтенд (из корня)
+# 3. В другом терминале — фронтенд (из корня)
 npm run dev
 ```
 
-Фронтенд будет на `http://localhost:8000`, API на `http://localhost:3001`.
+### 1.3 Переменные окружения для разработки
 
-### 1.2 Переменные окружения для разработки
-
-Создай `server/.env` (он в `.gitignore`, не попадёт в репозиторий):
+Файл `.env` в корне проекта (должен содержать хотя бы `JWT_SECRET`):
 ```env
-DATABASE_URL=postgres://tsufarm:tsufarm_pass@localhost:5432/tsufarm
 JWT_SECRET=dev-secret-key
-PORT=3001
-CORS_ORIGIN=http://localhost:8000
 ```
 
-Создай `.env` в корне проекта:
+Опционально (для запуска API локально, без Docker):
+```env
+DATABASE_URL=postgres://tsufarm:tsufarm_pass@localhost:5432/tsufarm
+```
+
+Для фронтенда (создать `.env` в корне, если не используется dev compose):
 ```env
 VITE_API_URL=http://localhost:3001/api
 ```
 
-### 1.3 Команды
+### 1.4 Команды
 
 | Команда | Откуда | Что делает |
 |---|---|---|
-| `docker compose up db -d` | корень | Поднять PostgreSQL |
+| `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` | корень | Поднять PostgreSQL + API (hot-reload) |
+| `docker compose up db -d` | корень | Только PostgreSQL |
 | `docker compose down` | корень | Остановить всё |
 | `npx drizzle-kit generate` | `server/` | Сгенерировать миграцию из schema.ts |
 | `npx drizzle-kit migrate` | `server/` | Применить миграции к БД |
-| `npm run dev` | `server/` | Запустить API (hot reload) |
+| `npm run dev` | `server/` | Запустить API локально (hot reload) |
 | `npm run dev` | корень | Запустить фронтенд (Vite) |
 
 ---
