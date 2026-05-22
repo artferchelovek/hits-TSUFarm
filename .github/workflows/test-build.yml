@@ -17,8 +17,13 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        run: npm install
+      - name: Build Frontend
+        run: |
+          npm install
+          npm run build
 
-      - name: Run Build Test
-        run: npm run build
+      - name: Build Server
+        run: |
+          cd server
+          npm ci
+          npm run build

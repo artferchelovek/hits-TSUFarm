@@ -651,6 +651,7 @@ export const initialGameState: GameState = {
     currentWeather: Weather.Clear,
     dayDuration: 1000,
     isNight: false,
+    farmName: "Новая ферма",
   },
   economy: {
     money: 1200,

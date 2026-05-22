@@ -1,5 +1,9 @@
 import type { GameState } from "../engine/Types";
 import { WorldMap } from "../engine/WorldMap";
+import * as savesApi from "../api/saves.ts";
+import type { CloudSaveMeta } from "../api/saves.ts";
+
+export type { CloudSaveMeta };
 
 interface SaveFile {
   version: string;
@@ -72,4 +76,70 @@ export function getPendingLoad(): SaveFile | null {
   if (!raw) return null;
   sessionStorage.removeItem(PENDING_KEY);
   return JSON.parse(raw) as SaveFile;
+}
+
+export async function saveToCloud(
+  slot: number,
+  gameState: GameState,
+  world: WorldMap,
+): Promise<void> {
+  await savesApi.saveToSlot(slot, {
+    name: gameState.meta.farmName,
+    gameState: gameState as unknown as Record<string, unknown>,
+    worldData: world.serialize(),
+  });
+}
+
+export function listCloudSaves(): Promise<CloudSaveMeta[]> {
+  return savesApi.listSaves();
+}
+
+export async function loadCloudSave(slot: number): Promise<SaveFile | null> {
+  try {
+    const data = await savesApi.loadFromSlot(slot);
+    return {
+      version: "0.0.1",
+      timestamp: data.timestamp,
+      gameState: data.gameState as unknown as GameState,
+      worldData: data.worldData,
+    };
+  } catch {
+    return null;
+  }
+}
+
+const UNLOAD_KEY = "tsufarm_unload_save";
+
+export function saveUnloadSave(
+  gameState: GameState,
+  world: WorldMap,
+): void {
+  const data: SaveFile = {
+    version: "0.0.1",
+    timestamp: Date.now(),
+    gameState,
+    worldData: world.serialize(),
+  };
+  try {
+    localStorage.setItem(UNLOAD_KEY, JSON.stringify(data));
+  } catch {
+    // localStorage full or unavailable — ignore
+  }
+}
+
+export function getUnloadSave(): SaveFile | null {
+  try {
+    const raw = localStorage.getItem(UNLOAD_KEY);
+    return raw ? (JSON.parse(raw) as SaveFile) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearUnloadSave(): void {
+  try {
+    localStorage.removeItem(UNLOAD_KEY);
+  } catch {
+    // ignore
+  }
 }
