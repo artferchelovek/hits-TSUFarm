@@ -10,7 +10,8 @@ export default function StatisticPanel() {
 
   const lastIncome = cfg.economy.lastDailyIncome ?? 0;
   const lastMaintenance = cfg.economy.lastDailyMaintenance ?? 0;
-  const balance = lastIncome - lastMaintenance;
+  const rawBalance = lastIncome - lastMaintenance;
+  const balance = isNaN(rawBalance) ? 0 : rawBalance;
 
   return (
     <div className={styles.statisticList}>
@@ -25,8 +26,8 @@ export default function StatisticPanel() {
       
       <p className={styles.panelTitle} style={{ marginTop: 12 }}>Финансы (за прошлый день)</p>
       <div className={styles.statisticList__metadata}>
-        <Row name={"Доход"} data={`+${lastIncome}`} color="#4CAF50" />
-        <Row name={"Содержание"} data={`-${lastMaintenance}`} color="#F44336" />
+        <Row name={"Доход"} data={`+${isNaN(lastIncome) ? 0 : lastIncome}`} color="#4CAF50" />
+        <Row name={"Содержание"} data={`-${isNaN(lastMaintenance) ? 0 : lastMaintenance}`} color="#F44336" />
         <div style={{ height: 1, background: "rgba(0,0,0,0.1)", margin: "4px 0" }} />
         <Row name={"Прибыль"} data={balance > 0 ? `+${balance}` : balance} color={balance > 0 ? "#4CAF50" : balance < 0 ? "#F44336" : "inherit"} />
       </div>

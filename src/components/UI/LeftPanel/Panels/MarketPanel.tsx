@@ -22,7 +22,9 @@ export default function MarketPanel() {
       <div className={styles.marketList}>
         {resourceTypes.map((type) => {
           const basePrice = RESOURCE_PRICES[type] ?? 0;
-          const currentDemand = demand[type] ?? 1.0;
+          const rawDemand = demand[type] ?? 1.0;
+          const currentDemand = isNaN(rawDemand) ? 1.0 : rawDemand;
+          
           const currentPrice = (basePrice * currentDemand).toFixed(2);
           const trend = currentDemand > 1.05 ? "trending_up" : currentDemand < 0.95 ? "trending_down" : "horizontal_rule";
           const trendColor = currentDemand > 1.05 ? "#4CAF50" : currentDemand < 0.95 ? "#F44336" : "#7A4A24";
@@ -34,7 +36,7 @@ export default function MarketPanel() {
                   {RESOURCE_DISPLAY_NAMES[type] || type}
                 </span>
                 <span className={styles.marketItem__price}>
-                  {currentPrice} 💰
+                  {currentPrice === "NaN" ? "0.00" : currentPrice} 💰
                 </span>
               </div>
               <div className={styles.marketItem__trend} style={{ color: trendColor }}>

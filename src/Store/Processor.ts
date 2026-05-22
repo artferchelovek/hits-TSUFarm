@@ -4,12 +4,13 @@ import {
   Weather,
   BuildingType,
   type Market,
+  type House,
   ResourceType,
 } from "../engine/Types.ts";
 
 import type { WritableDraft } from "immer";
 import { appendLog } from "./GameStore.ts";
-import { RESOURCE_PRICES } from "../engine/Constants.ts";
+import { RESOURCE_PRICES, REPRODUCTION } from "../engine/Constants.ts";
 import { workerManager } from "./WorkerManager.ts";
 
 export const processDayTime = (state: WritableDraft<GameStore>) => {
@@ -21,6 +22,8 @@ export const processDayTime = (state: WritableDraft<GameStore>) => {
   if (dayTick === 0 && meta.gameTick > 0) {
     processMarketSales(state);
     processMaintenanceCosts(state);
+    settleHomeless(state);
+    processRelocation(state);
   }
 
   const totalSeasons = Object.values(Season);
@@ -148,6 +151,114 @@ const processMaintenanceCosts = (state: WritableDraft<GameStore>) => {
     }
   } else {
     state.gameState.economy.lastDailyMaintenance = 0;
+  }
+};
+
+const settleHomeless = (state: WritableDraft<GameStore>) => {
+  const homeless = Object.values(state.gameState.residents).filter(
+    (r) => r.homeId === null,
+  );
+  if (homeless.length === 0) return;
+
+  const freeHouses = Object.values(state.gameState.buildings).filter(
+    (b): b is House =>
+      b.type === BuildingType.House && (b as House).residentsId.length < b.capacity,
+  );
+
+  if (freeHouses.length === 0) return;
+
+  let settledCount = 0;
+  homeless.forEach((resident) => {
+    const house = freeHouses.find((h) => h.residentsId.length < h.capacity);
+    if (house) {
+      resident.homeId = house.id;
+      house.residentsId.push(resident.id);
+      settledCount++;
+      appendLog(
+        state,
+        `${resident.name} ${resident.surname} заселился в новый дом.`,
+        "info",
+      );
+    }
+  });
+
+  if (settledCount > 0) {
+    workerManager.send("SET_RESIDENTS", {
+      residents: JSON.parse(JSON.stringify(state.gameState.residents)),
+    });
+    // We also need to update the buildings because house.residentsId changed
+    Object.values(state.gameState.buildings).forEach((b) => {
+      if (b.type === BuildingType.House) {
+        workerManager.send("UPDATE_BUILDING", {
+          building: JSON.parse(JSON.stringify(b)),
+        });
+      }
+    });
+  }
+};
+
+const processRelocation = (state: WritableDraft<GameStore>) => {
+  const residents = Object.values(state.gameState.residents);
+  const adults = residents.filter((r) => r.age >= REPRODUCTION.MIN_FERTILITY_AGE && r.homeId);
+  const houses = Object.values(state.gameState.buildings).filter(
+    (b): b is House => b.type === BuildingType.House
+  );
+
+  let relocatedCount = 0;
+
+  adults.forEach((resident) => {
+    const currentHouse = state.gameState.buildings[resident.homeId!] as House;
+    if (!currentHouse) return;
+
+    // Check if resident is "young adult" living in a crowded house
+    // (If house has more than 1 person, it's a candidate for moving out)
+    if (currentHouse.residentsId.length <= 1) return;
+
+    // Potential new homes
+    // 1. House with exactly 1 occupant of opposite gender (potential partner)
+    const partnerHouse = houses.find((h) => {
+      if (h.residentsId.length !== 1) return false;
+      const occupant = state.gameState.residents[h.residentsId[0]];
+      return occupant && occupant.gender !== resident.gender && occupant.age >= REPRODUCTION.MIN_FERTILITY_AGE;
+    });
+
+    // 2. Empty house
+    const emptyHouse = houses.find((h) => h.residentsId.length === 0);
+
+    const targetHouse = partnerHouse || emptyHouse;
+
+    if (targetHouse) {
+      // Move out from current
+      currentHouse.residentsId = currentHouse.residentsId.filter((id) => id !== resident.id);
+      
+      // Move in to target
+      resident.homeId = targetHouse.id;
+      targetHouse.residentsId.push(resident.id);
+      
+      // Update position to be near the new home
+      resident.position = {
+        x: targetHouse.position.x - 1,
+        y: targetHouse.position.y - 1,
+      };
+
+      relocatedCount++;
+      appendLog(
+        state,
+        `${resident.name} ${resident.surname} съехал от родителей в новое жилье.`,
+        "info"
+      );
+    }
+  });
+
+  if (relocatedCount > 0) {
+    workerManager.send("SET_RESIDENTS", {
+      residents: JSON.parse(JSON.stringify(state.gameState.residents)),
+    });
+    houses.forEach((h) => {
+      workerManager.send("UPDATE_BUILDING", {
+        building: JSON.parse(JSON.stringify(h)),
+      });
+    });
   }
 };
 
