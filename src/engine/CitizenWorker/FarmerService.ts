@@ -3,6 +3,8 @@ import {
   type Buildings,
   type Granary,
   type Greenhouse,
+  type Main,
+  type Market,
   type PlantPlace,
   type Position,
   ProfessionType,
@@ -14,8 +16,10 @@ import {
 import {
   BUILDING_CONFIG,
   FARMER_TASK_DURATION,
+  FOOD_NUTRITION,
   getMaxInventoryCapacity,
   getSpeedWork,
+  LEVEL_CONFIG,
   PLANT_CONFIG,
   PLANT_EFFECTS,
   XP_REWARDS,
@@ -33,7 +37,12 @@ import { GridService } from "./GridService.ts";
 export class FarmerService {
   constructor(private grid: GridService) {}
 
-  update(resident: Resident, buildings: Record<string, Buildings>): void {
+  update(
+    resident: Resident,
+    buildings: Record<string, Buildings>,
+    currentEconomyLevel: number = 1,
+    allResidents: Resident[] = [],
+  ): void {
     if (resident.profession.type !== ProfessionType.Farmer) return;
 
     const hasWater =
@@ -49,7 +58,11 @@ export class FarmerService {
       const gardenToWater = this.findNearestPlantPlace(
         resident,
         buildings,
-        needsWater,
+        (b) =>
+          needsWater(b) &&
+          !allResidents.some(
+            (r) => r.id !== resident.id && r.taskContext?.targetId === b.id,
+          ),
       );
       if (gardenToWater) {
         resident.taskContext = {
@@ -72,26 +85,47 @@ export class FarmerService {
       resident.inventory.totalAmount >=
       getMaxInventoryCapacity(ProfessionType.Farmer, resident.profession.level)
     ) {
-      const granary = this.findNearestGranary(resident, buildings);
-      if (granary) {
+      const unloadTarget = this.findUnloadTarget(
+        resident,
+        buildings,
+        currentEconomyLevel,
+      );
+      if (unloadTarget) {
+        resident.stuckCounter = 0;
+        const targetBuild = buildings[unloadTarget.targetId];
         resident.pathIndex = 0;
-        resident.path = this.grid.calculatePath(resident.position, {
-          x: granary.position.x,
-          y: granary.position.y - 1,
-        });
+        resident.path = this.grid.calculatePath(
+          resident.position,
+          getExitPos(targetBuild),
+        );
         resident.taskContext = {
-          targetId: granary.id,
-          resourceType: granary.resourceType!,
+          targetId: unloadTarget.targetId,
+          resourceType: unloadTarget.resourceType,
           neededAmount: 0,
           currentAmount: 0,
         };
         resident.status = VillagerStatus.MovingToStorage;
+      } else {
+        resident.stuckCounter = (resident.stuckCounter || 0) + 1;
+        if (resident.stuckCounter > 50) {
+          resident.inventory.resources = {};
+          resident.inventory.totalAmount = 0;
+          resident.stuckCounter = 0;
+        }
       }
       return;
     }
 
     const gardenForWatering = !hasWater
-      ? this.findNearestPlantPlace(resident, buildings, needsWater)
+      ? this.findNearestPlantPlace(
+          resident,
+          buildings,
+          (b) =>
+            needsWater(b) &&
+            !allResidents.some(
+              (r) => r.id !== resident.id && r.taskContext?.targetId === b.id,
+            ),
+        )
       : undefined;
     if (!hasWater && gardenForWatering) {
       const needWaterAmount =
@@ -127,7 +161,11 @@ export class FarmerService {
     const gardenForHarvesting = this.findNearestPlantPlace(
       resident,
       buildings,
-      isReadyToHarvest,
+      (b) =>
+        isReadyToHarvest(b) &&
+        !allResidents.some(
+          (r) => r.id !== resident.id && r.taskContext?.targetId === b.id,
+        ),
     );
     if (gardenForHarvesting) {
       resident.taskContext = {
@@ -147,7 +185,11 @@ export class FarmerService {
     const gardenForPlanting = this.findNearestPlantPlace(
       resident,
       buildings,
-      isEmptyForPlanting,
+      (b) =>
+        isEmptyForPlanting(b) &&
+        !allResidents.some(
+          (r) => r.id !== resident.id && r.taskContext?.targetId === b.id,
+        ),
     );
     if (gardenForPlanting) {
       resident.taskContext = {
@@ -199,38 +241,99 @@ export class FarmerService {
     );
   }
 
-  private findNearestGranary(
+  private findUnloadTarget(
     resident: Resident,
     buildings: Record<string, Buildings>,
-  ): Granary | null {
+    currentEconomyLevel: number = 1,
+  ): { targetId: string; resourceType: ResourceType } | null {
     let minDist = Infinity;
-    let nearestGranary: Granary | null = null;
+    let bestTarget: {
+      targetId: string;
+      resourceType: ResourceType;
+    } | null = null;
 
-    for (const build of Object.values(buildings)) {
-      if (build.type !== BuildingType.Granary) continue;
+    const resTypes = (Object.keys(resident.inventory.resources) as ResourceType[]).filter(
+      (k) => (resident.inventory.resources[k] ?? 0) > 0
+    );
+    if (resTypes.length === 0) return null;
 
-      const granary = build as Granary;
-      if (!granary.resourceType) continue;
-
-      const availableAmount =
-        resident.inventory.resources[granary.resourceType] ?? 0;
-      if (availableAmount === 0) continue;
-
-      const freeSpace = granary.storage.maxCapacity - granary.storage.amount;
-      if (freeSpace < availableAmount) continue;
-
-      const dist = getEvcDist(resident.position, {
-        x: granary.position.x,
-        y: granary.position.y - 1,
-      });
-
-      if (dist < minDist) {
-        minDist = dist;
-        nearestGranary = granary;
+    // 1. Try to find a valid Granary first (Absolute Priority)
+    for (const resType of resTypes) {
+      for (const build of Object.values(buildings)) {
+        if (build.type === BuildingType.Granary) {
+          const g = build as Granary;
+          if (g.resourceType !== resType) continue;
+          const freeSpace = g.storage.maxCapacity - g.storage.amount;
+          if (freeSpace <= 0) continue;
+          
+          const dist = getEvcDist(resident.position, getExitPos(g));
+          if (dist < minDist) {
+            minDist = dist;
+            bestTarget = { targetId: g.id, resourceType: resType };
+          }
+        }
       }
     }
 
-    return nearestGranary;
+    // 2. Only if no granary was found, look for Market or Main building
+    if (!bestTarget) {
+      minDist = Infinity;
+      for (const resType of resTypes) {
+        for (const build of Object.values(buildings)) {
+          if (build.type === BuildingType.Market) {
+            const m = build as Market;
+            
+            // Food Security: Don't let farmers dump food at the market if granaries are empty
+            const isEdible = FOOD_NUTRITION[resType]?.isEdible;
+            if (isEdible) {
+              const granariesForThisRes = Object.values(buildings).filter(
+                (b): b is Granary =>
+                  b.type === BuildingType.Granary && b.resourceType === resType,
+              );
+              if (granariesForThisRes.length > 0) {
+                const totalInGranaries = granariesForThisRes.reduce(
+                  (sum, g) => sum + g.storage.amount,
+                  0,
+                );
+                const hasSpaceInGranary = granariesForThisRes.some(
+                  (g) => g.storage.amount < g.storage.maxCapacity
+                );
+                if (totalInGranaries < 50 && hasSpaceInGranary) continue; 
+              }
+            }
+
+            const totalStored = (Object.values(m.storage) as number[]).reduce(
+              (s, a) => s + a,
+              0,
+            );
+            const freeSpace = m.maxCapacity - totalStored;
+            if (freeSpace <= 0) continue;
+
+            const dist = getEvcDist(resident.position, getExitPos(m));
+            if (dist < minDist) {
+              minDist = dist;
+              bestTarget = { targetId: m.id, resourceType: resType };
+            }
+          } else if (build.type === BuildingType.Main) {
+            const m = build as Main;
+            const config = LEVEL_CONFIG[currentEconomyLevel];
+            if (!config) continue;
+
+            const needed = config.upgradeCost.resources[resType] ?? 0;
+            const stored = m.storage[resType] ?? 0;
+            if (needed > stored) {
+              const dist = getEvcDist(resident.position, getExitPos(m));
+              if (dist < minDist) {
+                minDist = dist;
+                bestTarget = { targetId: m.id, resourceType: resType };
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return bestTarget;
   }
 
   private findNearestWaterSource(
@@ -252,15 +355,12 @@ export class FarmerService {
       if (build.type === BuildingType.Well) {
         const well = build as Well;
         if (well.currentAmount > 0) {
-          const dist = getEvcDist(resident.position, {
-            x: build.position.x,
-            y: build.position.y - 1,
-          });
+          const dist = getEvcDist(resident.position, getExitPos(build));
           if (dist < minDist) {
             minDist = dist;
             nearestSource = {
               id: build.id,
-              position: { x: build.position.x, y: build.position.y - 1 },
+              position: getExitPos(build),
               type: "well",
             };
           }
@@ -295,29 +395,62 @@ export class FarmerService {
     return nearestSource;
   }
 
-  unloadToGranary(
+  unloadToStorage(
     resident: Resident,
     buildings: Record<string, Buildings>,
+    currentEconomyLevel: number = 1,
   ): boolean {
     if (resident.profession.type !== ProfessionType.Farmer) return false;
 
-    const granary = buildings[resident.taskContext?.targetId ?? ""] as Granary;
-    if (!granary) return false;
+    const tc = resident.taskContext;
+    if (!tc) return false;
 
-    if (!granary.resourceType) return false;
-
-    const availableAmount =
-      resident.inventory.resources[granary.resourceType] ?? 0;
-    if (availableAmount === 0) {
+    const dest = buildings[tc.targetId];
+    if (!dest) {
       resident.taskContext = null;
-      return false;
+      return true;
     }
 
-    const freeSpace = granary.storage.maxCapacity - granary.storage.amount;
-    if (freeSpace < availableAmount) {
+    const resType = tc.resourceType;
+    const amount = resident.inventory.resources[resType] ?? 0;
+    if (amount <= 0) {
       resident.taskContext = null;
-      return false;
+      return true;
     }
+
+    let freeSpace = 0;
+    if (dest.type === BuildingType.Granary) {
+      const g = dest as Granary;
+      if (g.resourceType && g.resourceType !== resType) {
+        resident.taskContext = null;
+        return true;
+      }
+      freeSpace = g.storage.maxCapacity - g.storage.amount;
+    } else if (dest.type === BuildingType.Market) {
+      const m = dest as Market;
+      const totalAmount = (Object.values(m.storage) as number[]).reduce(
+        (sum, amt) => sum + amt,
+        0,
+      );
+      freeSpace = m.maxCapacity - totalAmount;
+    } else if (dest.type === BuildingType.Main) {
+      const m = dest as Main;
+      const config = LEVEL_CONFIG[currentEconomyLevel];
+      if (!config) {
+        resident.taskContext = null;
+        return true;
+      }
+      const needed = config.upgradeCost.resources[resType] ?? 0;
+      const stored = m.storage[resType] ?? 0;
+      freeSpace = Math.max(0, needed - stored);
+    }
+
+    if (freeSpace <= 0) {
+      resident.taskContext = null;
+      return true;
+    }
+
+    const toUnload = Math.min(amount, freeSpace);
 
     if (resident.workProgress < FARMER_TASK_DURATION.UNLOADING) {
       resident.workProgress += getSpeedWork(
@@ -327,12 +460,24 @@ export class FarmerService {
       return false;
     }
 
-    granary.storage.amount += availableAmount;
+    // Actual transfer
+    if (dest.type === BuildingType.Granary) {
+      (dest as Granary).storage.amount += toUnload;
+    } else if (dest.type === BuildingType.Market) {
+      const m = dest as Market;
+      m.storage[resType] = (m.storage[resType] ?? 0) + toUnload;
+    } else if (dest.type === BuildingType.Main) {
+      const m = dest as Main;
+      m.storage[resType] = (m.storage[resType] ?? 0) + toUnload;
+    }
 
-    delete resident.inventory.resources[granary.resourceType];
-    resident.inventory.totalAmount = Object.values(
-      resident.inventory.resources,
-    ).reduce((sum, amount) => sum + amount, 0);
+    resident.inventory.resources[resType]! -= toUnload;
+    if (resident.inventory.resources[resType]! <= 0) {
+      delete resident.inventory.resources[resType];
+    }
+    resident.inventory.totalAmount = (
+      Object.values(resident.inventory.resources) as number[]
+    ).reduce((sum, amt) => sum + amt, 0);
 
     resident.workProgress = 0;
     resident.taskContext = null;

@@ -19,6 +19,7 @@ export const createBuilding = (
     width: size?.width ?? config.width,
     length: size?.length ?? config.length,
     incoming: {},
+    maintenanceCost: config.maintenanceCost ?? 0,
   };
 
   switch (type) {
@@ -31,6 +32,9 @@ export const createBuilding = (
           maxCapacity: config.initialCapacity || 0,
           currentAmount: 0,
         },
+        storage: {},
+        maxCapacity: config.maxCapacity || 500,
+        incoming: {},
       };
     }
     case BuildingType.House: {
@@ -143,7 +147,8 @@ export const createBuilding = (
       return { ...base, type, speedModifier: config.speed };
     }
     case BuildingType.Market: {
-      return { ...base, type };
+      const config = BUILDING_CONFIG[type];
+      return { ...base, type, storage: {}, maxCapacity: config.maxCapacity, export: [] };
     }
     case BuildingType.Graveyard: {
       const config = BUILDING_CONFIG[type];

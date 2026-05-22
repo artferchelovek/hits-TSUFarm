@@ -146,3 +146,72 @@
 .statisticPanel__rowData {
   font-weight: bold;
 }
+
+/* Market Panel */
+.marketPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panelTitle {
+  font-weight: bold;
+  font-size: 15px;
+  color: #4e3017;
+  border-bottom: 1px solid rgba(78, 48, 23, 0.1);
+  padding-bottom: 6px;
+}
+
+.marketList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.marketItem {
+  background: #fbf0e5;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(46, 44, 44, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.marketItem__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.marketItem__name {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.marketItem__price {
+  font-size: 14px;
+  color: #7A4A24;
+}
+
+.marketItem__trend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.marketItem__trend span.material-symbols-outlined {
+  font-size: 20px;
+}
+
+.marketItem__demand {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.marketHint {
+  font-size: 11px;
+  font-style: italic;
+  color: #8b5a2b;
+  margin-top: 10px;
+}

@@ -1,5 +1,14 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 20V12H0V20H4ZM64 12H60V20H64V12ZM24 56V60H28V56H24ZM8 24V28H12V24H8ZM40 40H36V44H40V40ZM32 24H28V28H32V24ZM48 12V8H44V12H48Z" fill="#E6EB7A"/>
-    <path d="M60 12H64V0H0V12H4V20H0V64H64V20H60V12ZM48 16H52V20H48V16ZM48 8V12H44V8H48ZM12 4H16V8H12V4ZM28 24H32V28H28V24ZM36 40H40V44H36V40ZM40 36V28H48V36H40ZM8 28V24H12V28H8ZM20 48H16V44H20V48ZM8 52H12V56H8V52ZM24 60V56H28V60H24ZM56 48V52H52V48H56Z" fill="#F9FE90"/>
-    <path d="M56 52V48H52V52H56ZM12 52H8V56H12V52ZM16 48H20V44H16V48ZM40 28V36H48V28H40ZM16 4H12V8H16V4ZM52 16H48V20H52V16Z" fill="#FFFFA6"/>
+  <rect width="64" height="64" fill="#D8B858"/>
+  <!-- subtle sand ripples / pebbles -->
+  <rect x="6" y="8" width="8" height="2" fill="#EAD070"/>
+  <rect x="34" y="16" width="10" height="2" fill="#EAD070"/>
+  <rect x="14" y="32" width="8" height="2" fill="#EAD070"/>
+  <rect x="48" y="40" width="8" height="2" fill="#EAD070"/>
+  <rect x="22" y="52" width="10" height="2" fill="#EAD070"/>
+  <!-- shadow pebbles -->
+  <rect x="24" y="10" width="4" height="4" fill="#B89840"/>
+  <rect x="52" y="26" width="3" height="3" fill="#B89840"/>
+  <rect x="8" y="46" width="4" height="4" fill="#B89840"/>
+  <rect x="40" y="54" width="3" height="3" fill="#B89840"/>
 </svg>

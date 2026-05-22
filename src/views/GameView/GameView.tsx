@@ -5,10 +5,7 @@ import {
   CHARACTERS_SVG,
   TILE_SVG,
 } from "../../engine/Constants.ts";
-import {
-  applySave,
-  getPendingLoad,
-} from "../../Store/SaveManager.ts";
+import { applySave, getPendingLoad } from "../../Store/SaveManager.ts";
 import { useGameStore } from "../../Store/GameStore.ts";
 import MapCanvas from "../../components/game/MapCanvas.tsx";
 import RightPanel from "../../components/UI/RightPanel/RightPanel.tsx";
@@ -45,7 +42,7 @@ export default function GameView() {
         `тик номер ${useGameStore.getState().gameState.meta.gameTick}`,
       );
       console.log(useGameStore.getState().gameState.residents);
-    }, 100);
+    }, 10);
 
     return () => clearInterval(gameLoop);
   }, []);

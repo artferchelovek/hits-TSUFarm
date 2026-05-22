@@ -1,7 +1,10 @@
 import {
   BuildingType,
+  type Bakery,
   type Buildings,
   type Granary,
+  type Main,
+  type Market,
   type Mill,
   type Position,
   ProfessionType,
@@ -12,8 +15,10 @@ import {
   VillagerStatus,
 } from "../Types.ts";
 import {
+  FOOD_NUTRITION,
   getMaxInventoryCapacity,
   getSpeedWork,
+  LEVEL_CONFIG,
   TRANSPORTER_TASK_DURATION,
   XP_REWARDS,
 } from "../Constants.ts";
@@ -38,9 +43,9 @@ export class TransportService {
     let bestAmount = 0;
 
     for (const build of Object.values(buildings)) {
-      const exportArr = (build as any).export;
-      if (!Array.isArray(exportArr) || exportArr.length === 0) continue;
-
+      const exportArr = (build as any).export || [];
+      // Always allow sources that have resources, findBestExportDestination will handle candidates (like Main)
+      
       const availableResources: {
         type: ResourceType;
         amount: number;
@@ -65,6 +70,17 @@ export class TransportService {
             type: exportKey,
             amount: amount,
             max: m.maxCapacity,
+          });
+        }
+      } else if (build.type === BuildingType.Bakery) {
+        const b = build as Bakery;
+        const exportKey = b.recipe.export;
+        const amount = b.storage[exportKey] ?? 0;
+        if (amount > 0) {
+          availableResources.push({
+            type: exportKey,
+            amount: amount,
+            max: b.maxCapacity,
           });
         }
       }
@@ -120,6 +136,7 @@ export class TransportService {
   private getDestinationNeed(
     dest: Buildings,
     resourceType: ResourceType,
+    currentEconomyLevel: number = 1,
   ): number {
     if (dest.type === BuildingType.Mill) {
       const m = dest as Mill;
@@ -128,10 +145,34 @@ export class TransportService {
       if (need < 1) return 0;
       return need;
     }
+    if (dest.type === BuildingType.Bakery) {
+      const b = dest as Bakery;
+      if (b.recipe.import !== resourceType) return 0;
+      const need = b.maxCapacity - b.capacity;
+      if (need < 1) return 0;
+      return need;
+    }
     if (dest.type === BuildingType.Granary) {
       const g = dest as Granary;
       if (!g.resourceType || g.resourceType !== resourceType) return 0;
       return g.storage.maxCapacity - g.storage.amount;
+    }
+    if (dest.type === BuildingType.Market) {
+      const m = dest as Market;
+      const totalAmount = (Object.values(m.storage) as number[]).reduce(
+        (sum, amt) => sum + amt,
+        0,
+      );
+      return m.maxCapacity - totalAmount;
+    }
+    if (dest.type === BuildingType.Main) {
+      const m = dest as Main;
+      const config = LEVEL_CONFIG[currentEconomyLevel];
+      if (!config) return 0;
+
+      const needed = config.upgradeCost.resources[resourceType] ?? 0;
+      const stored = m.storage[resourceType] ?? 0;
+      return Math.max(0, needed - stored);
     }
     return 0;
   }
@@ -141,23 +182,67 @@ export class TransportService {
     resourceType: ResourceType,
     pos: Position,
     buildings: Record<string, Buildings>,
+    currentEconomyLevel: number = 1,
   ): Buildings | null {
     let bestDest: Buildings | null = null;
     let bestScore = -Infinity;
 
-    for (const destId of exportArr) {
+    const mainBuilding = Object.values(buildings).find(
+      (b) => b.type === BuildingType.Main,
+    );
+
+    const candidates = [...exportArr];
+    if (mainBuilding && !candidates.includes(mainBuilding.id)) {
+      candidates.push(mainBuilding.id);
+    }
+
+    // Food Security Logic:
+    // If the resource is edible, we first check if Granaries have enough reserve.
+    let finalCandidates = candidates;
+    const isEdible = FOOD_NUTRITION[resourceType]?.isEdible;
+    if (isEdible) {
+      const granariesForThisRes = Object.values(buildings).filter(
+        (b): b is Granary =>
+          b.type === BuildingType.Granary && b.resourceType === resourceType,
+      );
+
+      if (granariesForThisRes.length > 0) {
+        const totalInGranaries = granariesForThisRes.reduce(
+          (sum, g) => sum + g.storage.amount,
+          0,
+        );
+        const hasSpaceInGranary = granariesForThisRes.some(
+          (g) => g.storage.amount < g.storage.maxCapacity,
+        );
+
+        // If total reserve of this food is less than 50 AND we have space in a granary, don't deliver to Market
+        if (totalInGranaries < 50 && hasSpaceInGranary) {
+          finalCandidates = finalCandidates.filter(
+            (id) => buildings[id]?.type !== BuildingType.Market,
+          );
+        }
+      }
+    }
+
+    for (const destId of finalCandidates) {
       const dest = buildings[destId];
       if (!dest) continue;
-      if ((dest.incoming[resourceType] ?? 0) > 0) continue;
+      if ((dest.incoming[resourceType] ?? 0) >= 3) continue;
 
-      const need = this.getDestinationNeed(dest, resourceType);
+      const need = this.getDestinationNeed(dest, resourceType, currentEconomyLevel);
       if (need <= 0) continue;
 
       let maxCapacity = 100;
       if (dest.type === BuildingType.Mill)
         maxCapacity = (dest as Mill).maxCapacity;
+      if (dest.type === BuildingType.Bakery)
+        maxCapacity = (dest as Bakery).maxCapacity;
       if (dest.type === BuildingType.Granary)
         maxCapacity = (dest as Granary).storage.maxCapacity;
+      if (dest.type === BuildingType.Market)
+        maxCapacity = (dest as Market).maxCapacity;
+      if (dest.type === BuildingType.Main)
+        maxCapacity = (dest as Main).maxCapacity;
 
       const dist = getEvcDist(pos, dest.position);
 
@@ -177,6 +262,7 @@ export class TransportService {
     resident: Resident,
     tc: TaskContext,
     buildings: Record<string, Buildings>,
+    currentEconomyLevel: number = 1,
   ): void {
     if (tc.sourceId) {
       const source = buildings[tc.sourceId];
@@ -186,6 +272,7 @@ export class TransportService {
           tc.resourceType,
           resident.position,
           buildings,
+          currentEconomyLevel,
         );
         if (next) {
           next.incoming[tc.resourceType] =
@@ -203,6 +290,16 @@ export class TransportService {
         } else if (source.type === BuildingType.Mill) {
           canAccept =
             (source as Mill).capacity < (source as Mill).maxCapacity;
+        } else if (source.type === BuildingType.Bakery) {
+          canAccept =
+            (source as Bakery).capacity < (source as Bakery).maxCapacity;
+        } else if (source.type === BuildingType.Market) {
+          const m = source as Market;
+          const totalAmount = (Object.values(m.storage) as number[]).reduce(
+            (sum, amt) => sum + amt,
+            0,
+          );
+          canAccept = totalAmount < m.maxCapacity;
         }
         if (canAccept) {
           tc.targetId = tc.sourceId;
@@ -216,6 +313,7 @@ export class TransportService {
   updateTransporter(
     resident: Resident,
     buildings: Record<string, Buildings>,
+    currentEconomyLevel: number = 1,
   ): void {
     if (resident.profession.type !== ProfessionType.Transporter) return;
 
@@ -246,6 +344,7 @@ export class TransportService {
             carriedType,
             resident.position,
             buildings,
+            currentEconomyLevel,
           );
           if (dest) {
             dest.incoming[carriedType] =
@@ -268,6 +367,16 @@ export class TransportService {
           } else if (source.type === BuildingType.Mill) {
             canAccept =
               (source as Mill).capacity < (source as Mill).maxCapacity;
+          } else if (source.type === BuildingType.Bakery) {
+            canAccept =
+              (source as Bakery).capacity < (source as Bakery).maxCapacity;
+          } else if (source.type === BuildingType.Market) {
+            const m = source as Market;
+            const totalAmount = (Object.values(m.storage) as number[]).reduce(
+              (sum, amt) => sum + amt,
+              0,
+            );
+            canAccept = totalAmount < m.maxCapacity;
           }
           if (canAccept) {
             tc.targetId = tc.sourceId;
@@ -282,6 +391,9 @@ export class TransportService {
         }
       }
 
+      // If no valid destination and source cannot accept, clear inventory to prevent getting stuck
+      resident.inventory.resources = {};
+      resident.inventory.totalAmount = 0;
       if (tc) tc.targetId = "";
       return;
     }
@@ -307,6 +419,7 @@ export class TransportService {
   loadingExport(
     resident: Resident,
     buildings: Record<string, Buildings>,
+    currentEconomyLevel: number = 1,
   ): boolean {
     if (resident.profession.type !== ProfessionType.Transporter) return false;
 
@@ -330,6 +443,14 @@ export class TransportService {
         | ResourceType.Flour
         | ResourceType.Bread;
       availableAmount = m.storage[millKey] ?? 0;
+      if (availableAmount <= 0) return false;
+    } else if (source.type === BuildingType.Bakery) {
+      const b = source as Bakery;
+      availableAmount = b.storage[ResourceType.Bread] ?? 0;
+      if (availableAmount <= 0) return false;
+    } else if (source.type === BuildingType.Main) {
+      const m = source as Main;
+      availableAmount = m.storage[tc.resourceType] ?? 0;
       if (availableAmount <= 0) return false;
     } else {
       return false;
@@ -362,6 +483,17 @@ export class TransportService {
       m.storage[millKey] = (m.storage[millKey] ?? 0) - toTake;
       if (m.storage[millKey]! <= 0) delete m.storage[millKey];
       m.capacity -= toTake;
+    } else if (source.type === BuildingType.Bakery) {
+      const b = source as Bakery;
+      b.storage[ResourceType.Bread] =
+        (b.storage[ResourceType.Bread] ?? 0) - toTake;
+      if (b.storage[ResourceType.Bread]! <= 0)
+        delete b.storage[ResourceType.Bread];
+      b.capacity -= toTake;
+    } else if (source.type === BuildingType.Main) {
+      const m = source as Main;
+      m.storage[tc.resourceType] = (m.storage[tc.resourceType] ?? 0) - toTake;
+      if (m.storage[tc.resourceType]! <= 0) delete m.storage[tc.resourceType];
     }
 
     resident.inventory.resources[tc.resourceType] =
@@ -374,6 +506,7 @@ export class TransportService {
       tc.resourceType,
       resident.position,
       buildings,
+      currentEconomyLevel,
     );
 
     if (!dest) {
@@ -386,6 +519,14 @@ export class TransportService {
           | ResourceType.Bread;
         m.storage[millKey] = (m.storage[millKey] ?? 0) + toTake;
         m.capacity += toTake;
+      } else if (source.type === BuildingType.Bakery) {
+        const b = source as Bakery;
+        b.storage[ResourceType.Bread] =
+          (b.storage[ResourceType.Bread] ?? 0) + toTake;
+        b.capacity += toTake;
+      } else if (source.type === BuildingType.Main) {
+        const m = source as Main;
+        m.storage[tc.resourceType] = (m.storage[tc.resourceType] ?? 0) + toTake;
       }
       delete resident.inventory.resources[tc.resourceType];
       resident.inventory.totalAmount = Math.max(
@@ -414,6 +555,7 @@ export class TransportService {
   unloadingExport(
     resident: Resident,
     buildings: Record<string, Buildings>,
+    currentEconomyLevel: number = 1,
   ): boolean {
     if (resident.profession.type !== ProfessionType.Transporter) return false;
 
@@ -441,6 +583,25 @@ export class TransportService {
           (dest as Granary).storage.amount;
       } else if (dest.type === BuildingType.Mill) {
         freeSpace = (dest as Mill).maxCapacity - (dest as Mill).capacity;
+      } else if (dest.type === BuildingType.Bakery) {
+        freeSpace = (dest as Bakery).maxCapacity - (dest as Bakery).capacity;
+      } else if (dest.type === BuildingType.Market) {
+        const m = dest as Market;
+        const totalAmount = (Object.values(m.storage) as number[]).reduce(
+          (sum, amt) => sum + amt,
+          0,
+        );
+        freeSpace = m.maxCapacity - totalAmount;
+      } else if (dest.type === BuildingType.Main) {
+        const m = dest as Main;
+        const config = LEVEL_CONFIG[currentEconomyLevel];
+        if (!config) {
+          resident.taskContext = null;
+          return true;
+        }
+        const needed = config.upgradeCost.resources[tc.resourceType] ?? 0;
+        const stored = m.storage[tc.resourceType] ?? 0;
+        freeSpace = Math.max(0, needed - stored);
       } else {
         resident.taskContext = null;
         return true;
@@ -453,6 +614,13 @@ export class TransportService {
           return true;
         }
         freeSpace = m.maxCapacity - m.capacity;
+      } else if (dest.type === BuildingType.Bakery) {
+        const b = dest as Bakery;
+        if (b.recipe.import !== tc.resourceType) {
+          resident.taskContext = null;
+          return true;
+        }
+        freeSpace = b.maxCapacity - b.capacity;
       } else if (dest.type === BuildingType.Granary) {
         const g = dest as Granary;
         if (g.resourceType && g.resourceType !== tc.resourceType) {
@@ -460,6 +628,23 @@ export class TransportService {
           return true;
         }
         freeSpace = g.storage.maxCapacity - g.storage.amount;
+      } else if (dest.type === BuildingType.Market) {
+        const m = dest as Market;
+        const totalAmount = (Object.values(m.storage) as number[]).reduce(
+          (sum, amt) => sum + amt,
+          0,
+        );
+        freeSpace = m.maxCapacity - totalAmount;
+      } else if (dest.type === BuildingType.Main) {
+        const m = dest as Main;
+        const config = LEVEL_CONFIG[currentEconomyLevel];
+        if (!config) {
+          resident.taskContext = null;
+          return true;
+        }
+        const needed = config.upgradeCost.resources[tc.resourceType] ?? 0;
+        const stored = m.storage[tc.resourceType] ?? 0;
+        freeSpace = Math.max(0, needed - stored);
       } else {
         resident.taskContext = null;
         return true;
@@ -474,7 +659,7 @@ export class TransportService {
       ) {
         dest.incoming[tc.resourceType]! -= 1;
       }
-      this.routeRemainder(resident, tc, buildings);
+      this.routeRemainder(resident, tc, buildings, currentEconomyLevel);
       return true;
     }
 
@@ -497,6 +682,19 @@ export class TransportService {
         | ResourceType.Bread;
       m.storage[millKey] = (m.storage[millKey] ?? 0) + toUnload;
       m.capacity += toUnload;
+    } else if (dest.type === BuildingType.Bakery) {
+      const b = dest as Bakery;
+      const bakeryKey = tc.resourceType as
+        | ResourceType.Flour
+        | ResourceType.Bread;
+      b.storage[bakeryKey] = (b.storage[bakeryKey] ?? 0) + toUnload;
+      b.capacity += toUnload;
+    } else if (dest.type === BuildingType.Market) {
+      const m = dest as Market;
+      m.storage[tc.resourceType] = (m.storage[tc.resourceType] ?? 0) + toUnload;
+    } else if (dest.type === BuildingType.Main) {
+      const m = dest as Main;
+      m.storage[tc.resourceType] = (m.storage[tc.resourceType] ?? 0) + toUnload;
     }
 
     resident.inventory.resources[tc.resourceType]! -= toUnload;
@@ -508,7 +706,7 @@ export class TransportService {
       dest.incoming[tc.resourceType]! -= 1;
     }
     if ((resident.inventory.resources[tc.resourceType] ?? 0) > 0) {
-      this.routeRemainder(resident, tc, buildings);
+      this.routeRemainder(resident, tc, buildings, currentEconomyLevel);
       if (tc.targetId) {
         const nextDest = buildings[tc.targetId];
         resident.path = this.grid.calculatePath(
