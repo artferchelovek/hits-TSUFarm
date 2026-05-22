@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - develop
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -10,7 +11,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Execute remote ssh comands
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -18,17 +19,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/hits-TSUFarm
-            git pull origin develop
-            
-            docker build -t frontend-image .
-            
-            docker stop frontend-container || true
-            docker rm frontend-container || true
-            
-            docker run -d --name frontend-container \
-            -p 80:80 -p 443:443 \
-            -v /etc/letsencrypt/live/lilv2dim.ru/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro \
-            -v /etc/letsencrypt/live/lilv2dim.ru/privkey.pem:/etc/nginx/certs/privkey.pem:ro \
-            frontend-image
-            
+            git pull
+
+            cat > .env << 'EOF'
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            VITE_API_URL=/api
+            EOF
+
+            docker compose --profile prod up -d --build
+
             docker image prune -f
