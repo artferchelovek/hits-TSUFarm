@@ -366,6 +366,7 @@ export interface GameState {
     seasonDuration: number;
     dayDuration: number;
     isNight: boolean;
+    farmName: string;
   };
   economy: {
     money: number;

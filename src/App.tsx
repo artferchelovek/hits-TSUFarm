@@ -1,6 +1,9 @@
 import { BrowserRouter, Route, Routes } from "react-router";
+import { AuthProvider } from "./contexts/AuthContext.tsx";
 import GameView from "./views/GameView/GameView.tsx";
 import MainMenu from "./views/MainMenu/MainMenu.tsx";
+import LoginView from "./views/LoginView/LoginView.tsx";
+import RegisterView from "./views/RegisterView/RegisterView.tsx";
 import PlugView from "./views/PlugView/PlugView.tsx";
 
 export default function App() {
@@ -9,11 +12,15 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainMenu />} />
-        <Route path="/game" element={<GameView />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<MainMenu />} />
+          <Route path="/game" element={<GameView />} />
+          <Route path="/login" element={<LoginView />} />
+          <Route path="/register" element={<RegisterView />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

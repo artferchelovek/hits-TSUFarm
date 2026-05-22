@@ -1,11 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { WorldMap } from "../../engine/WorldMap.ts";
 import {
   BUILDING_SVG,
   CHARACTERS_SVG,
   TILE_SVG,
 } from "../../engine/Constants.ts";
-import { applySave, getPendingLoad } from "../../Store/SaveManager.ts";
+import {
+  applySave,
+  getPendingLoad,
+  saveToCloud,
+  saveUnloadSave,
+  getUnloadSave,
+  clearUnloadSave,
+} from "../../Store/SaveManager.ts";
+import { getToken } from "../../api/client.ts";
 import { useGameStore } from "../../Store/GameStore.ts";
 import MapCanvas from "../../components/game/MapCanvas.tsx";
 import RightPanel from "../../components/UI/RightPanel/RightPanel.tsx";
@@ -33,15 +41,38 @@ export default function GameView() {
   const [mapRendered, setMapRendered] = useState(false);
   const [loadedFromSave, setLoadedFromSave] = useState(false);
 
+  const worldRef = useRef<WorldMap | null>(null);
+
   const isLoading = !ready || !mapRendered;
 
   useEffect(() => {
+    worldRef.current = world ?? null;
+  }, [world]);
+
+  useEffect(() => {
+    let lastAutoSaveSlot = 0;
+
     const gameLoop = setInterval(() => {
+      const prevTick = useGameStore.getState().gameState.meta.gameTick;
       useGameStore.getState().tick();
-      console.log(
-        `тик номер ${useGameStore.getState().gameState.meta.gameTick}`,
-      );
+      const tick = useGameStore.getState().gameState.meta.gameTick;
+      const dayDuration = useGameStore.getState().gameState.meta.dayDuration;
+
+      console.log(`тик номер ${tick}`);
       console.log(useGameStore.getState().gameState.residents);
+
+      const prevDay = Math.floor(prevTick / dayDuration);
+      const currDay = Math.floor(tick / dayDuration);
+
+      if (currDay > prevDay && getToken()) {
+        const gs = useGameStore.getState().gameState;
+        const w = worldRef.current;
+        if (w) {
+          const slot = lastAutoSaveSlot > 0 ? lastAutoSaveSlot : 1;
+          saveToCloud(slot, gs, w).catch(() => {});
+          lastAutoSaveSlot = slot;
+        }
+      }
     }, 10);
 
     return () => clearInterval(gameLoop);
@@ -62,11 +93,29 @@ export default function GameView() {
         setWorld(loadedWorld);
         useGameStore.getState().loadState(gameState);
         setLoadedFromSave(true);
+        clearUnloadSave();
       } else {
-        const w = new WorldMap();
-        w.generate();
-        if (cancelled) return;
-        setWorld(w);
+        const unloadSave = getUnloadSave();
+        if (unloadSave) {
+          const { world: loadedWorld, gameState } = applySave(unloadSave);
+          setWorld(loadedWorld);
+          useGameStore.getState().loadState(gameState);
+          setLoadedFromSave(true);
+          clearUnloadSave();
+        } else {
+          const w = new WorldMap();
+          w.generate();
+          if (cancelled) return;
+          setWorld(w);
+
+          const farmName = sessionStorage.getItem("tsufarm_farm_name");
+          if (farmName) {
+            useGameStore.setState((s) => {
+              s.gameState.meta.farmName = farmName;
+            });
+            sessionStorage.removeItem("tsufarm_farm_name");
+          }
+        }
       }
 
       setStage(1);
@@ -137,14 +186,32 @@ export default function GameView() {
   }, []);
 
   useEffect(() => {
-    if (import.meta.env.DEV) return;
+    let saving = false;
 
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
+    const doSave = () => {
+      if (saving) return;
+      saving = true;
+      const gs = useGameStore.getState().gameState;
+      const w = worldRef.current;
+      if (w) {
+        saveUnloadSave(gs, w);
+      }
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") doSave();
+    };
+
+    const onBeforeUnload = () => {
+      doSave();
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
   }, []);
 
   return (
