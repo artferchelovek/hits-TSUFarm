@@ -37,7 +37,9 @@ export default function GreenhouseInfo({ build }: { build: Greenhouse }) {
             to={100}
             name={"Процесс роста"}
           />
-          <p>Коэффицент роста: {build.growthCoefficient}x</p>
+          <p>
+            Коэффицент роста: {parseFloat(build.growthCoefficient.toFixed(2))}x
+          </p>
           <p>Состояние: {build.health.toFixed(2)}</p>
         </>
       ) : (

@@ -6,11 +6,13 @@ import {
   ResourceType,
   Season,
   Weather,
+  type Well,
 } from "../Types.ts";
 import {
   DROUGHT_DAMAGE_TICK,
   PLANT_CONFIG,
   WeatherEffects,
+  WELL_REFILL_AMOUNT,
 } from "../Constants.ts";
 
 export class BuildingProcessor {
@@ -140,5 +142,20 @@ export class BuildingProcessor {
         }
       }
     }
+  }
+  processWell(building: Well, currentWeather: Weather) {
+    if (building.currentAmount === building.maxCapacity) {
+      return;
+    }
+    if (currentWeather === Weather.Rain) {
+      building.currentAmount = Math.min(
+        building.maxCapacity,
+        building.currentAmount + WeatherEffects.RAIN_REFILL_WELL,
+      );
+    }
+    building.currentAmount = Math.min(
+      building.maxCapacity,
+      building.currentAmount + WELL_REFILL_AMOUNT,
+    );
   }
 }
