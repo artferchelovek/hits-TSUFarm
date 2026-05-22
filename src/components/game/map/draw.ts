@@ -101,8 +101,8 @@ export const drawBuildings = (
           }
         }
       } else {
-        // Bottom-aligned with sprite aspect ratio — sprite can visually "stick up"
-        // above the tile footprint (Stardew Valley style)
+        
+        
         const naturalRatio = sprite.naturalHeight / sprite.naturalWidth;
         const visualH = Math.round(sw * naturalRatio);
         const drawY = sy + sh - visualH;

@@ -48,7 +48,7 @@ export default function MainInfo({ build }: { build: Main }) {
             Улучшение до уровня {currentLevel + 1}
           </p>
 
-          {/* Money Requirement */}
+          {}
           <div className={styles.InfoBox__requirementRow}>
             <span>Деньги:</span>
             <span
@@ -64,7 +64,7 @@ export default function MainInfo({ build }: { build: Main }) {
             </span>
           </div>
 
-          {/* Resource Requirements */}
+          {}
           {Object.entries(config.upgradeCost.resources).map(([res, needed]) => {
             const type = res as ResourceType;
             const stored = build.storage[type] ?? 0;

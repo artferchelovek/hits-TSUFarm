@@ -44,7 +44,7 @@ export class TransportService {
 
     for (const build of Object.values(buildings)) {
       const exportArr = (build as any).export || [];
-      // Always allow sources that have resources, findBestExportDestination will handle candidates (like Main)
+      
       
       const availableResources: {
         type: ResourceType;
@@ -196,8 +196,8 @@ export class TransportService {
       candidates.push(mainBuilding.id);
     }
 
-    // Food Security Logic:
-    // If the resource is edible, we first check if Granaries have enough reserve.
+    
+    
     let finalCandidates = candidates;
     const isEdible = FOOD_NUTRITION[resourceType]?.isEdible;
     if (isEdible) {
@@ -215,7 +215,7 @@ export class TransportService {
           (g) => g.storage.amount < g.storage.maxCapacity,
         );
 
-        // If total reserve of this food is less than 50 AND we have space in a granary, don't deliver to Market
+        
         if (totalInGranaries < 50 && hasSpaceInGranary) {
           finalCandidates = finalCandidates.filter(
             (id) => buildings[id]?.type !== BuildingType.Market,
@@ -391,7 +391,7 @@ export class TransportService {
         }
       }
 
-      // If no valid destination and source cannot accept, clear inventory to prevent getting stuck
+      
       resident.inventory.resources = {};
       resident.inventory.totalAmount = 0;
       if (tc) tc.targetId = "";

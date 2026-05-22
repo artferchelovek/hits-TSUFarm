@@ -562,7 +562,7 @@ export function useMapCanvas(
       const state = useGameStore.getState();
       drawBuildings(state.gameState.buildings);
     } catch {
-      // ignore
+      
     }
 
     return () => unsub();

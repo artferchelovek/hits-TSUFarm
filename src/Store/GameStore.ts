@@ -595,13 +595,13 @@ export const useGameStore = create<GameStore>()(
           return;
         }
 
-        // 1. Check money
+        
         if (state.gameState.economy.money < config.upgradeCost.money) {
           report = { success: false, message: "Недостаточно денег для улучшения" };
           return;
         }
 
-        // 2. Check Main building storage
+        
         const mainBuilding = Object.values(state.gameState.buildings).find(
           (b) => b.type === BuildingType.Main,
         ) as Main;
@@ -620,12 +620,12 @@ export const useGameStore = create<GameStore>()(
           return;
         }
 
-        // Success!
+        
         state.gameState.economy.money -= config.upgradeCost.money;
-        mainBuilding.storage = {}; // Clear storage
+        mainBuilding.storage = {}; 
         state.gameState.economy.level += 1;
 
-        // Update building limits for the new level
+        
         const newLevel = state.gameState.economy.level;
         Object.values(BuildingType).forEach((type) => {
           const limit = getBuildingLimit(type, newLevel);

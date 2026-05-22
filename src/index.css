@@ -3,14 +3,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
 
 :root {
-  /* Z-Index Layers */
+  
   --z-map: 0;
   --z-ui-panels: 100;
   --z-popups: 500;
   --z-overlays: 1000;
   --z-loading: 9999;
 
-  /* Global Colors */
+  
   --color-bg-panel: #e2c0a0;
   --color-bg-item: #fbf0e5;
   --color-text-main: #2e2c2c;

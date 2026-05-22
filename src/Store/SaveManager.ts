@@ -123,7 +123,7 @@ export function saveUnloadSave(
   try {
     localStorage.setItem(UNLOAD_KEY, JSON.stringify(data));
   } catch {
-    // localStorage full or unavailable — ignore
+    
   }
 }
 
@@ -140,6 +140,6 @@ export function clearUnloadSave(): void {
   try {
     localStorage.removeItem(UNLOAD_KEY);
   } catch {
-    // ignore
+    
   }
 }

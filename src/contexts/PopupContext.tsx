@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+
 import React, {
   createContext,
   useContext,
@@ -66,7 +66,7 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
       const logs = state.gameState.logs || [];
       if (logs.length) lastLogRef.current = logs[logs.length - 1].id;
     } catch {
-      // ignore
+      
     }
 
     return () => unsub();

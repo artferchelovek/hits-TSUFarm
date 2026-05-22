@@ -125,8 +125,8 @@ const processMaintenanceCosts = (state: WritableDraft<GameStore>) => {
       building.type === BuildingType.Road ||
       building.type === BuildingType.Bridge;
     
-    // For tiled buildings, maintenance could be per tile if we want, but config says 0 for them.
-    // If we later add cost for roads, we should multiply by area.
+    
+    
     const area = isTiled ? (building.width || 1) * (building.length || 1) : 1;
     totalMaintenance += cost * area;
   });
@@ -135,7 +135,7 @@ const processMaintenanceCosts = (state: WritableDraft<GameStore>) => {
     state.gameState.economy.money -= totalMaintenance;
     state.gameState.economy.lastDailyMaintenance = totalMaintenance;
     
-    // Check for negative balance
+    
     if (state.gameState.economy.money < 0) {
       appendLog(
         state,
@@ -186,7 +186,7 @@ const settleHomeless = (state: WritableDraft<GameStore>) => {
     workerManager.send("SET_RESIDENTS", {
       residents: JSON.parse(JSON.stringify(state.gameState.residents)),
     });
-    // We also need to update the buildings because house.residentsId changed
+    
     Object.values(state.gameState.buildings).forEach((b) => {
       if (b.type === BuildingType.House) {
         workerManager.send("UPDATE_BUILDING", {
@@ -210,32 +210,32 @@ const processRelocation = (state: WritableDraft<GameStore>) => {
     const currentHouse = state.gameState.buildings[resident.homeId!] as House;
     if (!currentHouse) return;
 
-    // Check if resident is "young adult" living in a crowded house
-    // (If house has more than 1 person, it's a candidate for moving out)
+    
+    
     if (currentHouse.residentsId.length <= 1) return;
 
-    // Potential new homes
-    // 1. House with exactly 1 occupant of opposite gender (potential partner)
+    
+    
     const partnerHouse = houses.find((h) => {
       if (h.residentsId.length !== 1) return false;
       const occupant = state.gameState.residents[h.residentsId[0]];
       return occupant && occupant.gender !== resident.gender && occupant.age >= REPRODUCTION.MIN_FERTILITY_AGE;
     });
 
-    // 2. Empty house
+    
     const emptyHouse = houses.find((h) => h.residentsId.length === 0);
 
     const targetHouse = partnerHouse || emptyHouse;
 
     if (targetHouse) {
-      // Move out from current
+      
       currentHouse.residentsId = currentHouse.residentsId.filter((id) => id !== resident.id);
       
-      // Move in to target
+      
       resident.homeId = targetHouse.id;
       targetHouse.residentsId.push(resident.id);
       
-      // Update position to be near the new home
+      
       resident.position = {
         x: targetHouse.position.x - 1,
         y: targetHouse.position.y - 1,

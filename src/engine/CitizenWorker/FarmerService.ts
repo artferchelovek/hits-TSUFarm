@@ -257,7 +257,7 @@ export class FarmerService {
     );
     if (resTypes.length === 0) return null;
 
-    // 1. Try to find a valid Granary first (Absolute Priority)
+    
     for (const resType of resTypes) {
       for (const build of Object.values(buildings)) {
         if (build.type === BuildingType.Granary) {
@@ -275,7 +275,7 @@ export class FarmerService {
       }
     }
 
-    // 2. Only if no granary was found, look for Market or Main building
+    
     if (!bestTarget) {
       minDist = Infinity;
       for (const resType of resTypes) {
@@ -283,7 +283,7 @@ export class FarmerService {
           if (build.type === BuildingType.Market) {
             const m = build as Market;
             
-            // Food Security: Don't let farmers dump food at the market if granaries are empty
+            
             const isEdible = FOOD_NUTRITION[resType]?.isEdible;
             if (isEdible) {
               const granariesForThisRes = Object.values(buildings).filter(
@@ -460,7 +460,7 @@ export class FarmerService {
       return false;
     }
 
-    // Actual transfer
+    
     if (dest.type === BuildingType.Granary) {
       (dest as Granary).storage.amount += toUnload;
     } else if (dest.type === BuildingType.Market) {
