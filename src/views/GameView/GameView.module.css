@@ -59,3 +59,72 @@
   background: #8b5a2b;
   border-radius: 2px;
 }
+
+.cloudSaveArea {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cloudSaveBtn {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  background: rgba(220, 187, 154, 0.85);
+  border: 2px solid rgba(46, 44, 44, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s;
+}
+
+.cloudSaveBtn:hover {
+  transform: scale(1.1);
+}
+
+.savePicker {
+  background: rgba(46, 44, 44, 0.9);
+  border: 1px solid rgba(220, 187, 154, 0.4);
+  border-radius: 6px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.savePickerTitle {
+  font-size: 12px;
+  color: #dcbb9a;
+  margin-bottom: 0.25rem;
+  text-align: center;
+}
+
+.saveSlotBtn {
+  font-size: 13px;
+  padding: 4px 16px;
+  color: #e6f0ff;
+  background: rgba(220, 187, 154, 0.15);
+  border: 1px solid rgba(220, 187, 154, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.saveSlotBtn:hover {
+  background: rgba(220, 187, 154, 0.3);
+}
+
+.saveMessage {
+  font-size: 13px;
+  color: #7ecf7e;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}

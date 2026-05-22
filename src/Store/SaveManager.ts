@@ -1,5 +1,9 @@
 import type { GameState } from "../engine/Types";
 import { WorldMap } from "../engine/WorldMap";
+import * as savesApi from "../api/saves.ts";
+import type { CloudSaveMeta } from "../api/saves.ts";
+
+export type { CloudSaveMeta };
 
 interface SaveFile {
   version: string;
@@ -72,4 +76,34 @@ export function getPendingLoad(): SaveFile | null {
   if (!raw) return null;
   sessionStorage.removeItem(PENDING_KEY);
   return JSON.parse(raw) as SaveFile;
+}
+
+export async function saveToCloud(
+  slot: number,
+  gameState: GameState,
+  world: WorldMap,
+): Promise<void> {
+  await savesApi.saveToSlot(slot, {
+    name: `Слот ${slot}`,
+    gameState: gameState as unknown as Record<string, unknown>,
+    worldData: world.serialize(),
+  });
+}
+
+export function listCloudSaves(): Promise<CloudSaveMeta[]> {
+  return savesApi.listSaves();
+}
+
+export async function loadCloudSave(slot: number): Promise<SaveFile | null> {
+  try {
+    const data = await savesApi.loadFromSlot(slot);
+    return {
+      version: "0.0.1",
+      timestamp: data.timestamp,
+      gameState: data.gameState as unknown as GameState,
+      worldData: data.worldData,
+    };
+  } catch {
+    return null;
+  }
 }
