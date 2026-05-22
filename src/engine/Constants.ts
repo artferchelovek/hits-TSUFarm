@@ -220,6 +220,9 @@ export const XP_REWARDS = {
     UNLOADING: 10,
   },
 };
+export const MOVE_COST_PER_TILE = 10;
+export const MOVE_COST_MULTIPLIER = 1.05;
+
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
     width: 3,
@@ -290,6 +293,12 @@ export const BUILDING_CONFIG = {
     length: 5,
     cost: 300,
     maxCapacity: 20,
+  },
+  [BuildingType.Bakery]: {
+    width: 3,
+    length: 3,
+    cost: 250,
+    maxCapacity: 15,
   },
 };
 export const PLANT_CONFIG: Record<CropType, Plant> = {
@@ -553,6 +562,7 @@ export const BUILDING_COLORS: Record<string, string> = {
   ROAD: "#9E7B5A",
   GARDEN: "#4CAF50",
   GRAVEYARD: "#5D5D5D",
+  BAKERY: "#D2B48C",
 };
 
 export const PALETTE = {
@@ -588,6 +598,7 @@ export const BUILDING_SVG: Record<string, string> = {
   GARDEN_READY: SVGs.gardenReady,
   GRAVEYARD: SVGs.graveyard,
   MILL: SVGs.mill,
+  BAKERY: SVGs.bakery,
 };
 
 export const CHARACTERS_SVG: Record<string, string> = {
@@ -610,8 +621,9 @@ export const RESOURCE_DISPLAY_NAMES: Partial<Record<ResourceType, string>> = {
 };
 
 export const EXPORT_RULES: Partial<Record<BuildingType, BuildingType[]>> = {
-  [BuildingType.Granary]: [BuildingType.Mill],
-  [BuildingType.Mill]: [BuildingType.Granary],
+  [BuildingType.Granary]: [BuildingType.Mill, BuildingType.Bakery],
+  [BuildingType.Mill]: [BuildingType.Granary, BuildingType.Bakery],
+  [BuildingType.Bakery]: [BuildingType.Granary],
 };
 
 export const TILE_SIZE = 25;

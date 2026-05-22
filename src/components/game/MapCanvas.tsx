@@ -1,4 +1,4 @@
-import useMapCanvas from "./useMapCanvas";
+import { useMapCanvas } from "./useMapCanvas";
 import InfoBox from "../UI/InfoBox/InfoBox";
 import ExportLinkingBanner from "./ExportLinkingBanner";
 import { PALETTE } from "../../engine/Constants";
@@ -33,6 +33,8 @@ export default function MapCanvas({
     buildInfo,
     infoBoxPos,
     onInfoBoxClose,
+    onMoveStart,
+    isDragging,
     onMouseDown,
     onMouseUp,
   } = useMapCanvas(
@@ -54,6 +56,7 @@ export default function MapCanvas({
         backgroundColor: PALETTE[TileType.Water],
         overflow: "hidden",
         position: "relative",
+        cursor: isDragging ? "move" : "default",
       }}
       onMouseDown={onMouseDown}
       onMouseUp={onMouseUp}
@@ -62,11 +65,12 @@ export default function MapCanvas({
     >
       <ExportLinkingBanner />
 
-      {buildInfo && (
+      {buildInfo && !isDragging && (
         <InfoBox
           build={buildInfo.build}
           position={infoBoxPos || buildInfo.position}
           onClose={onInfoBoxClose}
+          onMoveStart={onMoveStart}
         />
       )}
 

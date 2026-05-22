@@ -38,7 +38,8 @@ export type UItoWorkerMessage =
       payload: {
         building: Buildings;
       };
-    };
+    }
+  | { type: "REMOVE_BUILDING"; payload: { id: string } };
 
 export type WorkerToUIMessage =
   | {

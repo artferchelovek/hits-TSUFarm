@@ -21,6 +21,9 @@ export const getBuildingLimit = (type: BuildingType, level: number): number => {
     case BuildingType.Granary:
       return 1 + Math.floor(level / 5);
 
+    case BuildingType.Mill:
+      return 1 + Math.floor(level / 6);
+
     case BuildingType.Market:
       if (level < 4) return 0;
       return Math.floor(level / 4);
@@ -28,6 +31,10 @@ export const getBuildingLimit = (type: BuildingType, level: number): number => {
     case BuildingType.Graveyard:
       if (level < 2) return 0;
       return 1 + Math.floor(level / 10);
+
+    case BuildingType.Bakery:
+      if (level < 5) return 0;
+      return 1 + Math.floor((level - 5) / 5);
 
     case BuildingType.Road:
       return level * 100;

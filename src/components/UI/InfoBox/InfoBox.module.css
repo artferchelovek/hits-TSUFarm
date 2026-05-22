@@ -55,6 +55,87 @@
     }
 }
 
+.InfoBox__divider {
+    height: 1px;
+    background: rgba(46, 44, 44, 0.1);
+    margin: 8px 0;
+}
+
+.InfoBox__sectionTitle {
+    font-weight: bold;
+    font-size: 13px;
+    color: #3b2b20;
+    margin-bottom: 4px;
+}
+
+.InfoBox__recipe {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 6px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.InfoBox__recipeRow {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.InfoBox__actionBtn {
+    padding: 3px 8px;
+    border: 1px solid rgba(46, 44, 44, 0.2);
+    background: #fbf0e5;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+
+    &:hover {
+        background: #e2c0a0;
+    }
+}
+
+.InfoBox__headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.moveIconBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    color: #2e2c2c;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.moveIconBtn:hover {
+    background: rgba(46, 44, 44, 0.1);
+    opacity: 1;
+}
+
+.moveIconBtn span {
+    font-size: 18px;
+}
+
+.closeBtn {
+    padding: 2px 6px;
+    border: 1px solid rgba(46, 44, 44, 0.2);
+    background: #fbf0e5;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+
 .InfoBox__selector {
     display: flex;
     flex-wrap: wrap;

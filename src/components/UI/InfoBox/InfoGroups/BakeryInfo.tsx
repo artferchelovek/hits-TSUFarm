@@ -1,5 +1,5 @@
 import styles from "../InfoBox.module.css";
-import type { Mill } from "../../../../engine/Types.ts";
+import type { Bakery } from "../../../../engine/Types.ts";
 import { ResourceType } from "../../../../engine/Types.ts";
 import SizeBlock from "../SizeBlock.tsx";
 import ProgressBlock from "../ProgressBlock.tsx";
@@ -7,30 +7,30 @@ import { usePopup } from "../../../../contexts/PopupContext.tsx";
 import { useGameStore } from "../../../../Store/GameStore.ts";
 import { BUILDING_NAMES } from "../../../../engine/localization/locales.ts";
 
-export default function MillInfo({ build }: { build: Mill }) {
+export default function BakeryInfo({ build }: { build: Bakery }) {
   const { showPopup } = usePopup();
   return (
     <div className={styles.InfoBox__body}>
       <SizeBlock build={build} />
-      <ProgressBlock
-        from={build.storage[ResourceType.Wheat] ?? 0}
-        to={build.maxCapacity}
-        name={"Пшеница"}
-        isProcent={false}
-      />
       <ProgressBlock
         from={build.storage[ResourceType.Flour] ?? 0}
         to={build.maxCapacity}
         name={"Мука"}
         isProcent={false}
       />
+      <ProgressBlock
+        from={build.storage[ResourceType.Bread] ?? 0}
+        to={build.maxCapacity}
+        name={"Хлеб"}
+        isProcent={false}
+      />
 
       <div className={styles.InfoBox__divider}></div>
 
       <div className={styles.InfoBox__recipe}>
-        <p className={styles.InfoBox__sectionTitle}>Производство</p>
+        <p className={styles.InfoBox__sectionTitle}>Выпекание</p>
         <p className={styles.InfoBox__recipeRow}>
-          {build.recipe.importCount} Пшеница ➔ {build.recipe.exportCount} Мука
+          {build.recipe.importCount} Мука ➔ {build.recipe.exportCount} Хлеб
         </p>
         <ProgressBlock
           from={Math.round(build.progress * 100)}
