@@ -101,7 +101,12 @@ export const drawBuildings = (
           }
         }
       } else {
-        ctx.drawImage(sprite, sx, sy, sw, sh);
+        // Bottom-aligned with sprite aspect ratio — sprite can visually "stick up"
+        // above the tile footprint (Stardew Valley style)
+        const naturalRatio = sprite.naturalHeight / sprite.naturalWidth;
+        const visualH = Math.round(sw * naturalRatio);
+        const drawY = sy + sh - visualH;
+        ctx.drawImage(sprite, sx, drawY, sw, visualH);
       }
     } else {
       ctx.fillStyle = BUILDING_COLORS[b.type] || "#ccc";

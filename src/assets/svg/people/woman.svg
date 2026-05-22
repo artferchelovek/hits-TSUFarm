@@ -1,9 +1,36 @@
-<svg width="17" height="24" viewBox="0 0 17 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4.05005 22V24H12.05V22H4.05005ZM2 10V8V6C1.43333 6 0.966642 6.20001 0.599976 6.60001C0.199976 6.96667 0 7.43333 0 8V18C0 18.5667 0.199976 19.05 0.599976 19.45C0.966642 19.8167 1.43333 20 2 20V18V10ZM14.1 6H14.05V8H14.1V10V18V20C14.6666 20 15.15 19.8167 15.55 19.45C15.9167 19.05 16.1 18.5667 16.1 18V8C16.1 7.43333 15.9167 6.96667 15.55 6.60001C15.15 6.20001 14.6666 6 14.1 6Z" fill="#AF8F5E"/>
-    <path d="M4.05005 18H2V20H2.05005V22C2.05005 22.5667 2.25002 23.05 2.65002 23.45C3.01669 23.8167 3.48338 24 4.05005 24V22V18ZM14.1 18H12.05V22V24C12.6167 24 13.1 23.8167 13.5 23.45C13.8667 23.05 14.05 22.5667 14.05 22V20H14.1V18Z" fill="#157DA8"/>
-    <path d="M4.05005 12V10H2V18H4.05005V14V12ZM14.1 10H12.05V12V14V18H14.1V10Z" fill="#E9C07F"/>
-    <path d="M4.05005 8H2V10H4.05005V8ZM12.05 14V12H4.05005V14H12.05ZM14.05 8H12.05V10H14.1V8H14.05ZM10.05 4H6.05005V8H10.05V4Z" fill="#FFD18B"/>
-    <path d="M12.05 18V14H4.05005V18V22H12.05V18ZM12.05 10V8H10.05H6.05005H4.05005V10V12H12.05V10Z" fill="#1EA7E1"/>
-    <path d="M6.05005 2L4.05005 4V8H6.05005V4H10.05V8H12.05V4L10.05 2H6.05005Z" fill="#C48647"/>
-    <path d="M2.65002 2.60001C2.25002 2.96667 2.05005 3.43333 2.05005 4V6H2V8H4.05005V4L6.05005 2H10.05L12.05 4V8H14.05V6V4C14.05 3.43333 13.8667 2.96667 13.5 2.60001L11.5 0.600006C11.1 0.200006 10.6167 0 10.05 0H6.05005C5.48338 0 5.01669 0.200006 4.65002 0.600006L2.65002 2.60001Z" fill="#9A6836"/>
+<svg width="16" height="24" viewBox="0 0 16 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hair / bonnet -->
+  <rect x="3" y="0" width="10" height="2" fill="#C86880"/>
+  <rect x="2" y="2" width="12" height="3" fill="#E88098"/>
+  <rect x="2" y="5" width="2" height="4" fill="#E88098"/>
+  <rect x="12" y="5" width="2" height="4" fill="#E88098"/>
+  <!-- Head -->
+  <rect x="4" y="5" width="8" height="6" fill="#E8B870"/>
+  <!-- Eyes -->
+  <rect x="5" y="7" width="2" height="2" fill="#3A2810"/>
+  <rect x="9" y="7" width="2" height="2" fill="#3A2810"/>
+  <!-- Blush -->
+  <rect x="4" y="9" width="2" height="1" fill="#E89090"/>
+  <rect x="10" y="9" width="2" height="1" fill="#E89090"/>
+  <!-- Dress top -->
+  <rect x="3" y="11" width="10" height="7" fill="#E05878"/>
+  <rect x="3" y="11" width="2" height="7" fill="#C04060"/>
+  <rect x="11" y="11" width="2" height="7" fill="#C04060"/>
+  <!-- Apron -->
+  <rect x="5" y="13" width="6" height="5" fill="#F0E8C8"/>
+  <!-- Arms -->
+  <rect x="0" y="11" width="3" height="5" fill="#E8B870"/>
+  <rect x="13" y="11" width="3" height="5" fill="#E8B870"/>
+  <!-- Hands -->
+  <rect x="0" y="16" width="3" height="2" fill="#D4A060"/>
+  <rect x="13" y="16" width="3" height="2" fill="#D4A060"/>
+  <!-- Dress skirt (wider) -->
+  <rect x="2" y="18" width="12" height="4" fill="#E05878"/>
+  <rect x="2" y="18" width="2" height="4" fill="#C04060"/>
+  <rect x="12" y="18" width="2" height="4" fill="#C04060"/>
+  <!-- Apron bottom -->
+  <rect x="4" y="18" width="8" height="4" fill="#F0E8C8"/>
+  <!-- Shoes -->
+  <rect x="2" y="22" width="5" height="2" fill="#5A3020"/>
+  <rect x="9" y="22" width="5" height="2" fill="#5A3020"/>
 </svg>

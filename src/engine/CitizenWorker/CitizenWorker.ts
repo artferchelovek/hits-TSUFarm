@@ -150,8 +150,16 @@ class CitizenWorker {
   public updateBuilding(building: Buildings): void {
     const oldBuilding = this.buildings[building.id];
     if (oldBuilding) {
-      for (let i = oldBuilding.position.y; i < oldBuilding.position.y + oldBuilding.length; i++) {
-        for (let j = oldBuilding.position.x; j < oldBuilding.position.x + oldBuilding.width; j++) {
+      for (
+        let i = oldBuilding.position.y;
+        i < oldBuilding.position.y + oldBuilding.length;
+        i++
+      ) {
+        for (
+          let j = oldBuilding.position.x;
+          j < oldBuilding.position.x + oldBuilding.width;
+          j++
+        ) {
           if (i < this.height && j < this.width) {
             this.grid[i][j] = TERRAIN_WEIGHTS.DEFAULT;
           }
@@ -192,8 +200,16 @@ class CitizenWorker {
     const building = this.buildings[id];
     if (!building) return;
 
-    for (let i = building.position.y; i < building.position.y + building.length; i++) {
-      for (let j = building.position.x; j < building.position.x + building.width; j++) {
+    for (
+      let i = building.position.y;
+      i < building.position.y + building.length;
+      i++
+    ) {
+      for (
+        let j = building.position.x;
+        j < building.position.x + building.width;
+        j++
+      ) {
         if (i < this.height && j < this.width) {
           this.grid[i][j] = TERRAIN_WEIGHTS.DEFAULT;
         }
@@ -954,11 +970,11 @@ class CitizenWorker {
         delete mill.storage[ResourceType.Wheat];
       }
       mill.storage[ResourceType.Flour] = currentFlour + mill.recipe.exportCount;
-      
+
       mill.capacity =
         (mill.storage[ResourceType.Wheat] ?? 0) +
         (mill.storage[ResourceType.Flour] ?? 0);
-      
+
       mill.progress = 0;
     }
   }
@@ -978,16 +994,18 @@ class CitizenWorker {
     bakery.progress += 1 / bakery.recipe.durationPerTick;
 
     if (bakery.progress >= 1) {
-      bakery.storage[ResourceType.Flour] = currentFlour - bakery.recipe.importCount;
+      bakery.storage[ResourceType.Flour] =
+        currentFlour - bakery.recipe.importCount;
       if (bakery.storage[ResourceType.Flour]! <= 0) {
         delete bakery.storage[ResourceType.Flour];
       }
-      bakery.storage[ResourceType.Bread] = currentBread + bakery.recipe.exportCount;
-      
+      bakery.storage[ResourceType.Bread] =
+        currentBread + bakery.recipe.exportCount;
+
       bakery.capacity =
         (bakery.storage[ResourceType.Flour] ?? 0) +
         (bakery.storage[ResourceType.Bread] ?? 0);
-      
+
       bakery.progress = 0;
     }
   }
@@ -1189,7 +1207,7 @@ class CitizenWorker {
     for (const destId of exportArr) {
       const dest = this.buildings[destId];
       if (!dest) continue;
-      // Allow multiple transporters to head to the same destination
+
       if ((dest.incoming[resourceType] ?? 0) >= 3) continue;
 
       const need = this.getDestinationNeed(dest, resourceType);
@@ -1335,6 +1353,10 @@ class CitizenWorker {
         }
       }
 
+      // If we reach here, it means we have items in inventory but no place to deliver them 
+      // AND the source cannot take them back. We clear inventory to prevent the resident from getting stuck.
+      resident.inventory.resources = {};
+      resident.inventory.totalAmount = 0;
       if (tc) tc.targetId = "";
       return;
     }

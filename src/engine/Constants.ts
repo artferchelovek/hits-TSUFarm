@@ -218,8 +218,8 @@ export const MOVE_COST_MULTIPLIER = 1.05;
 
 export const BUILDING_CONFIG = {
   [BuildingType.Main]: {
-    width: 3,
-    length: 5,
+    width: 4,
+    length: 4,
     initialCapacity: 2,
     cost: 0,
     maintenanceCost: 0,
@@ -262,7 +262,7 @@ export const BUILDING_CONFIG = {
     maintenanceCost: 0,
   },
   [BuildingType.Greenhouse]: {
-    width: 3,
+    width: 4,
     length: 2,
     waterMax: 150,
     moisture: 0,
@@ -285,15 +285,15 @@ export const BUILDING_CONFIG = {
     maintenanceCost: 0,
   },
   [BuildingType.Graveyard]: {
-    width: 3,
-    length: 3,
+    width: 4,
+    length: 4,
     maxCapacity: 50,
     cost: 80,
     maintenanceCost: 0,
   },
   [BuildingType.Mill]: {
     width: 3,
-    length: 5,
+    length: 3,
     cost: 300,
     maxCapacity: 20,
     maintenanceCost: 5,
@@ -387,20 +387,7 @@ export const PLANT_EFFECTS = {
 export const FARMER_WATER_CAPACITY = 20;
 export const WELL_REFILL_AMOUNT = 20;
 export const DROUGHT_DAMAGE_TICK = 0.01;
-export const VILLAGER_CONFIG = {
-  maxHunger: 100,
-  maxHealth: 100,
-  hungerPerTick: 0.02,
-  starvationDamagePerTick: 1,
-  healPerTick: 0.5,
-  agePerTick: 1 / 600,
-  baseDeathChance: 0.0001,
-  minWalkableAge: 3,
-  minAgeForWork: 14,
-  homelessDamagePerTick: 5,
-  maxInventCapacity: 10,
-  moveSpeed: 1,
-};
+
 export const REPRODUCTION = {
   BASE_REPRODUCTION_CHANCE: 0.1,
   PEAK_FERTILITY_AGE: 30,
@@ -507,7 +494,7 @@ export const initialGameState: GameState = {
     gameTick: 300,
     graveyardIds: [],
     seasonDuration: 30 * 1000,
-    currentSeason: Season.Summer,
+    currentSeason: Season.Winter,
     currentWeather: Weather.Clear,
     dayDuration: 1000,
     isNight: false,
@@ -533,7 +520,20 @@ export const initialGameState: GameState = {
   residents: {},
   logs: [],
 };
-
+export const VILLAGER_CONFIG = {
+  maxHunger: 100,
+  maxHealth: 100,
+  hungerPerTick: 0.02,
+  starvationDamagePerTick: 1,
+  healPerTick: 0.5,
+  agePerTick: (1 / initialGameState.meta.dayDuration) * 4,
+  baseDeathChance: 0.0001,
+  minWalkableAge: 3,
+  minAgeForWork: 14,
+  homelessDamagePerTick: 5,
+  maxInventCapacity: 10,
+  moveSpeed: 1,
+};
 export const BUILDING_COLORS: Record<string, string> = {
   MAIN: "#8B5A2B",
   HOUSE: "#C68642",
@@ -604,8 +604,16 @@ export const RESOURCE_DISPLAY_NAMES: Partial<Record<ResourceType, string>> = {
 };
 
 export const EXPORT_RULES: Partial<Record<BuildingType, BuildingType[]>> = {
-  [BuildingType.Granary]: [BuildingType.Mill, BuildingType.Bakery, BuildingType.Market],
-  [BuildingType.Mill]: [BuildingType.Granary, BuildingType.Bakery, BuildingType.Market],
+  [BuildingType.Granary]: [
+    BuildingType.Mill,
+    BuildingType.Bakery,
+    BuildingType.Market,
+  ],
+  [BuildingType.Mill]: [
+    BuildingType.Granary,
+    BuildingType.Bakery,
+    BuildingType.Market,
+  ],
   [BuildingType.Bakery]: [BuildingType.Granary, BuildingType.Market],
 };
 
