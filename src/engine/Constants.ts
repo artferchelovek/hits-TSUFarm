@@ -246,6 +246,7 @@ export const BUILDING_CONFIG = {
     width: 3,
     length: 3,
     cost: 250,
+    maxCapacity: 200,
   },
   [BuildingType.Garden]: {
     width: 1,
@@ -355,6 +356,19 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
     maxYield: 2,
   },
 };
+export const RESOURCE_PRICES: Partial<Record<ResourceType, number>> = {
+  [ResourceType.Wheat]: 2,
+  [ResourceType.Cucumber]: 5,
+  [ResourceType.Tomato]: 8,
+  [ResourceType.Potato]: 4,
+  [ResourceType.Corn]: 12,
+  [ResourceType.Pumpkin]: 25,
+  [ResourceType.Flour]: 6,
+  [ResourceType.Bread]: 18,
+  [ResourceType.Water]: 0.1,
+  [ResourceType.WellWater]: 0.5,
+};
+
 export const PLANT_EFFECTS = {
   WELL_WATER_EFFECT: 1.2,
 };
@@ -489,6 +503,9 @@ export const initialGameState: GameState = {
     money: 100000,
     level: 10,
     totalPopulation: 0,
+    marketDemand: Object.fromEntries(
+      Object.values(ResourceType).map((r) => [r, 1.0]),
+    ),
   },
   buildings: { granary_wheat_01: fullWheatGranary },
   buildingCounts: Object.fromEntries(
@@ -574,9 +591,9 @@ export const RESOURCE_DISPLAY_NAMES: Partial<Record<ResourceType, string>> = {
 };
 
 export const EXPORT_RULES: Partial<Record<BuildingType, BuildingType[]>> = {
-  [BuildingType.Granary]: [BuildingType.Mill, BuildingType.Bakery],
-  [BuildingType.Mill]: [BuildingType.Granary, BuildingType.Bakery],
-  [BuildingType.Bakery]: [BuildingType.Granary],
+  [BuildingType.Granary]: [BuildingType.Mill, BuildingType.Bakery, BuildingType.Market],
+  [BuildingType.Mill]: [BuildingType.Granary, BuildingType.Bakery, BuildingType.Market],
+  [BuildingType.Bakery]: [BuildingType.Granary, BuildingType.Market],
 };
 
 export const TILE_SIZE = 25;

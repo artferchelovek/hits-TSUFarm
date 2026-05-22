@@ -137,7 +137,8 @@ export const createBuilding = (
       return { ...base, type, speedModifier: config.speed };
     }
     case BuildingType.Market: {
-      return { ...base, type };
+      const config = BUILDING_CONFIG[type];
+      return { ...base, type, storage: {}, maxCapacity: config.maxCapacity, export: [] };
     }
     case BuildingType.Graveyard: {
       const config = BUILDING_CONFIG[type];

@@ -8,6 +8,7 @@ import {
   Gender,
   type Granary,
   type House,
+  type Market,
   type Mill,
   moveStatuses,
   type PlantPlace,
@@ -1166,6 +1167,14 @@ class CitizenWorker {
       if (!g.resourceType || g.resourceType !== resourceType) return 0;
       return g.storage.maxCapacity - g.storage.amount;
     }
+    if (dest.type === BuildingType.Market) {
+      const m = dest as Market;
+      const totalAmount = (Object.values(m.storage) as number[]).reduce(
+        (sum, amt) => sum + amt,
+        0,
+      );
+      return m.maxCapacity - totalAmount;
+    }
     return 0;
   }
 
@@ -1180,7 +1189,8 @@ class CitizenWorker {
     for (const destId of exportArr) {
       const dest = this.buildings[destId];
       if (!dest) continue;
-      if ((dest.incoming[resourceType] ?? 0) > 0) continue;
+      // Allow multiple transporters to head to the same destination
+      if ((dest.incoming[resourceType] ?? 0) >= 3) continue;
 
       const need = this.getDestinationNeed(dest, resourceType);
       if (need <= 0) continue;
@@ -1234,6 +1244,13 @@ class CitizenWorker {
         } else if (source.type === BuildingType.Bakery) {
           canAccept =
             (source as Bakery).capacity < (source as Bakery).maxCapacity;
+        } else if (source.type === BuildingType.Market) {
+          const m = source as Market;
+          const totalAmount = (Object.values(m.storage) as number[]).reduce(
+            (sum, amt) => sum + amt,
+            0,
+          );
+          canAccept = totalAmount < m.maxCapacity;
         }
         if (canAccept) {
           tc.targetId = tc.sourceId;
@@ -1294,6 +1311,16 @@ class CitizenWorker {
           } else if (source.type === BuildingType.Mill) {
             canAccept =
               (source as Mill).capacity < (source as Mill).maxCapacity;
+          } else if (source.type === BuildingType.Bakery) {
+            canAccept =
+              (source as Bakery).capacity < (source as Bakery).maxCapacity;
+          } else if (source.type === BuildingType.Market) {
+            const m = source as Market;
+            const totalAmount = (Object.values(m.storage) as number[]).reduce(
+              (sum, amt) => sum + amt,
+              0,
+            );
+            canAccept = totalAmount < m.maxCapacity;
           }
           if (canAccept) {
             tc.targetId = tc.sourceId;
@@ -1477,6 +1504,13 @@ class CitizenWorker {
         freeSpace = (dest as Mill).maxCapacity - (dest as Mill).capacity;
       } else if (dest.type === BuildingType.Bakery) {
         freeSpace = (dest as Bakery).maxCapacity - (dest as Bakery).capacity;
+      } else if (dest.type === BuildingType.Market) {
+        const m = dest as Market;
+        const totalAmount = (Object.values(m.storage) as number[]).reduce(
+          (sum, amt) => sum + amt,
+          0,
+        );
+        freeSpace = m.maxCapacity - totalAmount;
       } else {
         resident.taskContext = null;
         return true;
@@ -1503,6 +1537,13 @@ class CitizenWorker {
           return true;
         }
         freeSpace = g.storage.maxCapacity - g.storage.amount;
+      } else if (dest.type === BuildingType.Market) {
+        const m = dest as Market;
+        const totalAmount = (Object.values(m.storage) as number[]).reduce(
+          (sum, amt) => sum + amt,
+          0,
+        );
+        freeSpace = m.maxCapacity - totalAmount;
       } else {
         resident.taskContext = null;
         return true;
@@ -1547,6 +1588,9 @@ class CitizenWorker {
         | ResourceType.Bread;
       b.storage[bakeryKey] = (b.storage[bakeryKey] ?? 0) + toUnload;
       b.capacity += toUnload;
+    } else if (dest.type === BuildingType.Market) {
+      const m = dest as Market;
+      m.storage[tc.resourceType] = (m.storage[tc.resourceType] ?? 0) + toUnload;
     }
 
     resident.inventory.resources[tc.resourceType]! -= toUnload;

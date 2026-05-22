@@ -1,13 +1,26 @@
-import { type GameStore, Season, Weather } from "../engine/Types.ts";
+import {
+  type GameStore,
+  Season,
+  Weather,
+  BuildingType,
+  type Market,
+  ResourceType,
+} from "../engine/Types.ts";
 
 import type { WritableDraft } from "immer";
 import { appendLog } from "./GameStore.ts";
+import { RESOURCE_PRICES } from "../engine/Constants.ts";
+import { workerManager } from "./WorkerManager.ts";
 
 export const processDayTime = (state: WritableDraft<GameStore>) => {
   const { meta } = state.gameState;
   const dayTick = meta.gameTick % meta.dayDuration;
   const nightStart = meta.dayDuration * 0.7;
   const nightEnd = meta.dayDuration * 0.2;
+
+  if (dayTick === 0 && meta.gameTick > 0) {
+    processMarketSales(state);
+  }
 
   const totalSeasons = Object.values(Season);
   const seasonIndex =
@@ -32,6 +45,67 @@ export const processDayTime = (state: WritableDraft<GameStore>) => {
       "info",
     );
   }
+};
+
+const processMarketSales = (state: WritableDraft<GameStore>) => {
+  let totalProfit = 0;
+  const soldResources: Partial<Record<ResourceType, number>> = {};
+
+  const markets = Object.values(state.gameState.buildings).filter(
+    (b): b is Market => b.type === BuildingType.Market,
+  );
+
+  markets.forEach((market) => {
+    let marketChanged = false;
+    Object.entries(market.storage).forEach(([res, amount]) => {
+      const type = res as ResourceType;
+      const basePrice = RESOURCE_PRICES[type] ?? 0;
+      const demand = state.gameState.economy.marketDemand[type] ?? 1.0;
+
+      const profit = (amount ?? 0) * basePrice * demand;
+      totalProfit += profit;
+
+      soldResources[type] = (soldResources[type] ?? 0) + (amount ?? 0);
+      delete market.storage[type];
+      marketChanged = true;
+    });
+
+    if (marketChanged) {
+      workerManager.send("UPDATE_BUILDING", {
+        building: JSON.parse(JSON.stringify(market)),
+      });
+    }
+  });
+
+  if (totalProfit > 0) {
+    state.gameState.economy.money += Math.floor(totalProfit);
+    appendLog(
+      state,
+      `Рынок продал товаров на сумму ${Math.floor(totalProfit)} монет.`,
+      "success",
+    );
+
+    Object.entries(soldResources).forEach(([res, amount]) => {
+      const type = res as ResourceType;
+      const currentDemand = state.gameState.economy.marketDemand[type] ?? 1.0;
+      const drop = (amount ?? 0) * 0.005;
+      state.gameState.economy.marketDemand[type] = Math.max(
+        0.2,
+        currentDemand - drop,
+      );
+    });
+  }
+
+  Object.keys(RESOURCE_PRICES).forEach((res) => {
+    const type = res as ResourceType;
+    const currentDemand = state.gameState.economy.marketDemand[type] ?? 1.0;
+    if (currentDemand < 1.5) {
+      state.gameState.economy.marketDemand[type] = Math.min(
+        1.5,
+        currentDemand + 0.02,
+      );
+    }
+  });
 };
 
 const updateWeather = (state: WritableDraft<GameStore>) => {

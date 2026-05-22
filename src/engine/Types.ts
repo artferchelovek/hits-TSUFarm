@@ -188,6 +188,9 @@ export interface Well extends BaseBuilding {
 
 export interface Market extends BaseBuilding {
   type: BuildingType.Market;
+  storage: Partial<Record<ResourceType, number>>;
+  maxCapacity: number;
+  export: string[];
 }
 
 export interface Bridge extends BaseBuilding {
@@ -338,6 +341,7 @@ export interface GameState {
     money: number;
     level: number;
     totalPopulation: number;
+    marketDemand: Partial<Record<ResourceType, number>>;
   };
   buildings: Record<string, Buildings>;
   buildingCounts: Record<BuildingType, number>;
