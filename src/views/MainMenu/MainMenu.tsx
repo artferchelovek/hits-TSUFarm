@@ -1,8 +1,11 @@
-import { useRef } from "react";
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router";
 import styles from "./MainMenu.module.css";
 import MapCanvas from "../../components/game/MapCanvas";
 import { loadGameFromFile, setPendingLoad } from "../../Store/SaveManager";
+import { useAuth } from "../../contexts/AuthContext.tsx";
+import * as savesApi from "../../api/saves.ts";
+import type { CloudSaveMeta } from "../../api/saves.ts";
 
 type CommitEntry = {
   sha: string;
@@ -11,8 +14,25 @@ type CommitEntry = {
 };
 
 export default function MainMenu() {
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
   const [commits, setCommits] = useState<CommitEntry[]>([]);
+  const [cloudSaves, setCloudSaves] = useState<CloudSaveMeta[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchSaves = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoadingSlots(true);
+    try {
+      const list = await savesApi.listSaves();
+      setCloudSaves(list);
+    } catch {
+      setCloudSaves([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const USER = "artferchelovek";
@@ -47,6 +67,52 @@ export default function MainMenu() {
     };
   }, []);
 
+  useEffect(() => {
+    fetchSaves();
+  }, [fetchSaves]);
+
+  const handleLoadSlot = async (slot: number) => {
+    try {
+      const data = await savesApi.loadFromSlot(slot);
+      const save = {
+        version: "0.0.1",
+        timestamp: data.timestamp,
+        gameState: data.gameState as any,
+        worldData: data.worldData,
+      };
+      setPendingLoad(save);
+      navigate("/game");
+    } catch {
+      alert("Не удалось загрузить сохранение");
+    }
+  };
+
+  const handleDeleteSlot = async (slot: number) => {
+    try {
+      await savesApi.deleteSlot(slot);
+      setCloudSaves((prev) =>
+        prev.map((s) =>
+          s.slot === slot
+            ? { slot, name: null, timestamp: null, updatedAt: null }
+            : s,
+        ),
+      );
+    } catch {
+      alert("Не удалось удалить сохранение");
+    }
+  };
+
+  const formatDate = (ts: number | null) => {
+    if (!ts) return "";
+    return new Date(ts).toLocaleString("ru-RU", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div className={styles.root}>
       <div className={styles.background}>
@@ -70,9 +136,80 @@ export default function MainMenu() {
             className={styles.btn}
             onClick={() => fileInputRef.current?.click()}
           >
-            Загрузить сохранение
+            Загрузить локально
           </button>
-          <button className={styles.btn}>Настройки</button>
+
+          {!isAuthenticated ? (
+            <div className={styles.authButtons}>
+              <button
+                className={styles.btnSmall}
+                onClick={() => navigate("/login")}
+              >
+                Войти
+              </button>
+              <button
+                className={styles.btnSmall}
+                onClick={() => navigate("/register")}
+              >
+                Регистрация
+              </button>
+            </div>
+          ) : (
+            <div className={styles.cloudSection}>
+              <div className={styles.cloudHeader}>
+                ☁ {user?.username}
+                <button className={styles.logoutBtn} onClick={logout}>
+                  Выйти
+                </button>
+              </div>
+
+              {loadingSlots ? (
+                <div className={styles.slotLoading}>Загрузка...</div>
+              ) : (
+                <div className={styles.slotList}>
+                  {cloudSaves.map((s) => (
+                    <div
+                      key={s.slot}
+                      className={
+                        s.timestamp ? styles.slot : styles.slotEmpty
+                      }
+                    >
+                      <div className={styles.slotInfo}>
+                        <span className={styles.slotName}>
+                          {s.name ?? `Слот ${s.slot}`}
+                        </span>
+                        <span className={styles.slotDate}>
+                          {formatDate(s.timestamp)}
+                        </span>
+                      </div>
+                      <div className={styles.slotActions}>
+                        {s.timestamp ? (
+                          <>
+                            <button
+                              className={styles.slotBtn}
+                              onClick={() => handleLoadSlot(s.slot)}
+                            >
+                              Загрузить
+                            </button>
+                            <button
+                              className={styles.slotBtnDanger}
+                              onClick={() => handleDeleteSlot(s.slot)}
+                            >
+                              Удалить
+                            </button>
+                          </>
+                        ) : (
+                          <span className={styles.slotEmptyText}>
+                            — пусто —
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className={styles.right}>
