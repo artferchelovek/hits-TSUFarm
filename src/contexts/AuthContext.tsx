@@ -38,6 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({ id: payload.userId, username: payload.username, email: "" });
     }
     setReady(true);
+
+    const onLogout = () => {
+      setTokenState(null);
+      setUser(null);
+    };
+    window.addEventListener("auth:logout", onLogout);
+    return () => window.removeEventListener("auth:logout", onLogout);
   }, []);
 
   const login = async (email: string, password: string) => {

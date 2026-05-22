@@ -51,6 +51,7 @@ export async function apiRequest<T>(
   if (!res.ok) {
     if (res.status === 401) {
       setToken(null);
+      window.dispatchEvent(new Event("auth:logout"));
     }
     throw new ApiError(
       res.status,

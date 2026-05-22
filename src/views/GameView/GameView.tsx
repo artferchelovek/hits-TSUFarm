@@ -8,7 +8,6 @@ import {
 import {
   applySave,
   getPendingLoad,
-  saveGame,
   saveToCloud,
   saveUnloadSave,
   getUnloadSave,
@@ -16,7 +15,6 @@ import {
 } from "../../Store/SaveManager.ts";
 import { getToken } from "../../api/client.ts";
 import { useGameStore } from "../../Store/GameStore.ts";
-import { useAuth } from "../../contexts/AuthContext.tsx";
 import MapCanvas from "../../components/game/MapCanvas.tsx";
 import RightPanel from "../../components/UI/RightPanel/RightPanel.tsx";
 import LeftPanel from "../../components/UI/LeftPanel/LeftPanel.tsx";
@@ -42,10 +40,8 @@ export default function GameView() {
     useState<Record<string, HTMLImageElement>>();
   const [mapRendered, setMapRendered] = useState(false);
   const [loadedFromSave, setLoadedFromSave] = useState(false);
-  const [showSavePicker, setShowSavePicker] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
+
   const worldRef = useRef<WorldMap | null>(null);
-  const { isAuthenticated } = useAuth();
 
   const isLoading = !ready || !mapRendered;
 
@@ -218,31 +214,6 @@ export default function GameView() {
     };
   }, []);
 
-  const handleCloudSave = async (slot: number) => {
-    const w = worldRef.current;
-    console.log("handleCloudSave", { slot, hasWorld: !!w, ready, isAuthenticated });
-
-    if (!w) {
-      setSaveMessage("Мир ещё не загружен");
-      setTimeout(() => setSaveMessage(""), 2000);
-      return;
-    }
-
-    setSaveMessage("");
-    try {
-      const gameState = useGameStore.getState().gameState;
-      saveGame(gameState, w);
-      await saveToCloud(slot, gameState, w);
-      setSaveMessage(`Сохранено в слот ${slot} ☁`);
-      setTimeout(() => setSaveMessage(""), 3000);
-    } catch (err) {
-      console.error("Save error:", err);
-      setSaveMessage("Ошибка сохранения");
-      setTimeout(() => setSaveMessage(""), 3000);
-    }
-    setShowSavePicker(false);
-  };
-
   return (
     <>
       <BuildSelectionProvider>
@@ -275,37 +246,6 @@ export default function GameView() {
           />
 
           <p className={styles.loadingStage}>{LOADING_STAGES[stage]}</p>
-        </div>
-      )}
-
-      {ready && isAuthenticated && (
-        <div className={styles.cloudSaveArea}>
-          <button
-            className={styles.cloudSaveBtn}
-            onClick={() => setShowSavePicker((v) => !v)}
-            title="Сохранить в облако"
-          >
-            ☁
-          </button>
-
-          {showSavePicker && (
-            <div className={styles.savePicker}>
-              <div className={styles.savePickerTitle}>Сохранить в слот</div>
-              {[1, 2, 3, 4, 5].map((slot) => (
-                <button
-                  key={slot}
-                  className={styles.saveSlotBtn}
-                  onClick={() => handleCloudSave(slot)}
-                >
-                  Слот {slot}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {saveMessage && (
-            <div className={styles.saveMessage}>{saveMessage}</div>
-          )}
         </div>
       )}
     </>

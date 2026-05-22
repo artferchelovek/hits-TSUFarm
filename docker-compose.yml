@@ -24,7 +24,7 @@ services:
       DATABASE_URL: postgres://tsufarm:${POSTGRES_PASSWORD:-tsufarm_pass}@db:5432/tsufarm
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3001
-      CORS_ORIGIN: https://lilv2dim.ru
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
     depends_on:
       db:
         condition: service_healthy
