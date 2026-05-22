@@ -1,4 +1,5 @@
 import {
+  type Bakery,
   BuildingType,
   type Mill,
   type PlantPlace,
@@ -43,6 +44,38 @@ export class BuildingProcessor {
     }
 
     mill.progress = 0;
+  }
+
+  processBakery(bakery: Bakery): void {
+    if (
+      (bakery.storage[ResourceType.Bread] ?? 0) >= bakery.maxCapacity ||
+      (bakery.storage[ResourceType.Flour] ?? 0) <= 0
+    ) {
+      bakery.progress = 0;
+      return;
+    }
+
+    if (bakery.progress < 1) {
+      bakery.progress += 1 / bakery.recipe.durationPerTick;
+
+      if (bakery.storage[ResourceType.Flour]) {
+        const step = bakery.recipe.importCount / bakery.recipe.durationPerTick;
+        bakery.storage[ResourceType.Flour] = Math.max(
+          bakery.storage[ResourceType.Flour] - step,
+          0,
+        );
+        bakery.capacity -= step;
+        bakery.capacity += bakery.recipe.exportCount / bakery.recipe.durationPerTick;
+        bakery.storage[ResourceType.Bread] =
+          (bakery.storage[ResourceType.Bread] ?? 0) +
+          bakery.recipe.exportCount / bakery.recipe.durationPerTick;
+      } else {
+        bakery.storage[ResourceType.Flour] = 0;
+      }
+      return;
+    }
+
+    bakery.progress = 0;
   }
 
   processPlantGrowth(

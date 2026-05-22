@@ -85,6 +85,16 @@ export class GridService {
     return data;
   }
 
+  clearArea(x: number, y: number, w: number, l: number): void {
+    for (let i = y; i < y + l; i++) {
+      for (let j = x; j < x + w; j++) {
+        if (i < this.height && j < this.width) {
+          this.grid[i][j] = TERRAIN_WEIGHTS.DEFAULT;
+        }
+      }
+    }
+  }
+
   updateObstacle(
     x: number,
     y: number,
