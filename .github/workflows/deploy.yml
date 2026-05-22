@@ -19,7 +19,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/projects/hits-TSUFarm
-            git pull
+            git fetch origin
+            git checkout develop
+            git reset --hard origin/develop
 
             cat > .env << 'EOF'
             JWT_SECRET=${{ secrets.JWT_SECRET }}
