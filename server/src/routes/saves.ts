@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
-import { db } from "../db/index.ts";
-import { saves } from "../db/schema.ts";
-import { authMiddleware } from "../middleware/auth.ts";
+import { db } from "../db/index.js";
+import { saves } from "../db/schema.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 

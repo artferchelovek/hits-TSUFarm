@@ -3,9 +3,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { db } from "../db/index.ts";
-import { users } from "../db/schema.ts";
-import { config } from "../config.ts";
+import { db } from "../db/index.js";
+import { users } from "../db/schema.js";
+import { config } from "../config.js";
 
 const router = Router();
 

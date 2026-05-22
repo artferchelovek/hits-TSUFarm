@@ -2,10 +2,10 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { config } from "./config.ts";
-import { db } from "./db/index.ts";
-import authRoutes from "./routes/auth.ts";
-import savesRoutes from "./routes/saves.ts";
+import { config } from "./config.js";
+import { db } from "./db/index.js";
+import authRoutes from "./routes/auth.js";
+import savesRoutes from "./routes/saves.js";
 
 const app = express();
 
