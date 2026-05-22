@@ -1,18 +1,81 @@
-<svg width="44" height="36" viewBox="0 0 44 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <g clip-path="url(#clip0_57_29878)">
-        <path d="M26 34H18H2V30V26H0V34C0 34.5667 0.199976 35.05 0.599976 35.45C0.966642 35.8167 1.43333 36 2 36H42C42.5667 36 43.05 35.8167 43.45 35.45C43.8166 35.05 44 34.5667 44 34V26H42V30V34H26Z" fill="#7B7360"/>
-        <path d="M18 30H14H10H2V34H18V30ZM30 30H26V34H42V30H34H30Z" fill="#E0D1AE"/>
-        <path d="M14 30V22H10V30H14ZM30 22V30H34V22H30ZM21 10V12H19V14H21V18H23V14H25V12H23V10H21Z" fill="#CBBE9D"/>
-        <path d="M26 30V22H18V30V34H26V30ZM34 2V0H10V2H34Z" fill="#BB8044"/>
-        <path d="M10 18V14L2 22V26L10 18ZM34 14V18L42 26V22L34 14Z" fill="#178044"/>
-        <path d="M2 0H0V26H2V22V0ZM44 0H42V22V26H44V0Z" fill="#115F32"/>
-        <path d="M10 0H2V22L10 14V6V2V0ZM34 0V2V6V14L42 22V0H34Z" fill="#1B914D"/>
-        <path d="M34 6V2H10V6H34Z" fill="#A6713B"/>
-        <path d="M34 14V6H10V14V18L2 26V30H10V22H14V30H18V22H26V30H30V22H34V30H42V26L34 18V14ZM21 12V10H23V12H25V14H23V18H21V14H19V12H21Z" fill="#ECDCB8"/>
-    </g>
-    <defs>
-        <clipPath id="clip0_57_29878">
-            <rect width="44" height="36" fill="white"/>
-        </clipPath>
-    </defs>
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- IRON FENCE (top row, sticks slightly above) -->
+  <!-- horizontal bars -->
+  <rect x="0" y="4"  width="128" height="4"  fill="#4A4038"/>
+  <rect x="0" y="12" width="128" height="3"  fill="#4A4038"/>
+  <!-- fence posts with spikes -->
+  <rect x="0"   y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="2"   y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="12"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="14"  y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="24"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="26"  y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="36"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="38"  y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="48"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="50"  y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="60"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="62"  y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="74"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="76"  y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="86"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="88"  y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="98"  y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="100" y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="110" y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="112" y="0" width="2" height="4"  fill="#6A5A40"/>
+  <rect x="122" y="0" width="6" height="18" fill="#3A3028"/>
+  <rect x="124" y="0" width="2" height="4"  fill="#6A5A40"/>
+
+  <!-- DARK EARTH GROUND -->
+  <rect x="0" y="18" width="128" height="96" fill="#3A3028"/>
+  <!-- sparse dead grass -->
+  <rect x="10"  y="100" width="4" height="6" fill="#5A6830"/>
+  <rect x="34"  y="104" width="4" height="5" fill="#5A6830"/>
+  <rect x="64"  y="100" width="4" height="6" fill="#5A6830"/>
+  <rect x="98"  y="102" width="4" height="5" fill="#5A6830"/>
+  <rect x="112" y="100" width="4" height="6" fill="#5A6830"/>
+
+  <!-- GRAVESTONES -->
+  <!-- gravestone left (arched top) -->
+  <rect x="12" y="28" width="24" height="34" fill="#8A9088"/>
+  <rect x="14" y="22" width="20" height="10" fill="#8A9088"/>
+  <rect x="18" y="18" width="12" height="6"  fill="#8A9088"/>
+  <rect x="12" y="28" width="24" height="3"  fill="#A0A898"/>
+  <!-- cross engraving -->
+  <rect x="23" y="32" width="2"  height="18" fill="#6A7068"/>
+  <rect x="17" y="38" width="14" height="2"  fill="#6A7068"/>
+  <!-- mound -->
+  <rect x="10" y="62" width="28" height="10" fill="#4A4038"/>
+  <rect x="12" y="68" width="24" height="6"  fill="#403828"/>
+
+  <!-- gravestone center (larger) -->
+  <rect x="52" y="24" width="28" height="40" fill="#909890"/>
+  <rect x="55" y="18" width="22" height="8"  fill="#909890"/>
+  <rect x="59" y="14" width="14" height="6"  fill="#909890"/>
+  <rect x="52" y="24" width="28" height="4"  fill="#A8B0A8"/>
+  <!-- cross engraving -->
+  <rect x="65" y="29" width="2"  height="22" fill="#707868"/>
+  <rect x="58" y="38" width="16" height="2"  fill="#707868"/>
+  <!-- inscription lines -->
+  <rect x="56" y="50" width="20" height="2"  fill="#707868"/>
+  <rect x="58" y="54" width="16" height="2"  fill="#707868"/>
+  <!-- mound -->
+  <rect x="50" y="64" width="32" height="10" fill="#4A4038"/>
+  <rect x="52" y="70" width="28" height="6"  fill="#403828"/>
+
+  <!-- gravestone right (smaller, tilted — represented with offset) -->
+  <rect x="90" y="34" width="22" height="28" fill="#888880"/>
+  <rect x="92" y="28" width="18" height="8"  fill="#888880"/>
+  <rect x="95" y="24" width="12" height="6"  fill="#888880"/>
+  <rect x="90" y="34" width="22" height="3"  fill="#9CA0A0"/>
+  <!-- simple cross -->
+  <rect x="100" y="38" width="2" height="16" fill="#686868"/>
+  <rect x="94"  y="44" width="14" height="2" fill="#686868"/>
+  <!-- mound -->
+  <rect x="88" y="62" width="26" height="8"  fill="#4A4038"/>
+
+  <!-- FOUNDATION + GROUND -->
+  <rect x="0" y="114" width="128" height="6"  fill="#504030"/>
+  <rect x="0" y="120" width="128" height="8"  fill="#9EC85A"/>
 </svg>

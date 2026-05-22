@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ResidentPanel } from "./Panels/ResidentPanel.tsx";
 import { BuildingsPanel } from "./Panels/BuildingsPanel.tsx";
 import StatisticPanel from "./Panels/StatisticPanel.tsx";
+import MarketPanel from "./Panels/MarketPanel.tsx";
 
 export default function LeftPanel() {
   const [picker, setPicker] = useState("buildings");
@@ -19,6 +20,7 @@ export default function LeftPanel() {
         <option value="buildings">Строения</option>
         <option value="statistic">Статистика</option>
         <option value="residents">Жители</option>
+        <option value="market">Рынок</option>
         <option value="taxes">Налоги</option>
         <option value="cultures">Культуры</option>
       </select>
@@ -26,6 +28,7 @@ export default function LeftPanel() {
         {picker === "buildings" ? <BuildingsPanel /> : null}
         {picker === "residents" ? <ResidentPanel /> : null}
         {picker === "statistic" ? <StatisticPanel /> : null}
+        {picker === "market" ? <MarketPanel /> : null}
       </div>
     </div>
   );

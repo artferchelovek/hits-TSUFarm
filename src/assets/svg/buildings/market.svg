@@ -1,14 +1,46 @@
-<svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M46 46V54H50V46H46ZM34 46V54H38V46H34Z" fill="#CBBE9D"/>
-    <path d="M60 46H58V58H54V60H58C58.5667 60 59.05 59.8167 59.45 59.45C59.8167 59.05 60 58.5667 60 58V46ZM26 50V46V42L6 46V50H26ZM24 44.45V48H8V47.65L24 44.45ZM25.2 12.1L1.70001 16.05C1.20001 16.1167 0.8 16.3333 0.5 16.7C0.166667 17.0667 0 17.5 0 18V58C0 58.5667 0.199976 59.05 0.599976 59.45C0.966642 59.8167 1.43333 60 2 60H6.15002C6.62919 59.9885 7.06251 59.8052 7.45001 59.45C7.81668 59.05 8 58.5667 8 58V56H24V58C24 58.5667 24.2 59.05 24.6 59.45C24.9552 59.8052 25.3886 59.9885 25.9 60H30V58H26V54H6V58H2V42V18L26 14V11.5L25.2 12.1Z" fill="#775029"/>
-    <path d="M58 46L54 43V54V58H58V46ZM26 50V54V58H30V54V43L26 46V50ZM26 42V38L2 42V58H6V54V50V46L26 42Z" fill="#BB8044"/>
-    <path d="M30 58V60H54V58H30Z" fill="#7B7360"/>
-    <path d="M30 43V54H34V46H38V54H46V46H50V54H54V43L42 34L30 43Z" fill="#ECDCB8"/>
-    <path d="M23.9999 48V44.45L7.99988 47.65V48H23.9999ZM23.9999 58V56H7.99988V58C7.99988 58.5667 7.81656 59.05 7.44989 59.45C7.06239 59.8052 6.62907 59.9885 6.1499 60H25.8999C25.3884 59.9885 24.9551 59.8052 24.5999 59.45C24.1999 59.05 23.9999 58.5667 23.9999 58Z" fill="black" fill-opacity="0.101961"/>
-    <path d="M30 54V58H54V54H50H46H38H34H30Z" fill="#E0D1AE"/>
-    <path d="M26 54V50H6V54H26Z" fill="#A6713B"/>
-    <path d="M26 14L2 18V42L26 38V14Z" fill="#C68848"/>
-    <path d="M42 30V2L26 14V38V42L42 30ZM34 22V18L38 14V18L34 22ZM34 26V30L30 34V30L34 26Z" fill="#1B914D"/>
-    <path d="M34 30V26L30 30V34L34 30ZM34 18V22L38 18V14L34 18ZM58 14L42 2V30L26 42V46L30 43L42 34L54 43L58 46V14Z" fill="#178044"/>
-    <path d="M43.2 0.400024C42.8333 0.133358 42.4333 0 42 0C41.5667 0 41.1667 0.133358 40.8 0.400024L26 11.5V14L42 2L58 14V46H60V14C60 13.7 59.9333 13.4 59.8 13.1C59.6667 12.8333 59.4667 12.6 59.2 12.4L43.2 0.400024Z" fill="#115F32"/>
+<svg width="96" height="128" viewBox="0 0 96 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- SIGN (above footprint) -->
+  <rect x="20" y="8"  width="56" height="18" fill="#8A5020"/>
+  <rect x="22" y="10" width="52" height="14" fill="#AA6830"/>
+  <!-- sign text bars (decorative) -->
+  <rect x="28" y="13" width="40" height="3" fill="#C88040"/>
+  <rect x="28" y="18" width="40" height="2" fill="#C88040"/>
+
+  <!-- AWNING (bold red + cream stripes) -->
+  <rect x="0" y="32" width="96" height="28" fill="#C42810"/>
+  <!-- awning stripes -->
+  <rect x="0"  y="32" width="12" height="28" fill="#E0DCC8"/>
+  <rect x="24" y="32" width="12" height="28" fill="#E0DCC8"/>
+  <rect x="48" y="32" width="12" height="28" fill="#E0DCC8"/>
+  <rect x="72" y="32" width="12" height="28" fill="#E0DCC8"/>
+  <!-- awning bottom fringe -->
+  <rect x="0" y="58" width="96" height="4" fill="#9A1C08"/>
+  <!-- awning shadow -->
+  <rect x="0" y="62" width="96" height="6" fill="#1C0C04"/>
+
+  <!-- WALL + DISPLAY -->
+  <rect x="0" y="68" width="96" height="52" fill="#E4D4A4"/>
+  <!-- wooden posts (left, center, right) -->
+  <rect x="0"  y="62" width="8"  height="58" fill="#8A5820"/>
+  <rect x="88" y="62" width="8"  height="58" fill="#8A5820"/>
+  <!-- display window (produce) -->
+  <rect x="10" y="70" width="76" height="26" fill="#C8E8A0"/>
+  <rect x="10" y="70" width="76" height="4"  fill="#7A5020"/>
+  <rect x="10" y="94" width="76" height="2"  fill="#7A5020"/>
+  <!-- produce on display -->
+  <rect x="14" y="76" width="12" height="14" fill="#E84828"/>
+  <rect x="30" y="76" width="12" height="14" fill="#E8C030"/>
+  <rect x="46" y="76" width="12" height="14" fill="#60B840"/>
+  <rect x="62" y="76" width="12" height="14" fill="#E87028"/>
+  <!-- counter -->
+  <rect x="8"  y="96" width="80" height="6" fill="#9A7030"/>
+  <!-- door -->
+  <rect x="36" y="102" width="24" height="18" fill="#8A5020"/>
+  <rect x="37" y="103" width="9"  height="12" fill="#A07030"/>
+  <rect x="50" y="103" width="9"  height="12" fill="#A07030"/>
+  <rect x="44" y="109" width="4"  height="3"  fill="#C08040"/>
+
+  <!-- FOUNDATION + GROUND -->
+  <rect x="0" y="120" width="96" height="4" fill="#9A7840"/>
+  <rect x="0" y="124" width="96" height="4" fill="#9EC85A"/>
 </svg>

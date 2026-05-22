@@ -73,7 +73,7 @@ export default function GameView() {
           lastAutoSaveSlot = slot;
         }
       }
-    }, 100);
+    }, 10);
 
     return () => clearInterval(gameLoop);
   }, []);

@@ -17,68 +17,61 @@ import {
 
 export class BuildingProcessor {
   processMill(mill: Mill): void {
+    const currentWheat = mill.storage[ResourceType.Wheat] ?? 0;
+    const currentFlour = mill.storage[ResourceType.Flour] ?? 0;
+
     if (
-      (mill.storage[ResourceType.Flour] ?? 0) >= mill.maxCapacity ||
-      (mill.storage[ResourceType.Wheat] ?? 0) <= 0
+      currentWheat < mill.recipe.importCount ||
+      currentFlour + mill.recipe.exportCount > mill.maxCapacity
     ) {
       mill.progress = 0;
       return;
     }
 
-    if (mill.progress < 1) {
-      mill.progress += 1 / mill.recipe.durationPerTick;
+    mill.progress += 1 / mill.recipe.durationPerTick;
 
-      if (mill.storage[ResourceType.Wheat]) {
-        const step = mill.recipe.importCount / mill.recipe.durationPerTick;
-        mill.storage[ResourceType.Wheat] = Math.max(
-          mill.storage[ResourceType.Wheat] - step,
-          0,
-        );
-        mill.capacity -= step;
-        mill.capacity += mill.recipe.exportCount / mill.recipe.durationPerTick;
-        mill.storage[ResourceType.Flour] =
-          (mill.storage[ResourceType.Flour] ?? 0) +
-          mill.recipe.exportCount / mill.recipe.durationPerTick;
-      } else {
-        mill.storage[ResourceType.Wheat] = 0;
+    if (mill.progress >= 1) {
+      mill.storage[ResourceType.Wheat] = currentWheat - mill.recipe.importCount;
+      if (mill.storage[ResourceType.Wheat]! <= 0) {
+        delete mill.storage[ResourceType.Wheat];
       }
-      return;
+      mill.storage[ResourceType.Flour] = currentFlour + mill.recipe.exportCount;
+      
+      mill.capacity =
+        (mill.storage[ResourceType.Wheat] ?? 0) +
+        (mill.storage[ResourceType.Flour] ?? 0);
+      
+      mill.progress = 0;
     }
-
-    mill.progress = 0;
   }
 
   processBakery(bakery: Bakery): void {
+    const currentFlour = bakery.storage[ResourceType.Flour] ?? 0;
+    const currentBread = bakery.storage[ResourceType.Bread] ?? 0;
+
     if (
-      (bakery.storage[ResourceType.Bread] ?? 0) >= bakery.maxCapacity ||
-      (bakery.storage[ResourceType.Flour] ?? 0) <= 0
+      currentFlour < bakery.recipe.importCount ||
+      currentBread + bakery.recipe.exportCount > bakery.maxCapacity
     ) {
       bakery.progress = 0;
       return;
     }
 
-    if (bakery.progress < 1) {
-      bakery.progress += 1 / bakery.recipe.durationPerTick;
+    bakery.progress += 1 / bakery.recipe.durationPerTick;
 
-      if (bakery.storage[ResourceType.Flour]) {
-        const step = bakery.recipe.importCount / bakery.recipe.durationPerTick;
-        bakery.storage[ResourceType.Flour] = Math.max(
-          bakery.storage[ResourceType.Flour] - step,
-          0,
-        );
-        bakery.capacity -= step;
-        bakery.capacity +=
-          bakery.recipe.exportCount / bakery.recipe.durationPerTick;
-        bakery.storage[ResourceType.Bread] =
-          (bakery.storage[ResourceType.Bread] ?? 0) +
-          bakery.recipe.exportCount / bakery.recipe.durationPerTick;
-      } else {
-        bakery.storage[ResourceType.Flour] = 0;
+    if (bakery.progress >= 1) {
+      bakery.storage[ResourceType.Flour] = currentFlour - bakery.recipe.importCount;
+      if (bakery.storage[ResourceType.Flour]! <= 0) {
+        delete bakery.storage[ResourceType.Flour];
       }
-      return;
+      bakery.storage[ResourceType.Bread] = currentBread + bakery.recipe.exportCount;
+      
+      bakery.capacity =
+        (bakery.storage[ResourceType.Flour] ?? 0) +
+        (bakery.storage[ResourceType.Bread] ?? 0);
+      
+      bakery.progress = 0;
     }
-
-    bakery.progress = 0;
   }
 
   processPlantGrowth(

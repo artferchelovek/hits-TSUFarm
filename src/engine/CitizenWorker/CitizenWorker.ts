@@ -135,6 +135,7 @@ class CitizenWorker {
     season: Season;
     plantBuildings: PlantPlace[];
     tick: number;
+    economy: any;
   }) {
     const deadResidentIds: string[] = [];
     const logs: GameLog[] = [];
@@ -190,7 +191,7 @@ class CitizenWorker {
         payload.isNight,
       );
 
-      this.updateMovement(resident, payload.isNight);
+      this.updateMovement(resident, payload.isNight, payload.economy.level);
 
       if (
         resident.status === VillagerStatus.Idle &&
@@ -391,7 +392,11 @@ class CitizenWorker {
     return REPRODUCTION.BASE_REPRODUCTION_CHANCE * (yearsLeft / decayRange);
   }
 
-  private updateMovement(resident: Resident, isNight: boolean): void {
+  private updateMovement(
+    resident: Resident,
+    isNight: boolean,
+    currentLevel: number,
+  ): void {
     if (
       moveStatuses.includes(resident.status) &&
       resident.pathIndex < resident.path.length
@@ -485,7 +490,7 @@ class CitizenWorker {
       return;
     }
     if (resident.status === VillagerStatus.Unloading) {
-      if (this.farmerService.unloadToGranary(resident, this.buildings)) {
+      if (this.farmerService.unloadToStorage(resident, this.buildings, currentLevel)) {
         resident.status = VillagerStatus.Idle;
       }
     }
@@ -518,12 +523,12 @@ class CitizenWorker {
     }
 
     if (resident.status === VillagerStatus.LoadingExport) {
-      if (this.transportService.loadingExport(resident, this.buildings)) {
+      if (this.transportService.loadingExport(resident, this.buildings, currentLevel)) {
         resident.status = VillagerStatus.Idle;
       }
     }
     if (resident.status === VillagerStatus.UnloadingExport) {
-      if (this.transportService.unloadingExport(resident, this.buildings)) {
+      if (this.transportService.unloadingExport(resident, this.buildings, currentLevel)) {
         if (resident.status === VillagerStatus.UnloadingExport) {
           resident.status = VillagerStatus.Idle;
         }
@@ -558,13 +563,22 @@ class CitizenWorker {
       resident.status === VillagerStatus.Idle &&
       resident.profession.type === ProfessionType.Farmer
     ) {
-      this.farmerService.update(resident, this.buildings);
+      this.farmerService.update(
+        resident,
+        this.buildings,
+        currentLevel,
+        Object.values(this.residents),
+      );
     }
     if (
       resident.status === VillagerStatus.Idle &&
       resident.profession.type === ProfessionType.Transporter
     ) {
-      this.transportService.updateTransporter(resident, this.buildings);
+      this.transportService.updateTransporter(
+        resident,
+        this.buildings,
+        currentLevel,
+      );
     }
     if (
       resident.status === VillagerStatus.Idle &&

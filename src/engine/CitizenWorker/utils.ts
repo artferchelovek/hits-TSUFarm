@@ -42,11 +42,12 @@ export function closestByDistance<T extends { position: Position }>(
 
 export function getExitPos(build: {
   position: Position;
+  width?: number;
   length?: number;
 }): Position {
   return {
-    x: build.position.x,
-    y: build.position.y + (build.length ?? 1),
+    x: Math.floor(build.position.x + (build.width ?? 1) / 2),
+    y: Math.floor(build.position.y + (build.length ?? 1) / 2),
   };
 }
 

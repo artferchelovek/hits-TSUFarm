@@ -5,7 +5,7 @@ import {
   type FoodNutrient,
   type GameState,
   Gender,
-  type Granary,
+  type LevelRequirement,
   type Plant,
   type Profession,
   ProfessionType,
@@ -229,31 +229,38 @@ export const BUILDING_CONFIG = {
     length: 5,
     initialCapacity: 2,
     cost: 0,
+    maintenanceCost: 0,
+    maxCapacity: 500,
   },
   [BuildingType.House]: {
     width: 3,
     length: 3,
     capacity: 3,
     maxStorageCapacity: 30,
-    cost: 50,
+    cost: 150,
+    maintenanceCost: 0,
   },
   [BuildingType.Granary]: {
     width: 4,
     length: 4,
     maxCapacity: 700,
-    cost: 120,
+    cost: 200,
+    maintenanceCost: 2,
   },
   [BuildingType.Well]: {
     width: 2,
     length: 2,
     maxCapacity: 200,
     refillRate: 2,
-    cost: 40,
+    cost: 50,
+    maintenanceCost: 1,
   },
   [BuildingType.Market]: {
     width: 3,
     length: 3,
-    cost: 250,
+    cost: 300,
+    maxCapacity: 200,
+    maintenanceCost: 10,
   },
   [BuildingType.Garden]: {
     width: 1,
@@ -261,46 +268,164 @@ export const BUILDING_CONFIG = {
     moisture: 0,
     growthCoefficient: 1.0,
     cost: 10,
+    maintenanceCost: 0,
   },
   [BuildingType.Greenhouse]: {
-    width: 3,
+    width: 4,
     length: 2,
     waterMax: 150,
     moisture: 0,
     growthCoefficient: 1.5,
-    cost: 200,
+    cost: 400,
+    maintenanceCost: 0,
   },
   [BuildingType.Road]: {
     width: 1,
     length: 1,
     speed: 1.5,
     cost: 2,
+    maintenanceCost: 0,
   },
   [BuildingType.Bridge]: {
     width: 1,
     length: 1,
     speed: 1.2,
     cost: 15,
+    maintenanceCost: 0,
   },
   [BuildingType.Graveyard]: {
-    width: 3,
-    length: 3,
+    width: 4,
+    length: 4,
     maxCapacity: 50,
-    cost: 80,
+    cost: 500,
+    maintenanceCost: 0,
   },
   [BuildingType.Mill]: {
     width: 3,
-    length: 5,
-    cost: 300,
+    length: 3,
+    cost: 600,
     maxCapacity: 20,
+    maintenanceCost: 5,
   },
   [BuildingType.Bakery]: {
     width: 3,
     length: 3,
-    cost: 250,
+    cost: 800,
     maxCapacity: 15,
+    maintenanceCost: 8,
   },
 };
+
+export const LEVEL_CONFIG: Record<number, LevelRequirement> = {
+  1: {
+    unlockedBuildings: [
+      BuildingType.Main,
+      BuildingType.House,
+      BuildingType.Garden,
+      BuildingType.Well,
+      BuildingType.Road,
+      BuildingType.Granary,
+      BuildingType.Market,
+    ],
+    unlockedCrops: [ResourceType.Potato, ResourceType.Wheat],
+    upgradeCost: {
+      money: 2000,
+      resources: { [ResourceType.Potato]: 30 },
+    },
+  },
+  2: {
+    unlockedBuildings: [
+      BuildingType.Main,
+      BuildingType.House,
+      BuildingType.Garden,
+      BuildingType.Well,
+      BuildingType.Road,
+      BuildingType.Granary,
+      BuildingType.Market,
+      BuildingType.Mill,
+      BuildingType.Bridge,
+    ],
+    unlockedCrops: [
+      ResourceType.Potato,
+      ResourceType.Wheat,
+      ResourceType.Cucumber,
+    ],
+    upgradeCost: {
+      money: 10000,
+      resources: { [ResourceType.Cucumber]: 50, [ResourceType.Flour]: 20 },
+    },
+  },
+  3: {
+    unlockedBuildings: [
+      BuildingType.Main,
+      BuildingType.House,
+      BuildingType.Garden,
+      BuildingType.Well,
+      BuildingType.Road,
+      BuildingType.Granary,
+      BuildingType.Market,
+      BuildingType.Mill,
+      BuildingType.Bridge,
+      BuildingType.Bakery,
+      BuildingType.Graveyard,
+    ],
+    unlockedCrops: [
+      ResourceType.Potato,
+      ResourceType.Wheat,
+      ResourceType.Cucumber,
+      ResourceType.Tomato,
+    ],
+    upgradeCost: {
+      money: 30000,
+      resources: { [ResourceType.Bread]: 30 },
+    },
+  },
+  4: {
+    unlockedBuildings: [
+      BuildingType.Main,
+      BuildingType.House,
+      BuildingType.Garden,
+      BuildingType.Well,
+      BuildingType.Road,
+      BuildingType.Granary,
+      BuildingType.Market,
+      BuildingType.Mill,
+      BuildingType.Bridge,
+      BuildingType.Bakery,
+      BuildingType.Graveyard,
+      BuildingType.Greenhouse,
+    ],
+    unlockedCrops: [
+      ResourceType.Potato,
+      ResourceType.Wheat,
+      ResourceType.Cucumber,
+      ResourceType.Tomato,
+      ResourceType.Corn,
+    ],
+    upgradeCost: {
+      money: 75000,
+      resources: { [ResourceType.Corn]: 100, [ResourceType.Bread]: 50 },
+    },
+  },
+  5: {
+    unlockedBuildings: Object.values(BuildingType),
+    unlockedCrops: Object.values(ResourceType).filter(
+      (r) =>
+        ![
+          ResourceType.Empty,
+          ResourceType.Water,
+          ResourceType.WellWater,
+          ResourceType.Flour,
+          ResourceType.Bread,
+        ].includes(r),
+    ) as ResourceType[],
+    upgradeCost: {
+      money: 0,
+      resources: {},
+    },
+  },
+};
+
 export const PLANT_CONFIG: Record<CropType, Plant> = {
   [ResourceType.Wheat]: {
     type: ResourceType.Wheat,
@@ -363,6 +488,20 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
     maxYield: 2,
   },
 };
+
+export const RESOURCE_PRICES: Partial<Record<ResourceType, number>> = {
+  [ResourceType.Wheat]: 2,
+  [ResourceType.Cucumber]: 5,
+  [ResourceType.Tomato]: 8,
+  [ResourceType.Potato]: 4,
+  [ResourceType.Corn]: 12,
+  [ResourceType.Pumpkin]: 25,
+  [ResourceType.Flour]: 6,
+  [ResourceType.Bread]: 18,
+  [ResourceType.Water]: 0.1,
+  [ResourceType.WellWater]: 0.5,
+};
+
 export const FOOD_NUTRITION: Record<ResourceType, FoodNutrient> = {
   [ResourceType.Bread]: {
     hungerRestore: 60,
@@ -401,16 +540,18 @@ export const FOOD_NUTRITION: Record<ResourceType, FoodNutrient> = {
   },
   [ResourceType.Empty]: { hungerRestore: 0, healthRestore: 0, isEdible: false },
 };
+
 export const PLANT_EFFECTS = {
   WELL_WATER_EFFECT: 1.2,
 };
 
 export const WELL_REFILL_AMOUNT = 2;
 export const DROUGHT_DAMAGE_TICK = 0.01;
+
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 0.5,
+  hungerPerTick: 0.1,
   hungerCoefficientForEat: 0.1,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,
@@ -463,6 +604,7 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     },
     path: [],
     pathIndex: 0,
+    stuckCounter: 0,
     parents: {
       parentFirst: "initial",
       parentSecond: "initial",
@@ -490,37 +632,14 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     },
     path: [],
     pathIndex: 0,
+    stuckCounter: 0,
     parents: {
       parentFirst: "initial",
       parentSecond: "initial",
     },
   },
 };
-const fullWheatGranary: Granary = {
-  // === Поля из интерфейса BaseBuilding ===
-  id: "granary_wheat_01",
-  position: { x: 105, y: 90 },
-  width: 4, // Например, размер здания 3х3 клетки
-  length: 4,
 
-  // Наш новый Partial-рекорд для счётчиков брони.
-  // Показывает, сколько транспортеров СЕЙЧАС взаимодействуют с этим зданием по конкретному ресурсу.
-  incoming: {
-    [ResourceType.Wheat]: 0, // К самому амбару сейчас никто не идёт разгружать пшеницу (он и так полон)
-  },
-
-  // === Специфичные поля интерфейса Granary ===
-  type: BuildingType.Granary,
-  resourceType: ResourceType.Tomato, // Амбар залочен под пшеницу
-
-  storage: {
-    amount: 500, // Текущее количество (полный)
-    maxCapacity: 500, // Максимальная вместимость
-  },
-
-  // Массив экспортных связей (куда логисты должны тащить пшеницу)
-  export: [],
-};
 export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
@@ -528,25 +647,28 @@ export const initialGameState: GameState = {
     gameTick: 300,
     graveyardIds: [],
     seasonDuration: 30 * 1000,
-    currentSeason: Season.Summer,
+    currentSeason: Season.Winter,
     currentWeather: Weather.Clear,
     dayDuration: 1000,
     isNight: false,
     farmName: "Новая ферма",
   },
   economy: {
-    money: 100000,
-    level: 10,
+    money: 1200,
+    level: 1,
     totalPopulation: 0,
+    marketDemand: Object.fromEntries(
+      Object.values(ResourceType).map((r) => [r, 1.0]),
+    ),
   },
-  buildings: { granary_wheat_01: fullWheatGranary },
+  buildings: {},
   buildingCounts: Object.fromEntries(
     Object.values(BuildingType).map((type) => [type, 0]),
   ) as Record<BuildingType, number>,
   buildingRemind: Object.fromEntries(
     Object.values(BuildingType).map((type) => [
       type,
-      getBuildingLimit(type, 10),
+      getBuildingLimit(type, 1),
     ]),
   ) as Record<BuildingType, number>,
   residents: {},
@@ -623,9 +745,23 @@ export const RESOURCE_DISPLAY_NAMES: Partial<Record<ResourceType, string>> = {
 };
 
 export const EXPORT_RULES: Partial<Record<BuildingType, BuildingType[]>> = {
-  [BuildingType.Granary]: [BuildingType.Mill, BuildingType.Bakery],
-  [BuildingType.Mill]: [BuildingType.Granary, BuildingType.Bakery],
-  [BuildingType.Bakery]: [BuildingType.Granary],
+  [BuildingType.Granary]: [
+    BuildingType.Mill,
+    BuildingType.Bakery,
+    BuildingType.Market,
+    BuildingType.Main,
+  ],
+  [BuildingType.Mill]: [
+    BuildingType.Granary,
+    BuildingType.Bakery,
+    BuildingType.Market,
+    BuildingType.Main,
+  ],
+  [BuildingType.Bakery]: [
+    BuildingType.Granary,
+    BuildingType.Market,
+    BuildingType.Main,
+  ],
 };
 
 export const TILE_SIZE = 25;

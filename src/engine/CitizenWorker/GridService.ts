@@ -63,7 +63,7 @@ export class GridService {
     if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return false;
     }
-    return this.grid[y][x] <= TERRAIN_WEIGHTS.OBSTACLE;
+    return this.grid[y][x] < TERRAIN_WEIGHTS.OBSTACLE;
   }
 
   getGrid(): number[][] {
@@ -71,8 +71,31 @@ export class GridService {
   }
 
   calculatePath(start: Position, end: Position): Position[] {
+    let target = end;
+    if (!this.isPositionWalkable(end.x, end.y)) {
+      const nearest = this.findNearestWalkable(end);
+      if (nearest) {
+        target = nearest;
+      }
+    }
     const pathfinder = new PathFinding(this.grid);
-    return pathfinder.findPath(start, end);
+    return pathfinder.findPath(start, target);
+  }
+
+  private findNearestWalkable(pos: Position): Position | null {
+    for (let radius = 1; radius < 10; radius++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = -radius; dy <= radius; dy++) {
+          if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+          const tx = pos.x + dx;
+          const ty = pos.y + dy;
+          if (this.isPositionWalkable(tx, ty)) {
+            return { x: tx, y: ty };
+          }
+        }
+      }
+    }
+    return null;
   }
 
   serialize(): Uint8Array {
@@ -106,6 +129,8 @@ export class GridService {
 
     if (type === BuildingType.Road) cost = TERRAIN_WEIGHTS.ROAD;
     if (type === BuildingType.Bridge) cost = TERRAIN_WEIGHTS.BRIDGE;
+    if (type === BuildingType.Garden || type === BuildingType.Greenhouse)
+      cost = TERRAIN_WEIGHTS.DEFAULT;
 
     for (let i = y; i < y + l; i++) {
       for (let j = x; j < x + w; j++) {

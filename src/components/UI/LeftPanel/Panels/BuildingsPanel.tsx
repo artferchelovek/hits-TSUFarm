@@ -1,13 +1,18 @@
 import { useBuildSelection } from "../../../../contexts/BuildSelectionContext.tsx";
 import { useGameStore } from "../../../../Store/GameStore.ts";
 import { type Buildings, BuildingType } from "../../../../engine/Types.ts";
-import { BUILDING_CONFIG, BUILDING_SVG } from "../../../../engine/Constants.ts";
+import {
+  BUILDING_CONFIG,
+  BUILDING_SVG,
+  LEVEL_CONFIG,
+} from "../../../../engine/Constants.ts";
 import styles from "../LeftPanel.module.css";
 import { BUILDING_NAMES } from "../../../../engine/localization/locales.ts";
 
 export function BuildingsPanel() {
   const { selected, setSelected } = useBuildSelection();
   const money = useGameStore((state) => state.gameState.economy.money);
+  const currentLevel = useGameStore((state) => state.gameState.economy.level);
   const buildings = useGameStore((state) => state.gameState.buildings);
   const buildingsAllow = useGameStore(
     (state) => state.gameState.buildingRemind,
@@ -18,8 +23,13 @@ export function BuildingsPanel() {
   const renderPaletteItem = (bt: BuildingType) => {
     const cfg = BUILDING_CONFIG[bt];
     const lost = buildingsAllow[bt];
+
+    const levelReq = LEVEL_CONFIG[currentLevel];
+    const isUnlocked = levelReq?.unlockedBuildings.includes(bt) ?? true;
+
     const isBuy = cfg.cost > money;
-    const isDisabled = isBuy || lost === 0;
+    const isDisabled = !isUnlocked || isBuy || lost === 0;
+
     const desc = cfg
       ? `${cfg.width}x${cfg.length} клетки. Цена: ${cfg.cost}`
       : "-";
@@ -38,17 +48,27 @@ export function BuildingsPanel() {
         onClick={() => {
           if (!isDisabled) setSelected(isSelected ? null : bt);
         }}
+        title={!isUnlocked ? `Откроется на следующем уровне` : ""}
       >
         <img
           className={styles.buildingItem__image}
           src={BUILDING_SVG[bt]}
           alt=""
+          style={{ filter: !isUnlocked ? "grayscale(1) opacity(0.5)" : "none" }}
         />
         <div>
-          <div className={styles.buildingItem__title}>{BUILDING_NAMES[bt]}</div>
+          <div className={styles.buildingItem__title}>
+            {BUILDING_NAMES[bt]} {!isUnlocked && "🔒"}
+          </div>
           <div className={styles.buildingItem__desc}>
-            <p>{desc}</p>
-            <p>Осталось: {lost}</p>
+            {isUnlocked ? (
+              <>
+                <p>{desc}</p>
+                <p>Осталось: {lost}</p>
+              </>
+            ) : (
+              <p style={{ color: "#d9534f" }}>Заблокировано</p>
+            )}
           </div>
         </div>
       </div>

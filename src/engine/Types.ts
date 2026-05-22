@@ -141,6 +141,7 @@ interface BaseBuilding {
   width: number;
   length: number;
   incoming: Partial<Record<ResourceType, number>>;
+  maintenanceCost: number;
 }
 
 interface PlaceGrow extends BaseBuilding {
@@ -159,6 +160,17 @@ export interface Main extends BaseBuilding {
   populationStats: {
     maxCapacity: number;
     currentAmount: number;
+  };
+  storage: Partial<Record<ResourceType, number>>;
+  maxCapacity: number;
+}
+
+export interface LevelRequirement {
+  unlockedBuildings: BuildingType[];
+  unlockedCrops: ResourceType[];
+  upgradeCost: {
+    money: number;
+    resources: Partial<Record<ResourceType, number>>;
   };
 }
 
@@ -205,6 +217,9 @@ export interface Well extends BaseBuilding {
 
 export interface Market extends BaseBuilding {
   type: BuildingType.Market;
+  storage: Partial<Record<ResourceType, number>>;
+  maxCapacity: number;
+  export: string[];
 }
 
 export interface Bridge extends BaseBuilding {
@@ -328,6 +343,7 @@ export interface Resident {
   };
   path: Position[];
   pathIndex: number;
+  stuckCounter?: number;
 }
 export interface Birth {
   parentFirst: string;
@@ -356,6 +372,9 @@ export interface GameState {
     money: number;
     level: number;
     totalPopulation: number;
+    marketDemand: Partial<Record<ResourceType, number>>;
+    lastDailyIncome?: number;
+    lastDailyMaintenance?: number;
   };
   buildings: Record<string, Buildings>;
   buildingCounts: Record<BuildingType, number>;
@@ -386,6 +405,7 @@ export interface GameActions {
   removeExportLink: (sourceId: string, targetId: string) => void;
   removeBuilding: (id: string) => Result;
   moveBuilding: (id: string, newPos: Position) => Result;
+  upgradeLevel: () => Result;
 }
 
 export type GameStore = {
