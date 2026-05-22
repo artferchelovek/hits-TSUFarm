@@ -224,10 +224,16 @@ class CitizenWorker {
     const bakeries = Object.values(this.buildings).filter(
       (b): b is Bakery => b.type === BuildingType.Bakery,
     );
+
     for (const bakery of bakeries) {
       this.buildingProcessor.processBakery(bakery);
     }
-
+    const wells = Object.values(this.buildings).filter(
+      (b) => b.type === BuildingType.Well,
+    );
+    for (const well of wells) {
+      this.buildingProcessor.processWell(well, payload.weather);
+    }
     return {
       residents: this.residents,
       deadIds: deadResidentIds,
@@ -245,10 +251,12 @@ class CitizenWorker {
     currentTick: number,
     isNight: boolean,
   ): void {
-    resident.hunger = Math.max(
-      0,
-      resident.hunger - VILLAGER_CONFIG.hungerPerTick,
-    );
+    if (!isNight) {
+      resident.hunger = Math.max(
+        0,
+        resident.hunger - VILLAGER_CONFIG.hungerPerTick,
+      );
+    }
 
     if (resident.homeId === null && isNight) {
       resident.health = Math.max(

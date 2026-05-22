@@ -404,13 +404,13 @@ export const FOOD_NUTRITION: Record<ResourceType, FoodNutrient> = {
 export const PLANT_EFFECTS = {
   WELL_WATER_EFFECT: 1.2,
 };
-export const FARMER_WATER_CAPACITY = 20;
-export const WELL_REFILL_AMOUNT = 20;
+
+export const WELL_REFILL_AMOUNT = 2;
 export const DROUGHT_DAMAGE_TICK = 0.01;
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 1,
+  hungerPerTick: 0.5,
   hungerCoefficientForEat: 0.1,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,
@@ -433,6 +433,7 @@ export const WeatherEffects = {
   NIGHT_GROWTH_COEFFICIENT: 0.5,
   RAIN_MOISTURE_GAIN: 0.5,
   WINTER_PLANT_DAMAGE: 0.05,
+  RAIN_REFILL_WELL: 5,
 };
 export const INITIAL_RESIDENTS: Record<string, Resident> = {
   "res-1": {
