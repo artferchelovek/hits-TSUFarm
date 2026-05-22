@@ -42,6 +42,25 @@
   font-family: "Press Start 2P", system-ui;
 }
 
+.farmInput {
+  font-size: 18px;
+  padding: 8px 14px;
+  border: 1px solid rgba(220, 187, 154, 0.3);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #e6f0ff;
+  outline: none;
+  max-width: 260px;
+}
+
+.farmInput::placeholder {
+  color: rgba(230, 240, 255, 0.4);
+}
+
+.farmInput:focus {
+  border-color: #dcbb9a;
+}
+
 .btn {
 
   position: relative;

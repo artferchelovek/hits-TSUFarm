@@ -19,6 +19,7 @@ export default function MainMenu() {
   const [commits, setCommits] = useState<CommitEntry[]>([]);
   const [cloudSaves, setCloudSaves] = useState<CloudSaveMeta[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [farmName, setFarmName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchSaves = useCallback(async () => {
@@ -124,8 +125,21 @@ export default function MainMenu() {
       <div className={styles.content}>
         <div className={styles.left}>
           <p className={styles.title}>TSUFarm</p>
+
+          <input
+            className={styles.farmInput}
+            type="text"
+            placeholder="Название фермы"
+            value={farmName}
+            onChange={(e) => setFarmName(e.target.value)}
+            maxLength={32}
+          />
+
           <button
             onClick={() => {
+              if (farmName.trim()) {
+                sessionStorage.setItem("tsufarm_farm_name", farmName.trim());
+              }
               window.location.href = "/game";
             }}
             className={styles.btn}
