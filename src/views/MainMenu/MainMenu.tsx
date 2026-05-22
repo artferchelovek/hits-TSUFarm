@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router";
 import styles from "./MainMenu.module.css";
 import MapCanvas from "../../components/game/MapCanvas";
-import { loadGameFromFile, setPendingLoad } from "../../Store/SaveManager";
+import { loadGameFromFile, setPendingLoad, clearUnloadSave } from "../../Store/SaveManager";
 import { useAuth } from "../../contexts/AuthContext.tsx";
 import * as savesApi from "../../api/saves.ts";
 import type { CloudSaveMeta } from "../../api/saves.ts";
@@ -137,6 +137,7 @@ export default function MainMenu() {
 
           <button
             onClick={() => {
+              clearUnloadSave();
               if (farmName.trim()) {
                 sessionStorage.setItem("tsufarm_farm_name", farmName.trim());
               }
