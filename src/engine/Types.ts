@@ -148,6 +148,17 @@ export interface Main extends BaseBuilding {
     maxCapacity: number;
     currentAmount: number;
   };
+  storage: Partial<Record<ResourceType, number>>;
+  maxCapacity: number;
+}
+
+export interface LevelRequirement {
+  unlockedBuildings: BuildingType[];
+  unlockedCrops: ResourceType[];
+  upgradeCost: {
+    money: number;
+    resources: Partial<Record<ResourceType, number>>;
+  };
 }
 
 export interface House extends BaseBuilding {
@@ -315,6 +326,7 @@ export interface Resident {
   };
   path: Position[];
   pathIndex: number;
+  stuckCounter?: number;
 }
 export interface Birth {
   parentFirst: string;
@@ -375,6 +387,7 @@ export interface GameActions {
   removeExportLink: (sourceId: string, targetId: string) => void;
   removeBuilding: (id: string) => Result;
   moveBuilding: (id: string, newPos: Position) => Result;
+  upgradeLevel: () => Result;
 }
 
 export type GameStore = {

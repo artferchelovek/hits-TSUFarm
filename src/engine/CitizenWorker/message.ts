@@ -30,6 +30,7 @@ export type UItoWorkerMessage =
         season: Season;
         plantBuildings: PlantPlace[];
         tick: number;
+        economy: any;
       };
     }
   | { type: "RESIDENT_BORN"; payload: Resident }

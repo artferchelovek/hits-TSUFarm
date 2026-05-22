@@ -32,6 +32,9 @@ export const createBuilding = (
           maxCapacity: config.initialCapacity || 0,
           currentAmount: 0,
         },
+        storage: {},
+        maxCapacity: config.maxCapacity || 500,
+        incoming: {},
       };
     }
     case BuildingType.House: {

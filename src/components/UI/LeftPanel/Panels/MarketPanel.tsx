@@ -1,13 +1,20 @@
 import styles from "../LeftPanel.module.css";
 import { useGameStore } from "../../../../Store/GameStore.ts";
-import { RESOURCE_PRICES } from "../../../../engine/Constants.ts";
+import { RESOURCE_PRICES, LEVEL_CONFIG } from "../../../../engine/Constants.ts";
 import { ResourceType } from "../../../../engine/Types.ts";
 import { RESOURCE_DISPLAY_NAMES } from "../../../../engine/Constants.ts";
 
 export default function MarketPanel() {
   const demand = useGameStore((state) => state.gameState.economy.marketDemand);
+  const currentLevel = useGameStore((state) => state.gameState.economy.level);
 
-  const resourceTypes = Object.keys(RESOURCE_PRICES) as ResourceType[];
+  const levelReq = LEVEL_CONFIG[currentLevel];
+  const unlockedCrops = levelReq?.unlockedCrops ?? [];
+  const baseUnlocked = [ResourceType.Flour, ResourceType.Bread, ResourceType.Water];
+
+  const resourceTypes = (Object.keys(RESOURCE_PRICES) as ResourceType[]).filter(
+    (type) => unlockedCrops.includes(type) || baseUnlocked.includes(type)
+  );
 
   return (
     <div className={styles.marketPanel}>

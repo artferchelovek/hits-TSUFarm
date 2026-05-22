@@ -2,14 +2,17 @@ import { create } from "zustand";
 import { type WritableDraft } from "immer";
 import {
   BuildingType,
+  Gender,
   type GameState,
   type GameStore,
   type House,
   type LogType,
+  type Main,
   type Position,
   type PlantPlace,
   ProfessionType,
   type Resident,
+  ResourceType,
   type Result,
   VillagerStatus,
 } from "../engine/Types.ts";
@@ -17,9 +20,10 @@ import { immer } from "zustand/middleware/immer";
 import {
   BUILDING_CONFIG,
   EXPORT_RULES,
-  INITIAL_RESIDENTS,
+  generateRandomName,
   getMaxGardens,
   initialGameState,
+  LEVEL_CONFIG,
   MOVE_COST_PER_TILE,
   PLANT_CONFIG,
   VILLAGER_CONFIG,
@@ -72,6 +76,7 @@ export const useGameStore = create<GameStore>()(
           weather: state.gameState.meta.currentWeather,
           season: state.gameState.meta.currentSeason,
           plantBuildings: JSON.parse(JSON.stringify(plantBuildings)),
+          economy: JSON.parse(JSON.stringify(state.gameState.economy)),
         });
       });
     },
@@ -82,12 +87,14 @@ export const useGameStore = create<GameStore>()(
         const h = size?.length ?? BUILDING_CONFIG[type].length;
         const area = w * h;
 
-        let cost = BUILDING_CONFIG[type].cost * area;
-
         const isTiled =
           type === BuildingType.Garden ||
           type === BuildingType.Road ||
           type === BuildingType.Bridge;
+
+        let cost = isTiled
+          ? BUILDING_CONFIG[type].cost * area
+          : BUILDING_CONFIG[type].cost;
 
         const countToAdd = isTiled ? area : 1;
 
@@ -155,19 +162,47 @@ export const useGameStore = create<GameStore>()(
 
         if (
           type === BuildingType.House &&
-          state.gameState.buildingCounts[type] === 1
+          state.gameState.buildingCounts[type] <= 2
         ) {
-          state.gameState.residents = INITIAL_RESIDENTS;
-          Object.values(state.gameState.residents).forEach((res) => {
-            res.homeId = newBuild.id;
-            const home = state.gameState.buildings[newBuild.id] as House;
-            res.position = { x: home.position.x - 1, y: home.position.y - 1 };
-            home.residentsId.push(res.id);
-          });
+          const house = state.gameState.buildings[newBuild.id] as House;
+          const spawnResident = (gender: Gender) => {
+            const id = crypto.randomUUID();
+            const { name, surname } = generateRandomName(gender);
+            const resident: Resident = {
+              id,
+              name,
+              surname,
+              age: 20 + Math.floor(Math.random() * 10),
+              gender,
+              health: 100,
+              hunger: 100,
+              status: VillagerStatus.Idle,
+              profession: { type: ProfessionType.Jobless },
+              homeId: newBuild.id,
+              workplaceId: null,
+              inventory: { resources: {}, totalAmount: 0 },
+              path: [],
+              pathIndex: 0,
+              stuckCounter: 0,
+              position: {
+                x: newBuild.position.x - 1,
+                y: newBuild.position.y - 1,
+              },
+              parents: { parentFirst: "initial", parentSecond: "initial" },
+              skills: {},
+              workProgress: 0,
+              taskContext: null,
+            };
+            state.gameState.residents[id] = resident;
+            house.residentsId.push(id);
+          };
+
+          spawnResident(Gender.Male);
+          spawnResident(Gender.Female);
 
           state.gameState.economy.totalPopulation += 2;
           workerManager.send("SET_RESIDENTS", {
-            residents: state.gameState.residents,
+            residents: JSON.parse(JSON.stringify(state.gameState.residents)),
           });
         }
         workerManager.send("UPDATE_BUILDING", { building: newBuild });
@@ -549,6 +584,63 @@ export const useGameStore = create<GameStore>()(
           });
         }
       });
+    },
+    upgradeLevel: (): Result => {
+      let report: Result = { success: false, message: "" };
+      set((state) => {
+        const curLevel = state.gameState.economy.level;
+        const config = LEVEL_CONFIG[curLevel];
+        if (!config || config.upgradeCost.money === 0) {
+          report = { success: false, message: "Максимальный уровень уже достигнут" };
+          return;
+        }
+
+        // 1. Check money
+        if (state.gameState.economy.money < config.upgradeCost.money) {
+          report = { success: false, message: "Недостаточно денег для улучшения" };
+          return;
+        }
+
+        // 2. Check Main building storage
+        const mainBuilding = Object.values(state.gameState.buildings).find(
+          (b) => b.type === BuildingType.Main,
+        ) as Main;
+
+        if (!mainBuilding) {
+          report = { success: false, message: "Главное здание не найдено" };
+          return;
+        }
+
+        const resourcesMet = Object.entries(config.upgradeCost.resources).every(
+          ([res, needed]) => (mainBuilding.storage[res as ResourceType] ?? 0) >= (needed as number),
+        );
+
+        if (!resourcesMet) {
+          report = { success: false, message: "Не все ресурсы доставлены в Ратушу" };
+          return;
+        }
+
+        // Success!
+        state.gameState.economy.money -= config.upgradeCost.money;
+        mainBuilding.storage = {}; // Clear storage
+        state.gameState.economy.level += 1;
+
+        // Update building limits for the new level
+        const newLevel = state.gameState.economy.level;
+        Object.values(BuildingType).forEach((type) => {
+          const limit = getBuildingLimit(type, newLevel);
+          const currentCount = state.gameState.buildingCounts[type] || 0;
+          state.gameState.buildingRemind[type] = Math.max(0, limit - currentCount);
+        });
+
+        workerManager.send("UPDATE_BUILDING", {
+          building: JSON.parse(JSON.stringify(mainBuilding)),
+        });
+
+        report = { success: true, message: `Поздравляем! Город достиг уровня ${curLevel + 1}` };
+        appendLog(state, `Уровень города повышен до ${curLevel + 1}!`, "success");
+      });
+      return report;
     },
   })),
 );

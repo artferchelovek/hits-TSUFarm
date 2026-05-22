@@ -1,6 +1,12 @@
 import { BuildingType } from "../engine/Types.ts";
+import { LEVEL_CONFIG } from "../engine/Constants.ts";
 
 export const getBuildingLimit = (type: BuildingType, level: number): number => {
+  const levelReq = LEVEL_CONFIG[level];
+  if (levelReq && !levelReq.unlockedBuildings.includes(type)) {
+    return 0;
+  }
+
   switch (type) {
     case BuildingType.Main:
       return 1;
@@ -25,8 +31,7 @@ export const getBuildingLimit = (type: BuildingType, level: number): number => {
       return 1 + Math.floor(level / 6);
 
     case BuildingType.Market:
-      if (level < 4) return 0;
-      return Math.floor(level / 4);
+      return 1 + Math.floor(level / 2);
 
     case BuildingType.Graveyard:
       if (level < 2) return 0;
