@@ -8,6 +8,7 @@ import {
 import {
   applySave,
   getPendingLoad,
+  saveGame,
   saveToCloud,
   saveUnloadSave,
   getUnloadSave,
@@ -43,13 +44,13 @@ export default function GameView() {
   const [loadedFromSave, setLoadedFromSave] = useState(false);
   const [showSavePicker, setShowSavePicker] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
-  const worldRef = useRef<WorldMap>();
+  const worldRef = useRef<WorldMap | null>(null);
   const { isAuthenticated } = useAuth();
 
   const isLoading = !ready || !mapRendered;
 
   useEffect(() => {
-    worldRef.current = world;
+    worldRef.current = world ?? null;
   }, [world]);
 
   useEffect(() => {
@@ -189,16 +190,32 @@ export default function GameView() {
   }, []);
 
   useEffect(() => {
-    const handler = () => {
-      if (document.visibilityState !== "hidden") return;
+    let saving = false;
+
+    const doSave = () => {
+      if (saving) return;
+      saving = true;
       const gs = useGameStore.getState().gameState;
       const w = worldRef.current;
       if (w) {
         saveUnloadSave(gs, w);
       }
     };
-    document.addEventListener("visibilitychange", handler);
-    return () => document.removeEventListener("visibilitychange", handler);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") doSave();
+    };
+
+    const onBeforeUnload = () => {
+      doSave();
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
   }, []);
 
   const handleCloudSave = useCallback(
@@ -207,6 +224,7 @@ export default function GameView() {
       setSaveMessage("");
       try {
         const gameState = useGameStore.getState().gameState;
+        saveGame(gameState, world);
         await saveToCloud(slot, gameState, world);
         setSaveMessage(`Сохранено в слот ${slot}`);
         setTimeout(() => setSaveMessage(""), 3000);
