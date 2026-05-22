@@ -54,7 +54,7 @@ services:
     build: .
     profiles: ["prod"]
     ports:
-      - "80:80"
+      - "8071:80"
     depends_on:
       - api
 
