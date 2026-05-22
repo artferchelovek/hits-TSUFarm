@@ -1,0 +1,232 @@
+# Облачная синхронизация сохранений
+
+## Архитектура
+
+```
+┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+│   Frontend   │──────▶│   API (Express)  │──────▶│  PostgreSQL  │
+│  (Vite/React)│  HTTP │  :3001 / :443  │  SQL  │  :5432       │
+└──────────────┘       └──────────────┘       └──────────────┘
+       │                                              │
+       │     localStorage:                             │
+       │     - JWT token                              │
+       │     - локальные .json файлы                   │
+       │     (работают как раньше)                     │
+```
+
+- **Авторизация:** JWT (Bearer token) → localStorage
+- **Сохранения:** 5 фиксированных слотов на пользователя
+- **Автосохранение:** каждый игровой день (~100 сек реального времени) в слот 1
+
+---
+
+## 1. Локальная разработка
+
+### 1.1 Быстрый старт
+
+```bash
+# 1. Поднять только PostgreSQL в Docker
+docker compose up db -d
+
+# 2. Сгенерировать миграции (если менял schema.ts)
+cd server
+npx drizzle-kit generate
+
+# 3. Запустить миграции (создаст таблицы)
+npx drizzle-kit migrate
+
+# 4. Запустить сервер в режиме watch
+JWT_SECRET=dev-secret \
+DATABASE_URL=postgres://tsufarm:tsufarm_pass@localhost:5432/tsufarm \
+npm run dev
+
+# 5. В другом терминале — фронтенд (из корня)
+npm run dev
+```
+
+Фронтенд будет на `http://localhost:8000`, API на `http://localhost:3001`.
+
+### 1.2 Переменные окружения для разработки
+
+Создай `server/.env` (он в `.gitignore`, не попадёт в репозиторий):
+```env
+DATABASE_URL=postgres://tsufarm:tsufarm_pass@localhost:5432/tsufarm
+JWT_SECRET=dev-secret-key
+PORT=3001
+CORS_ORIGIN=http://localhost:8000
+```
+
+Создай `.env` в корне проекта:
+```env
+VITE_API_URL=http://localhost:3001/api
+```
+
+### 1.3 Команды
+
+| Команда | Откуда | Что делает |
+|---|---|---|
+| `docker compose up db -d` | корень | Поднять PostgreSQL |
+| `docker compose down` | корень | Остановить всё |
+| `npx drizzle-kit generate` | `server/` | Сгенерировать миграцию из schema.ts |
+| `npx drizzle-kit migrate` | `server/` | Применить миграции к БД |
+| `npm run dev` | `server/` | Запустить API (hot reload) |
+| `npm run dev` | корень | Запустить фронтенд (Vite) |
+
+---
+
+## 2. Деплой новой версии на сервер
+
+### 2.1 Полный деплой (все сервисы)
+
+```bash
+# На локальной машине — запушить ветку
+git push origin feat/cloud-sync
+
+# На сервере — зайти и выполнить
+cd /path/to/project
+git pull origin feat/cloud-sync
+
+# Пересобрать и перезапустить
+docker compose down
+docker compose up -d --build
+```
+
+### 2.2 Что происходит при деплое
+
+1. `docker compose down` — останавливает старые контейнеры
+2. `docker compose up -d --build` — пересобирает образы и запускает:
+   - **db** — PostgreSQL. Если `pgdata` volume не удалён, **все данные БД сохраняются**
+   - **api** — Node.js сервер. При запуске выполняет:
+     ```typescript
+     await migrate(db, { migrationsFolder: "./drizzle" });
+     ```
+     Это накатывает новые миграции поверх существующих таблиц (добавляет колонки, индексы и т.д.)
+   - **frontend** — nginx со свежей сборкой
+
+---
+
+## 3. Совместимость сохранений
+
+### 3.1 Что будет со старыми сохранениями при обновлении
+
+**Короткий ответ: они останутся в БД и продолжат работать.**
+
+**Как это работает:**
+
+- В таблице `saves` есть колонки `game_state` (JSONB) и `world_data` (TEXT)
+- У каждого сохранения есть поле `version` внутри `game_state` (сейчас `"0.0.1"`)
+- Drizzle миграции только **добавляют** новые колонки/таблицы, но **не трогают** существующие строки
+- Если структура `GameState` (в `Types.ts`) поменяется, старые сохранения загрузятся, но у них будут отсутствовать новые поля — React просто использует значения по умолчанию
+
+### 3.2 Если структура GameState сильно изменилась
+
+Придётся написать миграцию данных. Два варианта:
+
+**Вариант А — ручная SQL миграция (проще):**
+```sql
+UPDATE saves
+SET game_state = jsonb_set(game_state, '{meta,version}', '"0.0.2"')
+WHERE game_state->'meta'->>'version' = '0.0.1';
+```
+
+**Вариант Б — на уровне приложения (безопаснее):**
+При загрузке сохранения проверяешь `version` и преобразуешь данные:
+
+```typescript
+// В SaveManager.ts
+export function applySave(save: SaveFile) {
+  const migrated = migrateSaveFormat(save);  // ← новая функция
+  const world = WorldMap.deserialize(migrated.worldData);
+  return { gameState: migrated.gameState, world };
+}
+
+function migrateSaveFormat(save: SaveFile): SaveFile {
+  switch (save.version) {
+    case "0.0.1":
+      return {
+        ...save,
+        gameState: {
+          ...save.gameState,
+          // добавить новые поля со значениями по умолчанию
+          newFeature: {},
+        },
+        version: "0.0.2",
+      };
+    default:
+      return save;
+  }
+}
+```
+
+**Рекомендация:** пока проект на ранней стадии — используй вариант А или даже ничего не делай (отсутствующие поля будут `undefined`, что в большинстве случаев не ломает игру).
+
+---
+
+## 4. Структура БД
+
+```sql
+users (
+  id            serial PRIMARY KEY
+  username      varchar(32) UNIQUE NOT NULL
+  email         varchar(255) UNIQUE NOT NULL
+  password_hash text NOT NULL
+  created_at    timestamp DEFAULT now()
+)
+
+saves (
+  id            serial PRIMARY KEY
+  user_id       integer REFERENCES users(id) NOT NULL
+  slot          integer NOT NULL CHECK (slot BETWEEN 1 AND 5)
+  name          varchar(64)
+  game_state    jsonb NOT NULL
+  world_data    text NOT NULL
+  timestamp     bigint NOT NULL
+  created_at    timestamp DEFAULT now()
+  updated_at    timestamp DEFAULT now()
+  UNIQUE(user_id, slot)
+)
+```
+
+---
+
+## 5. API endpoints
+
+| Метод | Путь | Auth | Описание |
+|---|---|---|---|
+| `GET` | `/api/health` | — | Проверка сервера |
+| `POST` | `/api/auth/register` | — | `{ username, email, password }` → `{ token, user }` |
+| `POST` | `/api/auth/login` | — | `{ email, password }` → `{ token, user }` |
+| `GET` | `/api/saves` | ✔ | Список 5 слотов (метаданные) |
+| `PUT` | `/api/saves/:slot` | ✔ | Сохранить (upsert) |
+| `GET` | `/api/saves/:slot` | ✔ | Загрузить |
+| `DELETE` | `/api/saves/:slot` | ✔ | Удалить |
+
+---
+
+## 6. Частые вопросы
+
+**Q: Я обновил Types.ts — как быть со старыми сохранениями?**
+A: Ничего не делать. Старые сохранения загрузятся, отсутствующие поля будут `undefined`. Если игра падает — напиши `migrateSaveFormat` (см. раздел 3.2).
+
+**Q: Можно не запускать БД в Docker, а использовать установленный PostgreSQL?**
+A: Да. Просто убери `docker compose up db -d`, убедись что у тебя работает PostgreSQL на `localhost:5432`, и задай правильную `DATABASE_URL`.
+
+**Q: Как сбросить БД локально и начать с нуля?**
+A: `docker compose down -v` (флаг `-v` удалит volume с данными). Потом снова `docker compose up db -d` + `npx drizzle-kit migrate`.
+
+**Q: Почему 5 слотов, а не бесконечно?**  
+A: Так договорились. Если понадобится больше — в БД достаточно снять ограничение `BETWEEN 1 AND 5` и обновить валидацию в `saves.ts`.
+
+---
+
+## 7. Порядок деплоя первой версии
+
+```bash
+# На сервере, первый раз:
+git pull origin feat/cloud-sync
+cp .env.example .env        # отредактировать JWT_SECRET!
+docker compose up -d --build
+
+# API сам накатит миграции при старте
+# Готово — проверь: curl https://lilv2dim.ru/api/health
+```
