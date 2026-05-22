@@ -31,7 +31,7 @@
 cp .env.example .env          # отредактировать JWT_SECRET
 
 # Поднять PostgreSQL + API (Express с hot-reload через tsx watch)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose --profile dev up -d
 
 # Доступны:
 #   - API:       http://localhost:3001
@@ -77,15 +77,16 @@ VITE_API_URL=http://localhost:3001/api
 
 ### 1.4 Команды
 
-| Команда | Откуда | Что делает |
-|---|---|---|
-| `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` | корень | Поднять PostgreSQL + API (hot-reload) |
-| `docker compose up db -d` | корень | Только PostgreSQL |
-| `docker compose down` | корень | Остановить всё |
-| `npx drizzle-kit generate` | `server/` | Сгенерировать миграцию из schema.ts |
-| `npx drizzle-kit migrate` | `server/` | Применить миграции к БД |
-| `npm run dev` | `server/` | Запустить API локально (hot reload) |
-| `npm run dev` | корень | Запустить фронтенд (Vite) |
+| Команда | Что делает |
+|---|---|
+| `docker compose --profile dev up -d` | PostgreSQL + API (hot-reload, только бэкенд) |
+| `docker compose --profile prod up -d --build` | PostgreSQL + API (production) + Frontend |
+| `docker compose up db -d` | Только PostgreSQL |
+| `docker compose down` | Остановить всё |
+| `npx drizzle-kit generate` | Сгенерировать миграцию (из `server/`) |
+| `npx drizzle-kit migrate` | Применить миграции (из `server/`) |
+| `npm run dev` (в `server/`) | Запустить API локально (hot reload) |
+| `npm run dev` (в корне) | Запустить фронтенд (Vite) |
 
 ---
 
@@ -101,16 +102,16 @@ git push origin feat/cloud-sync
 cd /path/to/project
 git pull origin feat/cloud-sync
 
-# Пересобрать и перезапустить
+# Пересобрать и перезапустить (profile prod = api + frontend)
 docker compose down
-docker compose up -d --build
+docker compose --profile prod up -d --build
 ```
 
 ### 2.2 Что происходит при деплое
 
 1. `docker compose down` — останавливает старые контейнеры
-2. `docker compose up -d --build` — пересобирает образы и запускает:
-   - **db** — PostgreSQL. Если `pgdata` volume не удалён, **все данные БД сохраняются**
+2. `docker compose --profile prod up -d --build` — собирает и запускает только сервисы с профилем `prod`:
+   - **db** — PostgreSQL (без профиля, запускается всегда). Если `pgdata` volume не удалён, **все данные БД сохраняются**
    - **api** — Node.js сервер. При запуске выполняет:
      ```typescript
      await migrate(db, { migrationsFolder: "./drizzle" });
@@ -240,7 +241,7 @@ A: Так договорились. Если понадобится больше
 # На сервере, первый раз:
 git pull origin feat/cloud-sync
 cp .env.example .env        # отредактировать JWT_SECRET!
-docker compose up -d --build
+docker compose --profile prod up -d --build
 
 # API сам накатит миграции при старте
 # Готово — проверь: curl https://lilv2dim.ru/api/health

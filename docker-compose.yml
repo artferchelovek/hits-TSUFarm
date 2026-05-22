@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: tsufarm
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tsufarm"]
       interval: 5s
@@ -15,6 +17,7 @@ services:
 
   api:
     build: ./server
+    profiles: ["prod"]
     ports:
       - "3001:3001"
     environment:
@@ -26,8 +29,30 @@ services:
       db:
         condition: service_healthy
 
+  api-dev:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    profiles: ["dev"]
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server/src:/app/src
+      - ./server/drizzle:/app/drizzle
+      - ./server/drizzle.config.ts:/app/drizzle.config.ts
+      - ./server/tsconfig.json:/app/tsconfig.json
+    environment:
+      DATABASE_URL: postgres://tsufarm:${POSTGRES_PASSWORD:-tsufarm_pass}@db:5432/tsufarm
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:8000
+    depends_on:
+      db:
+        condition: service_healthy
+
   frontend:
     build: .
+    profiles: ["prod"]
     ports:
       - "80:80"
     depends_on:
