@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "../../contexts/AuthContext.tsx";
+import MapCanvas from "../../components/game/MapCanvas";
 import styles from "./LoginView.module.css";
 
 export default function LoginView() {
@@ -27,41 +28,49 @@ export default function LoginView() {
 
   return (
     <div className={styles.root}>
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <h1 className={styles.title}>Вход</h1>
+      <div className={styles.background}>
+        <MapCanvas isBackground={true} />
+      </div>
 
-        {error && <p className={styles.error}>{error}</p>}
+      <div className={styles.overlay} />
 
-        <input
-          className={styles.input}
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+      <div className={styles.content}>
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <h1 className={styles.title}>Вход</h1>
 
-        <input
-          className={styles.input}
-          type="password"
-          placeholder="Пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+          {error && <p className={styles.error}>{error}</p>}
 
-        <button className={styles.btn} type="submit" disabled={loading}>
-          {loading ? "Вход..." : "Войти"}
-        </button>
+          <input
+            className={styles.input}
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-        <p className={styles.link}>
-          Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
-        </p>
+          <input
+            className={styles.input}
+            type="password"
+            placeholder="Пароль"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-        <p className={styles.link}>
-          <Link to="/">На главную</Link>
-        </p>
-      </form>
+          <button className={styles.btn} type="submit" disabled={loading}>
+            {loading ? "Вход..." : "Войти"}
+          </button>
+
+          <p className={styles.link}>
+            Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+          </p>
+
+          <p className={styles.link}>
+            <Link to="/">На главную</Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

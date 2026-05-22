@@ -1,62 +1,87 @@
 .root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  color: #e6f0ff;
+}
+
+.background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.55));
+  z-index: 1;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
-  color: #e6f0ff;
+  height: 100%;
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  width: 320px;
-  padding: 2rem;
-  background: rgba(220, 187, 154, 0.1);
-  border: 1px solid rgba(220, 187, 154, 0.3);
+  width: 400px;
+  padding: 2.5rem;
+  background: rgba(220, 187, 154, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .title {
-  font-size: 28px;
+  font-size: 24px;
   text-align: center;
-  margin: 0;
-  color: #dcbb9a;
+  margin: 0 0 1rem 0;
+  color: #2e2c2c;
+  font-family: "Press Start 2P", system-ui;
 }
 
 .input {
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 16px;
-  border: 1px solid rgba(220, 187, 154, 0.3);
+  border: 1px solid rgba(46, 44, 44, 0.15);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  color: #e6f0ff;
+  background: rgba(0, 0, 0, 0.15);
+  color: #2e2c2c;
   outline: none;
 }
 
 .input::placeholder {
-  color: rgba(230, 240, 255, 0.4);
+  color: rgba(46, 44, 44, 0.4);
 }
 
 .input:focus {
-  border-color: #dcbb9a;
+  border-color: #2e2c2c;
 }
 
 .btn {
-  padding: 10px;
+  padding: 12px;
   font-size: 18px;
-  background: #dcbb9a;
-  color: #2e2c2c;
+  background: #3b2b20;
+  color: #fbf0e5;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s, background 0.2s;
 }
 
 .btn:hover:not(:disabled) {
   transform: scale(1.02);
+  background: #4e3017;
 }
 
 .btn:disabled {
@@ -65,19 +90,25 @@
 }
 
 .error {
-  color: #ff6b6b;
+  color: #d9534f;
   text-align: center;
   margin: 0;
   font-size: 14px;
+  font-weight: bold;
+  background: rgba(217, 83, 79, 0.1);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .link {
   text-align: center;
   margin: 0;
   font-size: 14px;
+  color: #4e3017;
 }
 
 .link a {
-  color: #dcbb9a;
+  color: #2e2c2c;
+  font-weight: bold;
   text-decoration: underline;
 }

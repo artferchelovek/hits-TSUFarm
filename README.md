@@ -1,73 +1,59 @@
-# React + TypeScript + Vite
+# TSUFarm — Симулятор Фермерского Поселения
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+TSUFarm — это глубокий градостроительный симулятор с элементами выживания и сложной экономической моделью. Развивайте свою колонию, управляйте ресурсами и создайте процветающий город с автономными жителями.
 
-Currently, two official plugins are available:
+## 🚀 Стек технологий
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Проект построен на современном и высокопроизводительном стеке:
 
-## React Compiler
+- **Frontend:** React 19 (TypeScript)
+- **State Management:** Zustand + Immer (для управления сложным игровым состоянием)
+- **Rendering:** HTML5 Canvas API (обеспечивает плавную отрисовку процедурных карт)
+- **Game Engine:** Web Workers (вся игровая логика вынесена в отдельный поток для стабильных 60 FPS)
+- **Backend:** Node.js (Express) + PostgreSQL (Drizzle ORM)
+- **Infrastructure:** Docker + Docker Compose
+- **Build Tool:** Vite 8
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 💎 Киллер-фичи
 
-## Expanding the ESLint configuration
+1.  **Динамическая экономика:** Рынок реагирует на ваши действия. Избыток одного товара обрушит его цену, заставляя игрока выстраивать сложные цепочки производства.
+2.  **Автономный ИИ жителей:** У каждого жителя есть имя, возраст, пол и профессия. Они сами принимают решения: когда идти работать, когда отдыхать и что именно нести на склад.
+3.  **Социальная симуляция:** Жители взрослеют, образуют пары, съезжают от родителей в новые дома и заводят детей, обеспечивая естественный рост популяции.
+4.  **Производственные цепочки:** Реализована многоуровневая переработка. Например: Пшеница -> Мука (Мельница) -> Хлеб (Пекарня).
+5.  **Система прогрессии:** 5 уровней развития города. Для повышения уровня нужно не только золото, но и физическая доставка ресурсов в Ратушу.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🧠 Сложные механики
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Многопоточный движок:** Мы разделили UI и логику. Фоновый Worker рассчитывает пути сотен жителей и рост растений, не нагружая основной поток.
+- **Логистика и продовольственная безопасность:** Умная система приоритетов. Жители сначала обеспечивают городские амбары едой для выживания и только излишки несут на рынок.
+- **Облачная синхронизация:** Поддержка JWT-авторизации и 5 слотов для облачных сохранений.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🛠 Запуск проекта (Dev Mode)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 1. Фронтенд (Быстрый старт)
+1. Установите зависимости: `npm install`
+2. Запустите: `npm run dev`
+3. Откройте: `http://localhost:5173`
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Полная среда (с БД и Облаком)
+Для работы авторизации и облачных сохранений используйте Docker:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1.  **Настройте окружение**:
+    ```bash
+    cp .env.example .env
+    # Отредактируйте JWT_SECRET в файле .env
+    ```
+2.  **Запустите инфраструктуру**:
+    ```bash
+    docker compose --profile dev up -d
+    ```
+    - **API**: `http://localhost:3001`
+    - **PostgreSQL**: `localhost:5432`
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3.  **Запустите фронтенд** (в отдельном терминале):
+    ```bash
+    npm run dev
+    ```
+
+Подробную информацию об архитектуре и миграциях БД читайте в [документации по Cloud Sync](./docs/CLOUD_SYNC.md).
+
