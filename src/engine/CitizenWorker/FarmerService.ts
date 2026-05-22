@@ -2,6 +2,7 @@ import {
   BuildingType,
   type Buildings,
   type Granary,
+  type Greenhouse,
   type PlantPlace,
   type Position,
   ProfessionType,
@@ -11,6 +12,7 @@ import {
   type Well,
 } from "../Types.ts";
 import {
+  BUILDING_CONFIG,
   FARMER_TASK_DURATION,
   getMaxInventoryCapacity,
   getSpeedWork,
@@ -93,10 +95,13 @@ export class FarmerService {
       : undefined;
     if (!hasWater && gardenForWatering) {
       const needWaterAmount =
-        gardenForWatering.length *
-        gardenForWatering.width *
-        PLANT_CONFIG[gardenForWatering.harvest?.type ?? ResourceType.Wheat]
-          .neededWater;
+        gardenForWatering.type === BuildingType.Greenhouse
+          ? (gardenForWatering as Greenhouse).waterTank.max -
+            (gardenForWatering as Greenhouse).waterTank.current
+          : gardenForWatering.length *
+            gardenForWatering.width *
+            PLANT_CONFIG[gardenForWatering.harvest?.type ?? ResourceType.Wheat]
+              .neededWater;
 
       const waterSource = this.findNearestWaterSource(resident, buildings);
       if (waterSource) {
@@ -372,8 +377,10 @@ export class FarmerService {
     addExperience(resident, XP_REWARDS[ProfessionType.Farmer].HARVEST);
     const targetGarden = buildings[garden.id] as PlantPlace;
     targetGarden.harvest = null;
-    targetGarden.moisture = 0;
     targetGarden.isWatered = false;
+    if (targetGarden.type === BuildingType.Garden) {
+      targetGarden.moisture = 0;
+    }
     return true;
   }
 
@@ -405,9 +412,15 @@ export class FarmerService {
       isReady: false,
     };
     garden.growthCoefficient = 1;
-    garden.moisture = 5;
     garden.isWatered = true;
     garden.health = 100;
+
+    if (garden.type === BuildingType.Greenhouse) {
+      garden.growthCoefficient =
+        BUILDING_CONFIG[BuildingType.Greenhouse].growthCoefficient;
+    } else {
+      garden.moisture = 5;
+    }
 
     resident.workProgress = 0;
     resident.taskContext = null;
@@ -480,13 +493,28 @@ export class FarmerService {
         ProfessionType.Farmer,
         resident.profession.level,
       );
-      garden.moisture = Math.min(
-        100,
-        100 *
-          (resident.workProgress /
-            (FARMER_TASK_DURATION.SET_WATER * gardenSize)),
-      );
+      if (garden.type === BuildingType.Greenhouse) {
+        const gh = garden as Greenhouse;
+        gh.waterTank.current = Math.min(
+          gh.waterTank.max,
+          gh.waterTank.current +
+            (gh.waterTank.max / waterDuration) *
+              getSpeedWork(ProfessionType.Farmer, resident.profession.level),
+        );
+      } else {
+        garden.moisture = Math.min(
+          100,
+          100 *
+            (resident.workProgress /
+              (FARMER_TASK_DURATION.SET_WATER * gardenSize)),
+        );
+      }
       return false;
+    }
+
+    if (garden.type === BuildingType.Greenhouse) {
+      const gh = garden as Greenhouse;
+      gh.waterTank.current = gh.waterTank.max;
     }
 
     const wellWaterAmt =

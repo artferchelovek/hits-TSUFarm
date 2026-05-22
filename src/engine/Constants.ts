@@ -403,6 +403,7 @@ export const FOOD_NUTRITION: Record<ResourceType, FoodNutrient> = {
 };
 export const PLANT_EFFECTS = {
   WELL_WATER_EFFECT: 1.2,
+  GREENHOUSE_COEFFICIENT: 1.5,
 };
 export const FARMER_WATER_CAPACITY = 20;
 export const WELL_REFILL_AMOUNT = 20;
@@ -410,7 +411,7 @@ export const DROUGHT_DAMAGE_TICK = 0.01;
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 1,
+  hungerPerTick: 0.5,
   hungerCoefficientForEat: 0.1,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,

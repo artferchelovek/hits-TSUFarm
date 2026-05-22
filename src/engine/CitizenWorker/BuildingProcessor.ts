@@ -65,7 +65,8 @@ export class BuildingProcessor {
           0,
         );
         bakery.capacity -= step;
-        bakery.capacity += bakery.recipe.exportCount / bakery.recipe.durationPerTick;
+        bakery.capacity +=
+          bakery.recipe.exportCount / bakery.recipe.durationPerTick;
         bakery.storage[ResourceType.Bread] =
           (bakery.storage[ResourceType.Bread] ?? 0) +
           bakery.recipe.exportCount / bakery.recipe.durationPerTick;
@@ -123,7 +124,9 @@ export class BuildingProcessor {
           building.growthCoefficient * growthBonus;
 
         if (currentSeason === Season.Winter) {
-          building.health -= WeatherEffects.WINTER_PLANT_DAMAGE;
+          if (building.type === BuildingType.Garden) {
+            building.health -= WeatherEffects.WINTER_PLANT_DAMAGE;
+          }
         }
 
         if (building.harvest.growthProgress >= 100) {
