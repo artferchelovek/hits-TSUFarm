@@ -1,5 +1,5 @@
 import type { Position } from "../Types.ts";
-import { TERRAIN_WEIGHTS } from "./CitizenWorker.ts";
+import { TERRAIN_WEIGHTS } from "./utils.ts";
 interface PathNode {
   x: number;
   y: number;

@@ -2,6 +2,7 @@ import {
   type BaseWorker,
   BuildingType,
   type CropType,
+  type FoodNutrient,
   type GameState,
   Gender,
   type LevelRequirement,
@@ -157,6 +158,12 @@ export const TRANSPORTER_TASK_DURATION = {
   LOADING: 3,
   UNLOADING: 3,
 };
+export const FOOD_TASK_DURATION = {
+  LOADING: 3,
+  UNLOADING: 3,
+};
+
+export const FOOD_CONSUMPTION_PERSON = 6;
 export function getMaxGardens(
   professionType: ProfessionType,
   level: number,
@@ -229,6 +236,7 @@ export const BUILDING_CONFIG = {
     width: 3,
     length: 3,
     capacity: 3,
+    maxStorageCapacity: 30,
     cost: 150,
     maintenanceCost: 0,
   },
@@ -480,6 +488,7 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
     maxYield: 2,
   },
 };
+
 export const RESOURCE_PRICES: Partial<Record<ResourceType, number>> = {
   [ResourceType.Wheat]: 2,
   [ResourceType.Cucumber]: 5,
@@ -493,13 +502,67 @@ export const RESOURCE_PRICES: Partial<Record<ResourceType, number>> = {
   [ResourceType.WellWater]: 0.5,
 };
 
+export const FOOD_NUTRITION: Record<ResourceType, FoodNutrient> = {
+  [ResourceType.Bread]: {
+    hungerRestore: 60,
+    healthRestore: 20,
+    isEdible: true,
+  },
+  [ResourceType.Potato]: {
+    hungerRestore: 30,
+    healthRestore: 5,
+    isEdible: true,
+  },
+  [ResourceType.Pumpkin]: {
+    hungerRestore: 40,
+    healthRestore: 10,
+    isEdible: true,
+  },
+  [ResourceType.Tomato]: {
+    hungerRestore: 20,
+    healthRestore: 8,
+    isEdible: true,
+  },
+  [ResourceType.Cucumber]: {
+    hungerRestore: 15,
+    healthRestore: 5,
+    isEdible: true,
+  },
+  [ResourceType.Corn]: { hungerRestore: 25, healthRestore: 5, isEdible: true },
+
+  [ResourceType.Wheat]: { hungerRestore: 5, healthRestore: 0, isEdible: false },
+  [ResourceType.Flour]: { hungerRestore: 2, healthRestore: 0, isEdible: false },
+  [ResourceType.Water]: { hungerRestore: 5, healthRestore: 2, isEdible: true },
+  [ResourceType.WellWater]: {
+    hungerRestore: 5,
+    healthRestore: 2,
+    isEdible: true,
+  },
+  [ResourceType.Empty]: { hungerRestore: 0, healthRestore: 0, isEdible: false },
+};
+
 export const PLANT_EFFECTS = {
   WELL_WATER_EFFECT: 1.2,
 };
-export const FARMER_WATER_CAPACITY = 20;
-export const WELL_REFILL_AMOUNT = 20;
+
+export const WELL_REFILL_AMOUNT = 2;
 export const DROUGHT_DAMAGE_TICK = 0.01;
 
+export const VILLAGER_CONFIG = {
+  maxHunger: 100,
+  maxHealth: 100,
+  hungerPerTick: 0.5,
+  hungerCoefficientForEat: 0.1,
+  starvationDamagePerTick: 1,
+  healPerTick: 0.5,
+  agePerTick: 1 / 600,
+  baseDeathChance: 0.0001,
+  minWalkableAge: 3,
+  minAgeForWork: 14,
+  homelessDamagePerTick: 5,
+  maxInventCapacity: 10,
+  moveSpeed: 1,
+};
 export const REPRODUCTION = {
   BASE_REPRODUCTION_CHANCE: 0.1,
   PEAK_FERTILITY_AGE: 30,
@@ -511,6 +574,7 @@ export const WeatherEffects = {
   NIGHT_GROWTH_COEFFICIENT: 0.5,
   RAIN_MOISTURE_GAIN: 0.5,
   WINTER_PLANT_DAMAGE: 0.05,
+  RAIN_REFILL_WELL: 5,
 };
 export const INITIAL_RESIDENTS: Record<string, Resident> = {
   "res-1": {
@@ -575,6 +639,7 @@ export const INITIAL_RESIDENTS: Record<string, Resident> = {
     },
   },
 };
+
 export const initialGameState: GameState = {
   meta: {
     version: "0.0.1",
@@ -608,20 +673,7 @@ export const initialGameState: GameState = {
   residents: {},
   logs: [],
 };
-export const VILLAGER_CONFIG = {
-  maxHunger: 100,
-  maxHealth: 100,
-  hungerPerTick: 0.02,
-  starvationDamagePerTick: 1,
-  healPerTick: 0.5,
-  agePerTick: (1 / initialGameState.meta.dayDuration) * 4,
-  baseDeathChance: 0.0001,
-  minWalkableAge: 3,
-  minAgeForWork: 14,
-  homelessDamagePerTick: 5,
-  maxInventCapacity: 10,
-  moveSpeed: 1,
-};
+
 export const BUILDING_COLORS: Record<string, string> = {
   MAIN: "#8B5A2B",
   HOUSE: "#C68642",

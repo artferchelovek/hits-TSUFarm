@@ -2,6 +2,7 @@ import type { House } from "../../../../engine/Types.ts";
 import styles from "../InfoBox.module.css";
 import SizeBlock from "../SizeBlock.tsx";
 import { useGameStore } from "../../../../Store/GameStore.ts";
+import ProgressBlock from "../ProgressBlock.tsx";
 
 export default function HouseInfo({ build }: { build: House }) {
   return (
@@ -25,6 +26,15 @@ export default function HouseInfo({ build }: { build: House }) {
               </p>
             );
           })}
+
+          <ProgressBlock
+            name={"Хранилище"}
+            from={Object.values(build?.foodStorage?.storage ?? {}).reduce(
+              (sum, val) => sum + (val ?? 0),
+              0,
+            )}
+            to={build?.foodStorage?.maxCapacity ?? 100}
+          ></ProgressBlock>
         </div>
       ) : (
         <p
