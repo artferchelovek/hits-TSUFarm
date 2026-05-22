@@ -18,6 +18,10 @@ export enum VillagerStatus {
   Idle = "Idle",
   Moving = "Moving",
   MovingToStorage = "MovingToStorage",
+  MovingToFetchFood = "MovingToFetchFood",
+  MovingHomeWithFood = "MovingHomeWithFood",
+  MovingHomeToEat = "MovingHomeToEat",
+  FetchingFood = "FetchingFood",
   Unloading = "Unloading",
   Harvesting = "Harvesting",
   MovingToHarvest = "MovingToHarvest",
@@ -33,6 +37,7 @@ export enum VillagerStatus {
   MovingToExportSource = "MovingToExportSource",
   LoadingExport = "LoadingExport",
   MovingToExportTarget = "MovingToExportTarget",
+  UnloadingHomeFood = "UnloadingHomeFood",
   UnloadingExport = "UnloadingExport",
 }
 export const moveStatuses: VillagerStatus[] = [
@@ -44,6 +49,9 @@ export const moveStatuses: VillagerStatus[] = [
   VillagerStatus.Moving,
   VillagerStatus.MovingToExportSource,
   VillagerStatus.MovingToExportTarget,
+  VillagerStatus.MovingToFetchFood,
+  VillagerStatus.MovingHomeWithFood,
+  VillagerStatus.MovingHomeToEat,
 ];
 export enum ResourceType {
   Water = "Water",
@@ -106,6 +114,11 @@ export interface CropState {
   growthProgress: number;
   isReady: boolean;
 }
+export interface FoodNutrient {
+  hungerRestore: number;
+  healthRestore: number;
+  isEdible: boolean;
+}
 export type WaterResource = ResourceType.Water | ResourceType.WellWater;
 
 export type ProductType = ResourceType.Flour | ResourceType.Bread;
@@ -151,6 +164,10 @@ export interface Main extends BaseBuilding {
 export interface House extends BaseBuilding {
   type: BuildingType.House;
   residentsId: string[];
+  foodStorage: {
+    storage: Partial<Record<ResourceType, number>>;
+    maxCapacity: number;
+  };
   capacity: number;
 }
 

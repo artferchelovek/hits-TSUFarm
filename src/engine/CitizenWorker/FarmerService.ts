@@ -16,7 +16,6 @@ import {
   getSpeedWork,
   PLANT_CONFIG,
   PLANT_EFFECTS,
-  WeatherEffects,
   XP_REWARDS,
 } from "../Constants.ts";
 import {
@@ -32,10 +31,7 @@ import { GridService } from "./GridService.ts";
 export class FarmerService {
   constructor(private grid: GridService) {}
 
-  update(
-    resident: Resident,
-    buildings: Record<string, Buildings>,
-  ): void {
+  update(resident: Resident, buildings: Record<string, Buildings>): void {
     if (resident.profession.type !== ProfessionType.Farmer) return;
 
     const hasWater =
@@ -300,9 +296,7 @@ export class FarmerService {
   ): boolean {
     if (resident.profession.type !== ProfessionType.Farmer) return false;
 
-    const granary = buildings[
-      resident.taskContext?.targetId ?? ""
-    ] as Granary;
+    const granary = buildings[resident.taskContext?.targetId ?? ""] as Granary;
     if (!granary) return false;
 
     if (!granary.resourceType) return false;
@@ -347,7 +341,9 @@ export class FarmerService {
     buildings: Record<string, Buildings>,
   ): boolean {
     if (resident.profession.type !== ProfessionType.Farmer) return false;
-    const garden = buildings[resident.taskContext?.targetId ?? ""] as PlantPlace;
+    const garden = buildings[
+      resident.taskContext?.targetId ?? ""
+    ] as PlantPlace;
     if (!garden) return false;
 
     const gardenSize = (garden.width || 1) * (garden.length || 1);
@@ -367,7 +363,8 @@ export class FarmerService {
       Math.random() * (plant.maxYield - plant.minYield + 1) + plant.minYield,
     );
     const healthFactor = garden.health / 100;
-    const amount = Math.max(1, Math.round(baseYield * healthFactor)) * gardenSize;
+    const amount =
+      Math.max(1, Math.round(baseYield * healthFactor)) * gardenSize;
 
     addItemToInventory(resident, garden.harvest.type, amount);
     resident.workProgress = 0;
@@ -380,12 +377,11 @@ export class FarmerService {
     return true;
   }
 
-  planting(
-    resident: Resident,
-    buildings: Record<string, Buildings>,
-  ): boolean {
+  planting(resident: Resident, buildings: Record<string, Buildings>): boolean {
     if (resident.profession.type !== ProfessionType.Farmer) return false;
-    const garden = buildings[resident.taskContext?.targetId ?? ""] as PlantPlace;
+    const garden = buildings[
+      resident.taskContext?.targetId ?? ""
+    ] as PlantPlace;
     if (!garden) return false;
 
     if (!garden.harvestType) {
@@ -438,8 +434,7 @@ export class FarmerService {
       );
       const typeWater = isWell ? ResourceType.WellWater : ResourceType.Water;
       const stepAmount = Math.round(
-        (tc.neededAmount + tc.currentAmount) /
-          FARMER_TASK_DURATION.SET_WATER,
+        (tc.neededAmount + tc.currentAmount) / FARMER_TASK_DURATION.SET_WATER,
       );
       const remainingNeeded = tc.neededAmount - tc.currentAmount;
       const taken = Math.min(stepAmount, remainingNeeded);

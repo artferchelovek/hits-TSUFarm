@@ -1,5 +1,10 @@
-import { type Position, ProfessionType, type Resident, ResourceType, type TaskContext } from "../Types.ts";
-import { getMaxInventoryCapacity, getXpForNextLevel, PROFESSION_SETTINGS } from "../Constants.ts";
+import {
+  type Position,
+  ProfessionType,
+  type Resident,
+  ResourceType,
+} from "../Types.ts";
+import { getXpForNextLevel, PROFESSION_SETTINGS } from "../Constants.ts";
 
 export const TERRAIN_WEIGHTS = {
   ROAD: 1,
@@ -36,7 +41,7 @@ export function closestByDistance<T extends { position: Position }>(
 }
 
 export function getExitPos(build: { position: Position }): Position {
-  return { x: build.position.x, y: build.position.y - 1 };
+  return { x: build.position.x, y: build.position.y + 1 };
 }
 
 export function addItemToInventory(

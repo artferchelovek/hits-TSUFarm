@@ -33,6 +33,7 @@ export class TransportService {
   } | null {
     let bestSource: Buildings | null = null;
     let bestResourceType: ResourceType | null = null;
+    let bestDest: Buildings | null = null;
     let bestScore = -Infinity;
     let bestAmount = 0;
 
@@ -69,13 +70,13 @@ export class TransportService {
       }
 
       for (const res of availableResources) {
-        const hasValidDest = this.findBestExportDestination(
+        const dest = this.findBestExportDestination(
           exportArr,
           res.type,
           build.position,
           buildings,
         );
-        if (!hasValidDest) continue;
+        if (!dest) continue;
 
         const dist = getEvcDist(resident.position, build.position);
 
@@ -85,13 +86,14 @@ export class TransportService {
         if (score > bestScore) {
           bestScore = score;
           bestSource = build;
+          bestDest = dest;
           bestResourceType = res.type;
           bestAmount = res.amount;
         }
       }
     }
 
-    if (!bestSource || !bestResourceType) return null;
+    if (!bestSource || !bestResourceType || !bestDest) return null;
 
     const transporterLevel = (resident.profession as Transporter).level;
     const maxCarry = getMaxInventoryCapacity(
@@ -99,7 +101,9 @@ export class TransportService {
       transporterLevel,
     );
     const freeInv = maxCarry - resident.inventory.totalAmount;
-    const takeAmount = Math.min(bestAmount, freeInv);
+
+    const destNeed = this.getDestinationNeed(bestDest, bestResourceType);
+    const takeAmount = Math.min(bestAmount, freeInv, destNeed);
 
     if (takeAmount <= 0) return null;
 
@@ -120,7 +124,9 @@ export class TransportService {
     if (dest.type === BuildingType.Mill) {
       const m = dest as Mill;
       if (m.recipe.import !== resourceType) return 0;
-      return m.maxCapacity - m.capacity;
+      const need = m.maxCapacity - m.capacity;
+      if (need < 1) return 0;
+      return need;
     }
     if (dest.type === BuildingType.Granary) {
       const g = dest as Granary;

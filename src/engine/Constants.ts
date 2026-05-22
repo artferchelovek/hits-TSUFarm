@@ -2,6 +2,7 @@ import {
   type BaseWorker,
   BuildingType,
   type CropType,
+  type FoodNutrient,
   type GameState,
   Gender,
   type Granary,
@@ -157,6 +158,12 @@ export const TRANSPORTER_TASK_DURATION = {
   LOADING: 3,
   UNLOADING: 3,
 };
+export const FOOD_TASK_DURATION = {
+  LOADING: 3,
+  UNLOADING: 3,
+};
+
+export const FOOD_CONSUMPTION_PERSON = 6;
 export function getMaxGardens(
   professionType: ProfessionType,
   level: number,
@@ -224,6 +231,7 @@ export const BUILDING_CONFIG = {
     width: 3,
     length: 3,
     capacity: 3,
+    maxStorageCapacity: 30,
     cost: 50,
   },
   [BuildingType.Granary]: {
@@ -346,6 +354,44 @@ export const PLANT_CONFIG: Record<CropType, Plant> = {
     maxYield: 2,
   },
 };
+export const FOOD_NUTRITION: Record<ResourceType, FoodNutrient> = {
+  [ResourceType.Bread]: {
+    hungerRestore: 60,
+    healthRestore: 20,
+    isEdible: true,
+  },
+  [ResourceType.Potato]: {
+    hungerRestore: 30,
+    healthRestore: 5,
+    isEdible: true,
+  },
+  [ResourceType.Pumpkin]: {
+    hungerRestore: 40,
+    healthRestore: 10,
+    isEdible: true,
+  },
+  [ResourceType.Tomato]: {
+    hungerRestore: 20,
+    healthRestore: 8,
+    isEdible: true,
+  },
+  [ResourceType.Cucumber]: {
+    hungerRestore: 15,
+    healthRestore: 5,
+    isEdible: true,
+  },
+  [ResourceType.Corn]: { hungerRestore: 25, healthRestore: 5, isEdible: true },
+
+  [ResourceType.Wheat]: { hungerRestore: 5, healthRestore: 0, isEdible: false },
+  [ResourceType.Flour]: { hungerRestore: 2, healthRestore: 0, isEdible: false },
+  [ResourceType.Water]: { hungerRestore: 5, healthRestore: 2, isEdible: true },
+  [ResourceType.WellWater]: {
+    hungerRestore: 5,
+    healthRestore: 2,
+    isEdible: true,
+  },
+  [ResourceType.Empty]: { hungerRestore: 0, healthRestore: 0, isEdible: false },
+};
 export const PLANT_EFFECTS = {
   WELL_WATER_EFFECT: 1.2,
 };
@@ -355,7 +401,8 @@ export const DROUGHT_DAMAGE_TICK = 0.01;
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 0.02,
+  hungerPerTick: 1,
+  hungerCoefficientForEat: 0.1,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,
   agePerTick: 1 / 600,
@@ -454,7 +501,7 @@ const fullWheatGranary: Granary = {
 
   // === Специфичные поля интерфейса Granary ===
   type: BuildingType.Granary,
-  resourceType: ResourceType.Wheat, // Амбар залочен под пшеницу
+  resourceType: ResourceType.Tomato, // Амбар залочен под пшеницу
 
   storage: {
     amount: 500, // Текущее количество (полный)

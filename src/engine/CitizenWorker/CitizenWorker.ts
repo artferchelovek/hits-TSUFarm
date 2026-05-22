@@ -18,6 +18,9 @@ import {
   Weather,
 } from "../Types.ts";
 import {
+  FOOD_CONSUMPTION_PERSON,
+  FOOD_NUTRITION,
+  FOOD_TASK_DURATION,
   REPRODUCTION,
   VILLAGER_CONFIG,
 } from "../Constants.ts";
@@ -27,9 +30,10 @@ import { TransportService } from "./TransportService.ts";
 import { BuildingProcessor } from "./BuildingProcessor.ts";
 import {
   getEvcDist,
+  getExitPos,
+  WANDER_ATTEMPTS,
   WANDER_CHANCE,
   WANDER_RADIUS,
-  WANDER_ATTEMPTS,
 } from "./utils.ts";
 
 class CitizenWorker {
@@ -222,6 +226,70 @@ class CitizenWorker {
         resident.health - VILLAGER_CONFIG.homelessDamagePerTick,
       );
     }
+    const isAlreadyHandlingFood =
+      resident.status === VillagerStatus.MovingHomeToEat ||
+      resident.status === VillagerStatus.Eating ||
+      resident.status === VillagerStatus.MovingToFetchFood ||
+      resident.status === VillagerStatus.FetchingFood ||
+      resident.status === VillagerStatus.MovingHomeWithFood ||
+      resident.status === VillagerStatus.UnloadingHomeFood;
+    if (
+      resident.hunger <=
+        VILLAGER_CONFIG.maxHunger * VILLAGER_CONFIG.hungerCoefficientForEat &&
+      !isAlreadyHandlingFood
+    ) {
+      if (resident.homeId && this.buildings[resident.homeId]) {
+        const home = this.buildings[resident.homeId] as House;
+        const foodStorage = home.foodStorage.storage;
+        const availableFoodType = Object.keys(foodStorage).find((key) => {
+          const resType = key as ResourceType;
+          const amount = foodStorage[resType] ?? 0;
+          return amount > 0 && FOOD_NUTRITION[resType]?.isEdible;
+        }) as ResourceType | undefined;
+
+        if (availableFoodType) {
+          resident.status = VillagerStatus.MovingHomeToEat;
+          const path = this.calculatePath(resident.position, getExitPos(home));
+          if (path.length > 0) {
+            resident.path = path;
+            resident.pathIndex = 0;
+            resident.status = VillagerStatus.MovingHomeToEat;
+
+            resident.taskContext = {
+              targetId: home.id,
+              resourceType: availableFoodType,
+              currentAmount: 0,
+              neededAmount: 0,
+            };
+          }
+        } else {
+          const bestGranary = this.findNearestStorageFood(resident);
+          if (bestGranary) {
+            const path = this.calculatePath(
+              resident.position,
+              getExitPos(bestGranary),
+            );
+
+            if (path.length > 0) {
+              resident.path = path;
+              resident.pathIndex = 0;
+              resident.status = VillagerStatus.MovingToFetchFood;
+
+              resident.taskContext = {
+                sourceId: bestGranary.id,
+                targetId: home.id,
+                resourceType: bestGranary.resourceType!,
+                neededAmount: Math.min(
+                  bestGranary.storage.amount,
+                  home.foodStorage.maxCapacity,
+                ),
+                currentAmount: 0,
+              };
+            }
+          }
+        }
+      }
+    }
     if (resident.hunger <= 0) {
       resident.health = Math.max(
         0,
@@ -236,8 +304,7 @@ class CitizenWorker {
 
     resident.age += VILLAGER_CONFIG.agePerTick;
 
-    const deathChance =
-      (resident.age / 1000) * VILLAGER_CONFIG.baseDeathChance;
+    const deathChance = (resident.age / 1000) * VILLAGER_CONFIG.baseDeathChance;
     if (Math.random() < deathChance || resident.health <= 0) {
       logs.push({
         id: crypto.randomUUID(),
@@ -258,10 +325,7 @@ class CitizenWorker {
     }
   }
 
-  private birthEvents(
-    parentFirst: Resident,
-    parentSecond: Resident,
-  ): boolean {
+  private birthEvents(parentFirst: Resident, parentSecond: Resident): boolean {
     if (parentFirst.homeId !== parentSecond.homeId) return false;
     if (parentFirst.gender === parentSecond.gender) return false;
 
@@ -323,16 +387,31 @@ class CitizenWorker {
             resident.status = VillagerStatus.Watering;
             return;
           }
+          if (resident.status === VillagerStatus.MovingHomeWithFood) {
+            resident.status = VillagerStatus.UnloadingHomeFood;
+            return;
+          }
+          if (resident.status === VillagerStatus.MovingToFetchFood) {
+            resident.status = VillagerStatus.FetchingFood;
+            resident.workProgress = 0;
+            return;
+          }
           if (resident.status === VillagerStatus.MovingToExportSource) {
             const tc = resident.taskContext;
             if (tc) {
               const src = this.buildings[tc.sourceId ?? ""];
               if (src) {
-                src.incoming[tc.resourceType] =
-                  (src.incoming[tc.resourceType] ?? 1) - 1;
+                src.incoming[tc.resourceType] = Math.max(
+                  0,
+                  (src.incoming[tc.resourceType] ?? 1) - 1,
+                );
               }
             }
             resident.status = VillagerStatus.LoadingExport;
+            return;
+          }
+          if (resident.status === VillagerStatus.MovingHomeToEat) {
+            resident.status = VillagerStatus.Eating;
             return;
           }
           if (resident.status === VillagerStatus.MovingToExportTarget) {
@@ -340,8 +419,10 @@ class CitizenWorker {
             if (tc) {
               const dest = this.buildings[tc.targetId];
               if (dest && dest.id !== tc.sourceId) {
-                dest.incoming[tc.resourceType] =
-                  (dest.incoming[tc.resourceType] ?? 1) - 1;
+                dest.incoming[tc.resourceType] = Math.max(
+                  0,
+                  (dest.incoming[tc.resourceType] ?? 1) - 1,
+                );
               }
             }
             resident.status = VillagerStatus.UnloadingExport;
@@ -355,6 +436,16 @@ class CitizenWorker {
       }
     }
 
+    if (resident.status === VillagerStatus.UnloadingHomeFood) {
+      this.processUnloadingHomeFood(resident);
+      resident.status = VillagerStatus.Idle;
+      return;
+    }
+    if (resident.status === VillagerStatus.FetchingFood) {
+      if (this.processFetchingFood(resident)) {
+      }
+      return;
+    }
     if (resident.status === VillagerStatus.Unloading) {
       if (this.farmerService.unloadToGranary(resident, this.buildings)) {
         resident.status = VillagerStatus.Idle;
@@ -364,6 +455,13 @@ class CitizenWorker {
       if (this.farmerService.harvesting(resident, this.buildings)) {
         resident.status = VillagerStatus.Idle;
       }
+    }
+    if (resident.status === VillagerStatus.Eating) {
+      if (resident.taskContext) {
+        this.processEating(resident, resident.taskContext.resourceType);
+      }
+      resident.status = VillagerStatus.Idle;
+      return;
     }
     if (resident.status === VillagerStatus.Planting) {
       if (this.farmerService.planting(resident, this.buildings)) {
@@ -400,10 +498,7 @@ class CitizenWorker {
         const entryX = home.position.x - 1;
         const entryY = home.position.y - 1;
 
-        if (
-          resident.position.x === entryX &&
-          resident.position.y === entryY
-        ) {
+        if (resident.position.x === entryX && resident.position.y === entryY) {
           resident.status = VillagerStatus.Idle;
           return;
         }
@@ -452,6 +547,171 @@ class CitizenWorker {
         }
       }
     }
+  }
+
+  private processEating(resident: Resident, availableFoodType: ResourceType) {
+    const home = this.buildings[resident.homeId!] as House;
+    if (home) {
+      const foodStorage = home.foodStorage.storage;
+      foodStorage[availableFoodType]! -= 1;
+      if (foodStorage[availableFoodType]! <= 0) {
+        delete foodStorage[availableFoodType];
+      }
+      const nutrient = FOOD_NUTRITION[availableFoodType];
+      resident.hunger = Math.min(
+        VILLAGER_CONFIG.maxHunger,
+        resident.hunger + nutrient.hungerRestore,
+      );
+      resident.health = Math.min(
+        VILLAGER_CONFIG.maxHealth,
+        resident.health + nutrient.healthRestore,
+      );
+    }
+    resident.taskContext = null;
+  }
+
+  private processFetchingFood(resident: Resident) {
+    const tc = resident.taskContext;
+    if (!tc) {
+      return true;
+    }
+
+    const granary = this.buildings[tc.sourceId ?? ""] as Granary;
+    if (!granary || granary.storage.amount <= 0) {
+      resident.taskContext = null;
+      return true;
+    }
+
+    if (!tc.targetId) {
+      granary.storage.amount = Math.max(0, granary.storage.amount - 1);
+      const nutrient = FOOD_NUTRITION[tc.resourceType];
+      resident.hunger = Math.min(
+        VILLAGER_CONFIG.maxHunger,
+        resident.hunger + (nutrient?.hungerRestore ?? 20),
+      );
+      resident.health = Math.min(
+        VILLAGER_CONFIG.maxHealth,
+        resident.health + (nutrient?.healthRestore ?? 5),
+      );
+      resident.taskContext = null;
+      return true;
+    }
+
+    const home = this.buildings[tc.targetId] as House;
+    if (!home) {
+      resident.taskContext = null;
+      return true;
+    }
+
+    if (resident.workProgress < FOOD_TASK_DURATION.LOADING) {
+      resident.workProgress += 1;
+      return false;
+    }
+    const currentHomeFood = Object.values(home.foodStorage.storage).reduce(
+      (sum, val) => sum + (val ?? 0),
+      0,
+    );
+    const freeHomeSpace = home.foodStorage.maxCapacity - currentHomeFood;
+
+    const familySize = home.residentsId.length || 1;
+    const desiredAmountForFamily = familySize * FOOD_CONSUMPTION_PERSON;
+    const neededForHouseNorm = Math.max(
+      0,
+      desiredAmountForFamily - currentHomeFood,
+    );
+
+    const maxCarry = 20;
+
+    const toTake = Math.min(
+      granary.storage.amount,
+      freeHomeSpace,
+      neededForHouseNorm,
+      maxCarry,
+    );
+
+    if (toTake > 0) {
+      granary.storage.amount -= toTake;
+      if (!resident.inventory.resources) resident.inventory.resources = {};
+      resident.inventory.resources[tc.resourceType] = toTake;
+      resident.inventory.totalAmount = toTake;
+
+      const entryX = home.position.x - 1;
+      const entryY = home.position.y - 1;
+      const path = this.calculatePath(resident.position, {
+        x: entryX,
+        y: entryY,
+      });
+
+      if (path.length > 0) {
+        resident.path = path;
+        resident.pathIndex = 0;
+        resident.status = VillagerStatus.MovingHomeWithFood;
+      } else {
+        granary.storage.amount += toTake;
+        resident.inventory.resources = {};
+        resident.inventory.totalAmount = 0;
+        resident.status = VillagerStatus.Idle;
+        resident.taskContext = null;
+      }
+    } else {
+      resident.status = VillagerStatus.Idle;
+      resident.taskContext = null;
+    }
+    return true;
+  }
+
+  private processUnloadingHomeFood(resident: Resident): void {
+    const tc = resident.taskContext;
+    if (!tc) return;
+
+    const home = this.buildings[tc.targetId] as House;
+    if (home) {
+      const resType = tc.resourceType;
+      const amountToPut = resident.inventory.resources[resType] ?? 0;
+
+      if (!home.foodStorage.storage[resType]) {
+        home.foodStorage.storage[resType] = 0;
+      }
+      home.foodStorage.storage[resType]! += amountToPut;
+
+      resident.inventory.resources = {};
+      resident.inventory.totalAmount = 0;
+    }
+    resident.taskContext = null;
+  }
+
+  private findNearestStorageFood(resident: Resident): Granary | undefined {
+    let bestScore = -Infinity;
+    let bestStorage: Granary | undefined = undefined;
+
+    const neededHunger = 100 - resident.hunger;
+
+    for (const build of Object.values(this.buildings)) {
+      if (build.type !== BuildingType.Granary) continue;
+
+      const granary = build as Granary;
+      const foodType = granary.resourceType ?? ResourceType.Empty;
+      const nutrient = FOOD_NUTRITION[foodType];
+
+      if (!nutrient || !nutrient.isEdible || granary.storage.amount <= 0)
+        continue;
+
+      const effectiveHungerRestore = Math.min(
+        neededHunger,
+        nutrient.hungerRestore,
+      );
+
+      const dist = getEvcDist(resident.position, getExitPos(granary));
+
+      const score = effectiveHungerRestore / (dist + 1);
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestStorage = granary;
+      }
+    }
+
+    return bestStorage;
   }
 
   private getRandomWanderTarget(

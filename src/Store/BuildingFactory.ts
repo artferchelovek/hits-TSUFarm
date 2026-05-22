@@ -35,7 +35,13 @@ export const createBuilding = (
     }
     case BuildingType.House: {
       const config = BUILDING_CONFIG[type];
-      return { ...base, type, residentsId: [], capacity: config.capacity };
+      return {
+        ...base,
+        type,
+        residentsId: [],
+        capacity: config.capacity,
+        foodStorage: { storage: {}, maxCapacity: config.maxStorageCapacity },
+      };
     }
     case BuildingType.Garden: {
       const config = BUILDING_CONFIG[type];
