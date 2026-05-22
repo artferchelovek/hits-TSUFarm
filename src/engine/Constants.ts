@@ -403,7 +403,6 @@ export const FOOD_NUTRITION: Record<ResourceType, FoodNutrient> = {
 };
 export const PLANT_EFFECTS = {
   WELL_WATER_EFFECT: 1.2,
-  GREENHOUSE_COEFFICIENT: 1.5,
 };
 
 export const WELL_REFILL_AMOUNT = 2;

@@ -411,14 +411,15 @@ export class FarmerService {
       growthProgress: 0,
       isReady: false,
     };
-    garden.growthCoefficient = 1;
     garden.isWatered = true;
     garden.health = 100;
 
     if (garden.type === BuildingType.Greenhouse) {
       garden.growthCoefficient =
         BUILDING_CONFIG[BuildingType.Greenhouse].growthCoefficient;
+      (garden as Greenhouse).waterTank.current = 5;
     } else {
+      garden.growthCoefficient = 1;
       garden.moisture = 5;
     }
 

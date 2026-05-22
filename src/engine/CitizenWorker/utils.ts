@@ -40,8 +40,14 @@ export function closestByDistance<T extends { position: Position }>(
   return best;
 }
 
-export function getExitPos(build: { position: Position }): Position {
-  return { x: build.position.x, y: build.position.y + 1 };
+export function getExitPos(build: {
+  position: Position;
+  length?: number;
+}): Position {
+  return {
+    x: build.position.x,
+    y: build.position.y + (build.length ?? 1),
+  };
 }
 
 export function addItemToInventory(
