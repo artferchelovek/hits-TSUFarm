@@ -84,7 +84,7 @@ export async function saveToCloud(
   world: WorldMap,
 ): Promise<void> {
   await savesApi.saveToSlot(slot, {
-    name: `Слот ${slot}`,
+    name: gameState.meta.farmName,
     gameState: gameState as unknown as Record<string, unknown>,
     worldData: world.serialize(),
   });
@@ -105,5 +105,41 @@ export async function loadCloudSave(slot: number): Promise<SaveFile | null> {
     };
   } catch {
     return null;
+  }
+}
+
+const UNLOAD_KEY = "tsufarm_unload_save";
+
+export function saveUnloadSave(
+  gameState: GameState,
+  world: WorldMap,
+): void {
+  const data: SaveFile = {
+    version: "0.0.1",
+    timestamp: Date.now(),
+    gameState,
+    worldData: world.serialize(),
+  };
+  try {
+    localStorage.setItem(UNLOAD_KEY, JSON.stringify(data));
+  } catch {
+    // localStorage full or unavailable — ignore
+  }
+}
+
+export function getUnloadSave(): SaveFile | null {
+  try {
+    const raw = localStorage.getItem(UNLOAD_KEY);
+    return raw ? (JSON.parse(raw) as SaveFile) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearUnloadSave(): void {
+  try {
+    localStorage.removeItem(UNLOAD_KEY);
+  } catch {
+    // ignore
   }
 }
