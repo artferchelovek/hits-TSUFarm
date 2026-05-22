@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { WorldMap } from "../../engine/WorldMap.ts";
 import {
   BUILDING_SVG,
@@ -218,24 +218,30 @@ export default function GameView() {
     };
   }, []);
 
-  const handleCloudSave = useCallback(
-    async (slot: number) => {
-      if (!world) return;
-      setSaveMessage("");
-      try {
-        const gameState = useGameStore.getState().gameState;
-        saveGame(gameState, world);
-        await saveToCloud(slot, gameState, world);
-        setSaveMessage(`Сохранено в слот ${slot}`);
-        setTimeout(() => setSaveMessage(""), 3000);
-      } catch {
-        setSaveMessage("Ошибка сохранения");
-        setTimeout(() => setSaveMessage(""), 3000);
-      }
-      setShowSavePicker(false);
-    },
-    [world],
-  );
+  const handleCloudSave = async (slot: number) => {
+    const w = worldRef.current;
+    console.log("handleCloudSave", { slot, hasWorld: !!w, ready, isAuthenticated });
+
+    if (!w) {
+      setSaveMessage("Мир ещё не загружен");
+      setTimeout(() => setSaveMessage(""), 2000);
+      return;
+    }
+
+    setSaveMessage("");
+    try {
+      const gameState = useGameStore.getState().gameState;
+      saveGame(gameState, w);
+      await saveToCloud(slot, gameState, w);
+      setSaveMessage(`Сохранено в слот ${slot} ☁`);
+      setTimeout(() => setSaveMessage(""), 3000);
+    } catch (err) {
+      console.error("Save error:", err);
+      setSaveMessage("Ошибка сохранения");
+      setTimeout(() => setSaveMessage(""), 3000);
+    }
+    setShowSavePicker(false);
+  };
 
   return (
     <>

@@ -121,10 +121,12 @@
 }
 
 .saveMessage {
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: bold;
   color: #7ecf7e;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 4px 10px;
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 6px 14px;
+  border-radius: 6px;
   white-space: nowrap;
+  border: 1px solid rgba(126, 207, 126, 0.3);
 }
