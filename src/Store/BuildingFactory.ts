@@ -19,6 +19,7 @@ export const createBuilding = (
     width: size?.width ?? config.width,
     length: size?.length ?? config.length,
     incoming: {},
+    maintenanceCost: config.maintenanceCost ?? 0,
   };
 
   switch (type) {

@@ -128,6 +128,7 @@ interface BaseBuilding {
   width: number;
   length: number;
   incoming: Partial<Record<ResourceType, number>>;
+  maintenanceCost: number;
 }
 
 interface PlaceGrow extends BaseBuilding {
@@ -342,6 +343,8 @@ export interface GameState {
     level: number;
     totalPopulation: number;
     marketDemand: Partial<Record<ResourceType, number>>;
+    lastDailyIncome?: number;
+    lastDailyMaintenance?: number;
   };
   buildings: Record<string, Buildings>;
   buildingCounts: Record<BuildingType, number>;

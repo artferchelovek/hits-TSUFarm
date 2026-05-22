@@ -222,18 +222,21 @@ export const BUILDING_CONFIG = {
     length: 5,
     initialCapacity: 2,
     cost: 0,
+    maintenanceCost: 0,
   },
   [BuildingType.House]: {
     width: 3,
     length: 3,
     capacity: 3,
     cost: 50,
+    maintenanceCost: 0,
   },
   [BuildingType.Granary]: {
     width: 4,
     length: 4,
     maxCapacity: 700,
     cost: 120,
+    maintenanceCost: 2,
   },
   [BuildingType.Well]: {
     width: 2,
@@ -241,12 +244,14 @@ export const BUILDING_CONFIG = {
     maxCapacity: 200,
     refillRate: 2,
     cost: 40,
+    maintenanceCost: 1,
   },
   [BuildingType.Market]: {
     width: 3,
     length: 3,
     cost: 250,
     maxCapacity: 200,
+    maintenanceCost: 10,
   },
   [BuildingType.Garden]: {
     width: 1,
@@ -254,6 +259,7 @@ export const BUILDING_CONFIG = {
     moisture: 0,
     growthCoefficient: 1.0,
     cost: 10,
+    maintenanceCost: 0,
   },
   [BuildingType.Greenhouse]: {
     width: 3,
@@ -262,36 +268,42 @@ export const BUILDING_CONFIG = {
     moisture: 0,
     growthCoefficient: 1.5,
     cost: 200,
+    maintenanceCost: 0,
   },
   [BuildingType.Road]: {
     width: 1,
     length: 1,
     speed: 1.5,
     cost: 2,
+    maintenanceCost: 0,
   },
   [BuildingType.Bridge]: {
     width: 1,
     length: 1,
     speed: 1.2,
     cost: 15,
+    maintenanceCost: 0,
   },
   [BuildingType.Graveyard]: {
     width: 3,
     length: 3,
     maxCapacity: 50,
     cost: 80,
+    maintenanceCost: 0,
   },
   [BuildingType.Mill]: {
     width: 3,
     length: 5,
     cost: 300,
     maxCapacity: 20,
+    maintenanceCost: 5,
   },
   [BuildingType.Bakery]: {
     width: 3,
     length: 3,
     cost: 250,
     maxCapacity: 15,
+    maintenanceCost: 8,
   },
 };
 export const PLANT_CONFIG: Record<CropType, Plant> = {
@@ -486,6 +498,7 @@ const fullWheatGranary: Granary = {
 
   // Массив экспортных связей (куда логисты должны тащить пшеницу)
   export: [],
+  maintenanceCost: 2,
 };
 export const initialGameState: GameState = {
   meta: {

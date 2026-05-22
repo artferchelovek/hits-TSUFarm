@@ -20,6 +20,7 @@ export const processDayTime = (state: WritableDraft<GameStore>) => {
 
   if (dayTick === 0 && meta.gameTick > 0) {
     processMarketSales(state);
+    processMaintenanceCosts(state);
   }
 
   const totalSeasons = Object.values(Season);
@@ -79,6 +80,7 @@ const processMarketSales = (state: WritableDraft<GameStore>) => {
 
   if (totalProfit > 0) {
     state.gameState.economy.money += Math.floor(totalProfit);
+    state.gameState.economy.lastDailyIncome = Math.floor(totalProfit);
     appendLog(
       state,
       `Рынок продал товаров на сумму ${Math.floor(totalProfit)} монет.`,
@@ -94,6 +96,8 @@ const processMarketSales = (state: WritableDraft<GameStore>) => {
         currentDemand - drop,
       );
     });
+  } else {
+    state.gameState.economy.lastDailyIncome = 0;
   }
 
   Object.keys(RESOURCE_PRICES).forEach((res) => {
@@ -106,6 +110,45 @@ const processMarketSales = (state: WritableDraft<GameStore>) => {
       );
     }
   });
+};
+
+const processMaintenanceCosts = (state: WritableDraft<GameStore>) => {
+  let totalMaintenance = 0;
+
+  Object.values(state.gameState.buildings).forEach((building) => {
+    const cost = building.maintenanceCost || 0;
+    const isTiled =
+      building.type === BuildingType.Garden ||
+      building.type === BuildingType.Road ||
+      building.type === BuildingType.Bridge;
+    
+    // For tiled buildings, maintenance could be per tile if we want, but config says 0 for them.
+    // If we later add cost for roads, we should multiply by area.
+    const area = isTiled ? (building.width || 1) * (building.length || 1) : 1;
+    totalMaintenance += cost * area;
+  });
+
+  if (totalMaintenance > 0) {
+    state.gameState.economy.money -= totalMaintenance;
+    state.gameState.economy.lastDailyMaintenance = totalMaintenance;
+    
+    // Check for negative balance
+    if (state.gameState.economy.money < 0) {
+      appendLog(
+        state,
+        `ВНИМАНИЕ: Баланс ушел в минус! Расходы на содержание: ${totalMaintenance} 💰`,
+        "error",
+      );
+    } else {
+      appendLog(
+        state,
+        `Ежедневное обслуживание зданий обошлось в ${totalMaintenance} 💰`,
+        "info",
+      );
+    }
+  } else {
+    state.gameState.economy.lastDailyMaintenance = 0;
+  }
 };
 
 const updateWeather = (state: WritableDraft<GameStore>) => {
