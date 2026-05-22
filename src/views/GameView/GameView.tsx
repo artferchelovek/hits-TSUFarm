@@ -9,6 +9,9 @@ import {
   applySave,
   getPendingLoad,
   saveToCloud,
+  saveUnloadSave,
+  getUnloadSave,
+  clearUnloadSave,
 } from "../../Store/SaveManager.ts";
 import { getToken } from "../../api/client.ts";
 import { useGameStore } from "../../Store/GameStore.ts";
@@ -93,11 +96,29 @@ export default function GameView() {
         setWorld(loadedWorld);
         useGameStore.getState().loadState(gameState);
         setLoadedFromSave(true);
+        clearUnloadSave();
       } else {
-        const w = new WorldMap();
-        w.generate();
-        if (cancelled) return;
-        setWorld(w);
+        const unloadSave = getUnloadSave();
+        if (unloadSave) {
+          const { world: loadedWorld, gameState } = applySave(unloadSave);
+          setWorld(loadedWorld);
+          useGameStore.getState().loadState(gameState);
+          setLoadedFromSave(true);
+          clearUnloadSave();
+        } else {
+          const w = new WorldMap();
+          w.generate();
+          if (cancelled) return;
+          setWorld(w);
+
+          const farmName = sessionStorage.getItem("tsufarm_farm_name");
+          if (farmName) {
+            useGameStore.setState((s) => {
+              s.gameState.meta.farmName = farmName;
+            });
+            sessionStorage.removeItem("tsufarm_farm_name");
+          }
+        }
       }
 
       setStage(1);
@@ -168,14 +189,16 @@ export default function GameView() {
   }, []);
 
   useEffect(() => {
-    if (import.meta.env.DEV) return;
-
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
+    const handler = () => {
+      if (document.visibilityState !== "hidden") return;
+      const gs = useGameStore.getState().gameState;
+      const w = worldRef.current;
+      if (w) {
+        saveUnloadSave(gs, w);
+      }
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
   }, []);
 
   const handleCloudSave = useCallback(
