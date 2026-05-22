@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { WorldMap } from "../../engine/WorldMap.ts";
 import {
   BUILDING_SVG,
@@ -10,6 +10,7 @@ import {
   getPendingLoad,
   saveToCloud,
 } from "../../Store/SaveManager.ts";
+import { getToken } from "../../api/client.ts";
 import { useGameStore } from "../../Store/GameStore.ts";
 import { useAuth } from "../../contexts/AuthContext.tsx";
 import MapCanvas from "../../components/game/MapCanvas.tsx";
@@ -39,17 +40,39 @@ export default function GameView() {
   const [loadedFromSave, setLoadedFromSave] = useState(false);
   const [showSavePicker, setShowSavePicker] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const worldRef = useRef<WorldMap>();
   const { isAuthenticated } = useAuth();
 
   const isLoading = !ready || !mapRendered;
 
   useEffect(() => {
+    worldRef.current = world;
+  }, [world]);
+
+  useEffect(() => {
+    let lastAutoSaveSlot = 0;
+
     const gameLoop = setInterval(() => {
+      const prevTick = useGameStore.getState().gameState.meta.gameTick;
       useGameStore.getState().tick();
-      console.log(
-        `тик номер ${useGameStore.getState().gameState.meta.gameTick}`,
-      );
+      const tick = useGameStore.getState().gameState.meta.gameTick;
+      const dayDuration = useGameStore.getState().gameState.meta.dayDuration;
+
+      console.log(`тик номер ${tick}`);
       console.log(useGameStore.getState().gameState.residents);
+
+      const prevDay = Math.floor(prevTick / dayDuration);
+      const currDay = Math.floor(tick / dayDuration);
+
+      if (currDay > prevDay && getToken()) {
+        const gs = useGameStore.getState().gameState;
+        const w = worldRef.current;
+        if (w) {
+          const slot = lastAutoSaveSlot > 0 ? lastAutoSaveSlot : 1;
+          saveToCloud(slot, gs, w).catch(() => {});
+          lastAutoSaveSlot = slot;
+        }
+      }
     }, 100);
 
     return () => clearInterval(gameLoop);
