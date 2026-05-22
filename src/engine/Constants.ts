@@ -551,7 +551,7 @@ export const DROUGHT_DAMAGE_TICK = 0.01;
 export const VILLAGER_CONFIG = {
   maxHunger: 100,
   maxHealth: 100,
-  hungerPerTick: 0.5,
+  hungerPerTick: 0.1,
   hungerCoefficientForEat: 0.1,
   starvationDamagePerTick: 1,
   healPerTick: 0.5,

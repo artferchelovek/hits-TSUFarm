@@ -892,9 +892,9 @@ export function useMapCanvas(
     const row = Math.floor(worldY / TILE_SIZE);
 
     if (col >= 0 && col < MAP_DIMENSION && row >= 0 && row < MAP_DIMENSION) {
-      const pendingId = useGameStore.getState().pendingExportSourceId;
+      const state = useGameStore.getState();
+      const pendingId = state.pendingExportSourceId;
       if (pendingId) {
-        const state = useGameStore.getState();
         const clickedBuild = Object.values(state.gameState.buildings).find(
           (b) => {
             return (
@@ -945,7 +945,6 @@ export function useMapCanvas(
       const w = cfg?.width ?? 1;
       const h = cfg?.length ?? 1;
 
-      const state = useGameStore.getState();
       const existing = Object.values(
         state.gameState.buildings || ({} as Record<string, Buildings>),
       ) as Buildings[];

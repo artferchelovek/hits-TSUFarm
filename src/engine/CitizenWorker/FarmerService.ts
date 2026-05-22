@@ -16,6 +16,7 @@ import {
 import {
   BUILDING_CONFIG,
   FARMER_TASK_DURATION,
+  FOOD_NUTRITION,
   getMaxInventoryCapacity,
   getSpeedWork,
   LEVEL_CONFIG,
@@ -251,59 +252,87 @@ export class FarmerService {
       resourceType: ResourceType;
     } | null = null;
 
-    for (const build of Object.values(buildings)) {
-      if (build.type === BuildingType.Granary) {
-        const g = build as Granary;
-        if (!g.resourceType) continue;
-        const amount = resident.inventory.resources[g.resourceType] ?? 0;
-        if (amount <= 0) continue;
-        const freeSpace = g.storage.maxCapacity - g.storage.amount;
-        if (freeSpace <= 0) continue;
-        const dist = getEvcDist(resident.position, getExitPos(g));
-        if (dist < minDist) {
-          minDist = dist;
-          bestTarget = { targetId: g.id, resourceType: g.resourceType };
-        }
-      } else if (build.type === BuildingType.Market) {
-        const m = build as Market;
-        const totalStored = (Object.values(m.storage) as number[]).reduce(
-          (s, a) => s + a,
-          0,
-        );
-        const freeSpace = m.maxCapacity - totalStored;
-        if (freeSpace <= 0) continue;
+    const resTypes = (Object.keys(resident.inventory.resources) as ResourceType[]).filter(
+      (k) => (resident.inventory.resources[k] ?? 0) > 0
+    );
+    if (resTypes.length === 0) return null;
 
-        const resType = (
-          Object.keys(resident.inventory.resources) as ResourceType[]
-        ).find((k) => (resident.inventory.resources[k] ?? 0) > 0);
-        if (!resType) continue;
-
-        const dist = getEvcDist(resident.position, getExitPos(m));
-        if (dist < minDist) {
-          minDist = dist;
-          bestTarget = { targetId: m.id, resourceType: resType };
-        }
-      } else if (build.type === BuildingType.Main) {
-        const m = build as Main;
-        const config = LEVEL_CONFIG[currentEconomyLevel];
-        if (!config) continue;
-
-        const resType = (
-          Object.keys(resident.inventory.resources) as ResourceType[]
-        ).find((k) => {
-          const needed = config.upgradeCost.resources[k] ?? 0;
-          const stored = m.storage[k] ?? 0;
-          return needed > stored;
-        });
-        if (!resType) continue;
-
-        const dist = getEvcDist(resident.position, getExitPos(m));
-        if (dist < minDist) {
-          minDist = dist;
-          bestTarget = { targetId: m.id, resourceType: resType };
+    // 1. Try to find a valid Granary first (Absolute Priority)
+    for (const resType of resTypes) {
+      for (const build of Object.values(buildings)) {
+        if (build.type === BuildingType.Granary) {
+          const g = build as Granary;
+          if (g.resourceType !== resType) continue;
+          const freeSpace = g.storage.maxCapacity - g.storage.amount;
+          if (freeSpace <= 0) continue;
+          
+          const dist = getEvcDist(resident.position, getExitPos(g));
+          if (dist < minDist) {
+            minDist = dist;
+            bestTarget = { targetId: g.id, resourceType: resType };
+          }
         }
       }
     }
+
+    // 2. Only if no granary was found, look for Market or Main building
+    if (!bestTarget) {
+      minDist = Infinity;
+      for (const resType of resTypes) {
+        for (const build of Object.values(buildings)) {
+          if (build.type === BuildingType.Market) {
+            const m = build as Market;
+            
+            // Food Security: Don't let farmers dump food at the market if granaries are empty
+            const isEdible = FOOD_NUTRITION[resType]?.isEdible;
+            if (isEdible) {
+              const granariesForThisRes = Object.values(buildings).filter(
+                (b): b is Granary =>
+                  b.type === BuildingType.Granary && b.resourceType === resType,
+              );
+              if (granariesForThisRes.length > 0) {
+                const totalInGranaries = granariesForThisRes.reduce(
+                  (sum, g) => sum + g.storage.amount,
+                  0,
+                );
+                const hasSpaceInGranary = granariesForThisRes.some(
+                  (g) => g.storage.amount < g.storage.maxCapacity
+                );
+                if (totalInGranaries < 50 && hasSpaceInGranary) continue; 
+              }
+            }
+
+            const totalStored = (Object.values(m.storage) as number[]).reduce(
+              (s, a) => s + a,
+              0,
+            );
+            const freeSpace = m.maxCapacity - totalStored;
+            if (freeSpace <= 0) continue;
+
+            const dist = getEvcDist(resident.position, getExitPos(m));
+            if (dist < minDist) {
+              minDist = dist;
+              bestTarget = { targetId: m.id, resourceType: resType };
+            }
+          } else if (build.type === BuildingType.Main) {
+            const m = build as Main;
+            const config = LEVEL_CONFIG[currentEconomyLevel];
+            if (!config) continue;
+
+            const needed = config.upgradeCost.resources[resType] ?? 0;
+            const stored = m.storage[resType] ?? 0;
+            if (needed > stored) {
+              const dist = getEvcDist(resident.position, getExitPos(m));
+              if (dist < minDist) {
+                minDist = dist;
+                bestTarget = { targetId: m.id, resourceType: resType };
+              }
+            }
+          }
+        }
+      }
+    }
+
     return bestTarget;
   }
 

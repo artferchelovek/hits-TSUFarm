@@ -15,6 +15,7 @@ import {
   VillagerStatus,
 } from "../Types.ts";
 import {
+  FOOD_NUTRITION,
   getMaxInventoryCapacity,
   getSpeedWork,
   LEVEL_CONFIG,
@@ -42,9 +43,9 @@ export class TransportService {
     let bestAmount = 0;
 
     for (const build of Object.values(buildings)) {
-      const exportArr = (build as any).export;
-      if (!Array.isArray(exportArr) || exportArr.length === 0) continue;
-
+      const exportArr = (build as any).export || [];
+      // Always allow sources that have resources, findBestExportDestination will handle candidates (like Main)
+      
       const availableResources: {
         type: ResourceType;
         amount: number;
@@ -82,17 +83,6 @@ export class TransportService {
             max: b.maxCapacity,
           });
         }
-      } else if (build.type === BuildingType.Main) {
-        const m = build as Main;
-        Object.entries(m.storage).forEach(([res, amount]) => {
-          if ((amount ?? 0) > 0) {
-            availableResources.push({
-              type: res as ResourceType,
-              amount: amount ?? 0,
-              max: m.maxCapacity,
-            });
-          }
-        });
       }
 
       for (const res of availableResources) {
@@ -206,7 +196,35 @@ export class TransportService {
       candidates.push(mainBuilding.id);
     }
 
-    for (const destId of candidates) {
+    // Food Security Logic:
+    // If the resource is edible, we first check if Granaries have enough reserve.
+    let finalCandidates = candidates;
+    const isEdible = FOOD_NUTRITION[resourceType]?.isEdible;
+    if (isEdible) {
+      const granariesForThisRes = Object.values(buildings).filter(
+        (b): b is Granary =>
+          b.type === BuildingType.Granary && b.resourceType === resourceType,
+      );
+
+      if (granariesForThisRes.length > 0) {
+        const totalInGranaries = granariesForThisRes.reduce(
+          (sum, g) => sum + g.storage.amount,
+          0,
+        );
+        const hasSpaceInGranary = granariesForThisRes.some(
+          (g) => g.storage.amount < g.storage.maxCapacity,
+        );
+
+        // If total reserve of this food is less than 50 AND we have space in a granary, don't deliver to Market
+        if (totalInGranaries < 50 && hasSpaceInGranary) {
+          finalCandidates = finalCandidates.filter(
+            (id) => buildings[id]?.type !== BuildingType.Market,
+          );
+        }
+      }
+    }
+
+    for (const destId of finalCandidates) {
       const dest = buildings[destId];
       if (!dest) continue;
       if ((dest.incoming[resourceType] ?? 0) >= 3) continue;
