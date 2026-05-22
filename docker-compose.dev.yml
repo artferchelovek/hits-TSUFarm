@@ -1,0 +1,14 @@
+services:
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./server/src:/app/src
+      - ./server/drizzle:/app/drizzle
+      - ./server/drizzle.config.ts:/app/drizzle.config.ts
+      - ./server/tsconfig.json:/app/tsconfig.json
+    environment:
+      CORS_ORIGIN: http://localhost:8000
+    env_file:
+      - ./.env
