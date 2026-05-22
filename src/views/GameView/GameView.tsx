@@ -10,6 +10,7 @@ import { useGameStore } from "../../Store/GameStore.ts";
 import MapCanvas from "../../components/game/MapCanvas.tsx";
 import RightPanel from "../../components/UI/RightPanel/RightPanel.tsx";
 import LeftPanel from "../../components/UI/LeftPanel/LeftPanel.tsx";
+import TutorialPopup from "../../components/UI/CenteredPopup/TutorialPopup.tsx";
 import { BuildSelectionProvider } from "../../contexts/BuildSelectionContext";
 import { PopupProvider } from "../../contexts/PopupContext";
 import styles from "./GameView.module.css";
@@ -32,8 +33,21 @@ export default function GameView() {
     useState<Record<string, HTMLImageElement>>();
   const [mapRendered, setMapRendered] = useState(false);
   const [loadedFromSave, setLoadedFromSave] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const isLoading = !ready || !mapRendered;
+
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem("tsufarm_tutorial_seen");
+    if (!hasSeenTutorial) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  const closeTutorial = () => {
+    localStorage.setItem("tsufarm_tutorial_seen", "true");
+    setShowTutorial(false);
+  };
 
   useEffect(() => {
     const gameLoop = setInterval(() => {
@@ -42,7 +56,7 @@ export default function GameView() {
         `тик номер ${useGameStore.getState().gameState.meta.gameTick}`,
       );
       console.log(useGameStore.getState().gameState.residents);
-    }, 10);
+    }, 100);
 
     return () => clearInterval(gameLoop);
   }, []);
@@ -164,6 +178,7 @@ export default function GameView() {
             )}
             {ready && <RightPanel world={world} />}
             {ready && <LeftPanel />}
+            {showTutorial && <TutorialPopup onClose={closeTutorial} />}
           </div>
         </PopupProvider>
       </BuildSelectionProvider>

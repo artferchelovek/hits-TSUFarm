@@ -7,7 +7,11 @@ import {
   LEVEL_CONFIG,
 } from "../../../../engine/Constants.ts";
 import styles from "../LeftPanel.module.css";
-import { BUILDING_NAMES } from "../../../../engine/localization/locales.ts";
+import {
+  BUILDING_DESCRIPTIONS,
+  BUILDING_NAMES,
+} from "../../../../engine/localization/locales.ts";
+import { useState } from "react";
 
 export function BuildingsPanel() {
   const { selected, setSelected } = useBuildSelection();
@@ -17,6 +21,8 @@ export function BuildingsPanel() {
   const buildingsAllow = useGameStore(
     (state) => state.gameState.buildingRemind,
   );
+
+  const [infoBuilding, setInfoBuilding] = useState<BuildingType | null>(null);
 
   const buildingTypes = Object.values(BuildingType) as BuildingType[];
 
@@ -56,7 +62,7 @@ export function BuildingsPanel() {
           alt=""
           style={{ filter: !isUnlocked ? "grayscale(1) opacity(0.5)" : "none" }}
         />
-        <div>
+        <div style={{ flex: 1 }}>
           <div className={styles.buildingItem__title}>
             {BUILDING_NAMES[bt]} {!isUnlocked && "🔒"}
           </div>
@@ -71,6 +77,18 @@ export function BuildingsPanel() {
             )}
           </div>
         </div>
+        <button
+          className={styles.infoBtn}
+          onClick={(e) => {
+            e.stopPropagation();
+            setInfoBuilding(bt);
+          }}
+          title="Инфо"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+            info
+          </span>
+        </button>
       </div>
     );
   };
@@ -84,6 +102,30 @@ export function BuildingsPanel() {
       {!hasMain
         ? renderPaletteItem(BuildingType.Main)
         : buildingTypes.map((bt) => renderPaletteItem(bt))}
+
+      {infoBuilding && (
+        <div className={styles.infoPlate}>
+          <div className={styles.infoPlate__header}>
+            <strong>{BUILDING_NAMES[infoBuilding]}</strong>
+            <button onClick={() => setInfoBuilding(null)}>×</button>
+          </div>
+          <p className={styles.infoPlate__desc}>
+            {BUILDING_DESCRIPTIONS[infoBuilding]}
+          </p>
+          <div className={styles.infoPlate__stats}>
+            <p>Цена: {BUILDING_CONFIG[infoBuilding].cost} 💰</p>
+            <p>
+              Размер: {BUILDING_CONFIG[infoBuilding].width}x
+              {BUILDING_CONFIG[infoBuilding].length}
+            </p>
+            {BUILDING_CONFIG[infoBuilding].maintenanceCost > 0 && (
+              <p style={{ color: "#d9534f" }}>
+                Содержание: {BUILDING_CONFIG[infoBuilding].maintenanceCost} 💰/день
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

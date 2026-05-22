@@ -215,3 +215,65 @@
   color: #8b5a2b;
   margin-top: 10px;
 }
+
+.infoBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.infoBtn:hover {
+  opacity: 1;
+  background: rgba(0,0,0,0.05);
+}
+
+.infoPlate {
+  position: absolute;
+  left: 230px;
+  top: 0;
+  width: 250px;
+  background: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  padding: 15px;
+  box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.infoPlate__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding-bottom: 5px;
+}
+
+.infoPlate__header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.infoPlate__desc {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.infoPlate__stats {
+  font-size: 12px;
+  font-weight: bold;
+  background: rgba(255,255,255,0.2);
+  padding: 8px;
+  border-radius: 4px;
+}
