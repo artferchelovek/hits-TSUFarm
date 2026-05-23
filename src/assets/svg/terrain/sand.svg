@@ -1,0 +1,14 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#D8B858"/>
+  <!-- subtle sand ripples / pebbles -->
+  <rect x="6" y="8" width="8" height="2" fill="#EAD070"/>
+  <rect x="34" y="16" width="10" height="2" fill="#EAD070"/>
+  <rect x="14" y="32" width="8" height="2" fill="#EAD070"/>
+  <rect x="48" y="40" width="8" height="2" fill="#EAD070"/>
+  <rect x="22" y="52" width="10" height="2" fill="#EAD070"/>
+  <!-- shadow pebbles -->
+  <rect x="24" y="10" width="4" height="4" fill="#B89840"/>
+  <rect x="52" y="26" width="3" height="3" fill="#B89840"/>
+  <rect x="8" y="46" width="4" height="4" fill="#B89840"/>
+  <rect x="40" y="54" width="3" height="3" fill="#B89840"/>
+</svg>

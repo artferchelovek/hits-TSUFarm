@@ -1,0 +1,13 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#3E7898"/>
+  <!-- deep wave bands -->
+  <rect x="0" y="8" width="64" height="3" fill="#568AAC"/>
+  <rect x="0" y="28" width="64" height="3" fill="#568AAC"/>
+  <rect x="0" y="48" width="64" height="3" fill="#568AAC"/>
+  <!-- shadow troughs -->
+  <rect x="0" y="18" width="64" height="2" fill="#2E6080"/>
+  <rect x="0" y="58" width="64" height="2" fill="#2E6080"/>
+  <!-- 2 small sparkles -->
+  <rect x="16" y="8" width="8" height="3" fill="#6EB0C8"/>
+  <rect x="42" y="48" width="8" height="3" fill="#6EB0C8"/>
+</svg>

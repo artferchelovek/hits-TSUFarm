@@ -1,0 +1,48 @@
+<svg width="128" height="160" viewBox="0 0 128 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- КРЫША — Темный сланец (Slate), как у надежного склада -->
+  <!-- ridge -->
+  <rect x="0"  y="32" width="128" height="12" fill="#37474F"/>
+  <rect x="0"  y="44" width="128" height="4"  fill="#546E7A"/>
+  <!-- main surface -->
+  <rect x="0"  y="48" width="128" height="52" fill="#455A64"/>
+  <!-- shingle lines (редкие и четкие) -->
+  <rect x="0"  y="60" width="128" height="2"  fill="#37474F"/>
+  <rect x="0"  y="75" width="128" height="2"  fill="#37474F"/>
+  <rect x="0"  y="90" width="128" height="2"  fill="#37474F"/>
+  <!-- eave (край крыши) -->
+  <rect x="0"  y="100" width="128" height="6"  fill="#78909C"/>
+  <!-- ГЛУБОКАЯ ТЕНЬ (как в house.svg) -->
+  <rect x="0"  y="106" width="128" height="12" fill="#1A1A1A" fill-opacity="0.4"/>
+
+  <!-- СТЕНЫ — Песочный (как у дома для жителей) -->
+  <rect x="0"  y="114" width="128" height="42" fill="#E4D4A4"/>
+  
+  <!-- Угловые балки (крупные) -->
+  <rect x="0"   y="114" width="10" height="42" fill="#5D4037"/>
+  <rect x="118" y="114" width="10" height="42" fill="#5D4037"/>
+
+  <!-- ВЕНТИЛЯЦИОННЫЕ ОКНА-ЩЕЛИ -->
+  <rect x="20"  y="120" width="4"  height="12" fill="#3E2723"/>
+  <rect x="104" y="120" width="4"  height="12" fill="#3E2723"/>
+
+  <!-- ВОРОТА (Центральный акцент) -->
+  <!-- Рамка -->
+  <rect x="34"  y="124" width="60" height="32" fill="#5D4037"/>
+  <!-- Полотно -->
+  <rect x="36"  y="126" width="56" height="28" fill="#795548"/>
+  <!-- X-распорки (четкие и массивные) -->
+  <rect x="36" y="126" width="6"  height="6"  fill="#D7CCC8"/>
+  <rect x="42" y="132" width="6"  height="6"  fill="#D7CCC8"/>
+  <rect x="48" y="138" width="6"  height="6"  fill="#D7CCC8"/>
+  <rect x="54" y="144" width="6"  height="10" fill="#D7CCC8"/>
+  <rect x="60" y="138" width="6"  height="6"  fill="#D7CCC8"/>
+  <rect x="66" y="132" width="6"  height="6"  fill="#D7CCC8"/>
+  <rect x="72" y="126" width="6"  height="6"  fill="#D7CCC8"/>
+  
+  <!-- Засов (железный) -->
+  <rect x="60"  y="140" width="8"  height="3"  fill="#212121"/>
+
+  <!-- ФУНДАМЕНТ + ТРАВА -->
+  <rect x="0"   y="156" width="128" height="2"  fill="#795548"/>
+  <rect x="0"   y="158" width="128" height="6"  fill="#9EC85A"/>
+</svg>

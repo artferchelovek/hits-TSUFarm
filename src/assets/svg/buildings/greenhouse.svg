@@ -1,0 +1,58 @@
+<svg width="128" height="80" viewBox="0 0 128 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- GLASS PEAKED ROOF -->
+  <!-- back edge (dark green frame) -->
+  <rect x="0"  y="0"  width="128" height="6"  fill="#3A5830"/>
+  <!-- roof peak ridge (lit) -->
+  <rect x="0"  y="6"  width="128" height="4"  fill="#88C870"/>
+  <!-- left roof slope -->
+  <rect x="0"  y="10" width="128" height="16" fill="#C0E8B0"/>
+  <!-- roof frame dividers -->
+  <rect x="0"  y="10" width="2"   height="16" fill="#4A7040"/>
+  <rect x="22" y="10" width="2"   height="16" fill="#4A7040"/>
+  <rect x="44" y="10" width="2"   height="16" fill="#4A7040"/>
+  <rect x="64" y="10" width="2"   height="16" fill="#4A7040"/>
+  <rect x="84" y="10" width="2"   height="16" fill="#4A7040"/>
+  <rect x="106" y="10" width="2"  height="16" fill="#4A7040"/>
+  <rect x="126" y="10" width="2"  height="16" fill="#4A7040"/>
+  <!-- top frame horizontal -->
+  <rect x="0"  y="24" width="128" height="4"  fill="#4A7040"/>
+  <!-- eave shadow -->
+  <rect x="0"  y="28" width="128" height="4"  fill="#1A2C10"/>
+
+  <!-- GLASS WALLS -->
+  <rect x="0"  y="32" width="128" height="34" fill="#CCE8C0"/>
+  <!-- wall frame posts -->
+  <rect x="0"   y="32" width="4"  height="34" fill="#4A7040"/>
+  <rect x="30"  y="32" width="4"  height="34" fill="#4A7040"/>
+  <rect x="60"  y="32" width="4"  height="34" fill="#4A7040"/>
+  <rect x="90"  y="32" width="4"  height="34" fill="#4A7040"/>
+  <rect x="120" y="32" width="8"  height="34" fill="#4A7040"/>
+  <!-- mid rail -->
+  <rect x="0"  y="48" width="128" height="3"  fill="#4A7040"/>
+  <!-- plants inside (lower panels) -->
+  <rect x="6"  y="52" width="22" height="12" fill="#58A840"/>
+  <rect x="8"  y="48" width="6"  height="8"  fill="#70C050"/>
+  <rect x="16" y="46" width="6"  height="10" fill="#88D060"/>
+  <!-- plants panel 2 -->
+  <rect x="36" y="52" width="22" height="12" fill="#50A038"/>
+  <rect x="40" y="47" width="6"  height="9"  fill="#70C050"/>
+  <rect x="48" y="50" width="4"  height="7"  fill="#68B848"/>
+  <!-- plants panel 3 -->
+  <rect x="66" y="52" width="22" height="12" fill="#58A840"/>
+  <rect x="68" y="48" width="6"  height="8"  fill="#88D060"/>
+  <rect x="76" y="46" width="4"  height="10" fill="#70C050"/>
+  <!-- plants panel 4 (with flowers) -->
+  <rect x="96" y="52" width="22" height="12" fill="#50A038"/>
+  <rect x="98" y="48" width="5"  height="8"  fill="#70C050"/>
+  <rect x="99" y="46" width="3"  height="4"  fill="#E84848"/>
+  <rect x="106" y="47" width="5" height="8"  fill="#68B848"/>
+  <rect x="108" y="44" width="3" height="5"  fill="#E8D030"/>
+  <!-- door -->
+  <rect x="56" y="42" width="16" height="24" fill="#5A8060"/>
+  <rect x="57" y="43" width="6"  height="16" fill="#80B888"/>
+  <rect x="65" y="43" width="6"  height="16" fill="#80B888"/>
+
+  <!-- FOUNDATION + GROUND -->
+  <rect x="0"  y="66" width="128" height="6"  fill="#8A7050"/>
+  <rect x="0"  y="72" width="128" height="8"  fill="#9EC85A"/>
+</svg>

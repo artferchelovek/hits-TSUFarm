@@ -1,0 +1,279 @@
+.leftPanel {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: var(--z-ui-panels);
+
+  max-height: calc(100vh - 30px);
+
+  background: var(--color-bg-panel);
+  color: var(--color-text-main);
+
+  width: 220px;
+
+  display: flex;
+  flex-direction: column;
+
+  border-radius: 6px;
+  border: 2px solid var(--color-border);
+}
+
+.leftPanel__body {
+  padding: 12px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c4a482 #e2c0a0;
+}
+
+.leftPanel__body::-webkit-scrollbar {
+  height: 6px;
+}
+
+.leftPanel__body::-webkit-scrollbar-track {
+  background: #e2c0a0;
+}
+
+.leftPanel__body::-webkit-scrollbar-thumb {
+  background: #c4a482;
+  border-radius: 3px;
+}
+
+.leftPanel__body::-webkit-scrollbar-thumb:hover {
+  background: #b09070;
+}
+
+.leftPanelSelect {
+  background: transparent;
+  border: none;
+  outline: none;
+
+  margin: 12px;
+
+  font-size: 16px;
+  font-weight: 700;
+  color: #2e2c2c;
+}
+
+.buildingsList,
+.residentsList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.residentsItem {
+  gap: 10px;
+  display: flex;
+  align-items: center;
+  border-radius: 2px;
+  padding: 8px 10px;
+  background: #fbf0e5;
+}
+
+.residentsItem__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  select {
+    width: 100%;
+  }
+}
+
+.buildingItem {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+
+  border-radius: 2px;
+  padding: 8px 10px;
+  background: #fbf0e5;
+  border: 1px solid rgba(46, 44, 44, 0.08);
+  cursor: pointer;
+
+  img {
+    width: 40px;
+    height: auto;
+  }
+}
+
+.buildingItem:hover {
+  background: #f6e6d0;
+}
+
+.buildingItem__selected {
+  border: 2px solid rgba(78, 48, 23, 0.9);
+}
+
+.buildingItem__disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buildingItem__title {
+  font-weight: 700;
+  color: #3b2b20;
+}
+
+.buildingItem__desc {
+  font-size: 12px;
+  color: #5a4634;
+  margin-top: 6px;
+}
+
+.statisticList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statisticList__metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: 2px;
+  padding: 8px 10px;
+  background: #fbf0e5;
+  border: 1px solid rgba(46, 44, 44, 0.08);
+}
+
+.statisticPanel__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.statisticPanel__rowData {
+  font-weight: bold;
+}
+
+
+.marketPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panelTitle {
+  font-weight: bold;
+  font-size: 15px;
+  color: #4e3017;
+  border-bottom: 1px solid rgba(78, 48, 23, 0.1);
+  padding-bottom: 6px;
+}
+
+.marketList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.marketItem {
+  background: #fbf0e5;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(46, 44, 44, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.marketItem__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.marketItem__name {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.marketItem__price {
+  font-size: 14px;
+  color: #7A4A24;
+}
+
+.marketItem__trend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.marketItem__trend span.material-symbols-outlined {
+  font-size: 20px;
+}
+
+.marketItem__demand {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.marketHint {
+  font-size: 11px;
+  font-style: italic;
+  color: #8b5a2b;
+  margin-top: 10px;
+}
+
+.infoBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.infoBtn:hover {
+  opacity: 1;
+  background: rgba(0,0,0,0.05);
+}
+
+.infoPlate {
+  position: absolute;
+  left: 230px;
+  top: 0;
+  width: 250px;
+  background: var(--color-bg-panel);
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  padding: 15px;
+  box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.infoPlate__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding-bottom: 5px;
+}
+
+.infoPlate__header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.infoPlate__desc {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.infoPlate__stats {
+  font-size: 12px;
+  font-weight: bold;
+  background: rgba(255,255,255,0.2);
+  padding: 8px;
+  border-radius: 4px;
+}

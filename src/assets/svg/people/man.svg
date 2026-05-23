@@ -1,0 +1,28 @@
+<svg width="16" height="24" viewBox="0 0 16 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hat -->
+  <rect x="3" y="0" width="10" height="2" fill="#5A3818"/>
+  <rect x="4" y="2" width="8" height="3" fill="#7A5020"/>
+  <!-- Head -->
+  <rect x="4" y="5" width="8" height="6" fill="#E8B870"/>
+  <!-- Eyes -->
+  <rect x="5" y="7" width="2" height="2" fill="#3A2810"/>
+  <rect x="9" y="7" width="2" height="2" fill="#3A2810"/>
+  <!-- Shirt/torso -->
+  <rect x="3" y="11" width="10" height="7" fill="#4A7AB8"/>
+  <rect x="3" y="11" width="2" height="7" fill="#3A6AA8"/>
+  <rect x="11" y="11" width="2" height="7" fill="#3A6AA8"/>
+  <!-- Arms -->
+  <rect x="0" y="11" width="3" height="6" fill="#E8B870"/>
+  <rect x="13" y="11" width="3" height="6" fill="#E8B870"/>
+  <!-- Hands -->
+  <rect x="0" y="17" width="3" height="2" fill="#D4A060"/>
+  <rect x="13" y="17" width="3" height="2" fill="#D4A060"/>
+  <!-- Belt -->
+  <rect x="3" y="18" width="10" height="2" fill="#5A3818"/>
+  <!-- Pants -->
+  <rect x="3" y="20" width="4" height="4" fill="#3A5028"/>
+  <rect x="9" y="20" width="4" height="4" fill="#3A5028"/>
+  <!-- Shoes -->
+  <rect x="2" y="22" width="5" height="2" fill="#2A1808"/>
+  <rect x="9" y="22" width="5" height="2" fill="#2A1808"/>
+</svg>

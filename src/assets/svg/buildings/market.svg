@@ -1,0 +1,46 @@
+<svg width="96" height="128" viewBox="0 0 96 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- SIGN (above footprint) -->
+  <rect x="20" y="8"  width="56" height="18" fill="#8A5020"/>
+  <rect x="22" y="10" width="52" height="14" fill="#AA6830"/>
+  <!-- sign text bars (decorative) -->
+  <rect x="28" y="13" width="40" height="3" fill="#C88040"/>
+  <rect x="28" y="18" width="40" height="2" fill="#C88040"/>
+
+  <!-- AWNING (bold red + cream stripes) -->
+  <rect x="0" y="32" width="96" height="28" fill="#C42810"/>
+  <!-- awning stripes -->
+  <rect x="0"  y="32" width="12" height="28" fill="#E0DCC8"/>
+  <rect x="24" y="32" width="12" height="28" fill="#E0DCC8"/>
+  <rect x="48" y="32" width="12" height="28" fill="#E0DCC8"/>
+  <rect x="72" y="32" width="12" height="28" fill="#E0DCC8"/>
+  <!-- awning bottom fringe -->
+  <rect x="0" y="58" width="96" height="4" fill="#9A1C08"/>
+  <!-- awning shadow -->
+  <rect x="0" y="62" width="96" height="6" fill="#1C0C04"/>
+
+  <!-- WALL + DISPLAY -->
+  <rect x="0" y="68" width="96" height="52" fill="#E4D4A4"/>
+  <!-- wooden posts (left, center, right) -->
+  <rect x="0"  y="62" width="8"  height="58" fill="#8A5820"/>
+  <rect x="88" y="62" width="8"  height="58" fill="#8A5820"/>
+  <!-- display window (produce) -->
+  <rect x="10" y="70" width="76" height="26" fill="#C8E8A0"/>
+  <rect x="10" y="70" width="76" height="4"  fill="#7A5020"/>
+  <rect x="10" y="94" width="76" height="2"  fill="#7A5020"/>
+  <!-- produce on display -->
+  <rect x="14" y="76" width="12" height="14" fill="#E84828"/>
+  <rect x="30" y="76" width="12" height="14" fill="#E8C030"/>
+  <rect x="46" y="76" width="12" height="14" fill="#60B840"/>
+  <rect x="62" y="76" width="12" height="14" fill="#E87028"/>
+  <!-- counter -->
+  <rect x="8"  y="96" width="80" height="6" fill="#9A7030"/>
+  <!-- door -->
+  <rect x="36" y="102" width="24" height="18" fill="#8A5020"/>
+  <rect x="37" y="103" width="9"  height="12" fill="#A07030"/>
+  <rect x="50" y="103" width="9"  height="12" fill="#A07030"/>
+  <rect x="44" y="109" width="4"  height="3"  fill="#C08040"/>
+
+  <!-- FOUNDATION + GROUND -->
+  <rect x="0" y="120" width="96" height="4" fill="#9A7840"/>
+  <rect x="0" y="124" width="96" height="4" fill="#9EC85A"/>
+</svg>

@@ -1,0 +1,89 @@
+<svg width="128" height="192" viewBox="0 0 128 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- FLAG POLE (very top, well above footprint) -->
+  <rect x="61" y="0"  width="4"  height="28" fill="#6A4020"/>
+  <rect x="65" y="0"  width="18" height="10" fill="#E03028"/>
+  <rect x="65" y="10" width="18" height="4"  fill="#F0D030"/>
+
+  <!-- LEFT CHIMNEY -->
+  <rect x="10" y="8"  width="14" height="46" fill="#A09080"/>
+  <rect x="8"  y="8"  width="18" height="6"  fill="#808070"/>
+  <rect x="12" y="4"  width="10" height="6"  fill="#605850"/>
+  <rect x="13" y="4"  width="8"  height="3"  fill="#C0B8B0"/>
+
+  <!-- RIGHT CHIMNEY -->
+  <rect x="104" y="8"  width="14" height="46" fill="#A09080"/>
+  <rect x="102" y="8"  width="18" height="6"  fill="#808070"/>
+  <rect x="106" y="4"  width="10" height="6"  fill="#605850"/>
+  <rect x="107" y="4"  width="8"  height="3"  fill="#C0B8B0"/>
+
+  <!-- ROOF (grand green, stepped) -->
+  <rect x="0"  y="48" width="128" height="10" fill="#2A5010"/>
+  <rect x="0"  y="58" width="128" height="6"  fill="#94C840"/>
+  <rect x="0"  y="64" width="128" height="36" fill="#6A9430"/>
+  <!-- shingle lines -->
+  <rect x="0"  y="70" width="128" height="2"  fill="#507820"/>
+  <rect x="0"  y="80" width="128" height="2"  fill="#507820"/>
+  <rect x="0"  y="90" width="128" height="2"  fill="#507820"/>
+  <!-- eave -->
+  <rect x="0"  y="100" width="128" height="6"  fill="#84BA40"/>
+  <!-- eave shadow -->
+  <rect x="0"  y="106" width="128" height="8"  fill="#0E2006"/>
+
+  <!-- UPPER FLOOR (tall windows) -->
+  <rect x="0"  y="114" width="128" height="34" fill="#F0E4C0"/>
+  <!-- accent cornice -->
+  <rect x="0"  y="114" width="128" height="4"  fill="#C8A870"/>
+  <!-- tall windows (3) -->
+  <rect x="8"  y="119" width="24" height="24" fill="#A8D0E0"/>
+  <rect x="19" y="119" width="2"  height="24" fill="#5A3010"/>
+  <rect x="8"  y="131" width="24" height="2"  fill="#5A3010"/>
+  <rect x="50" y="119" width="28" height="24" fill="#A8D0E0"/>
+  <rect x="63" y="119" width="2"  height="24" fill="#5A3010"/>
+  <rect x="50" y="131" width="28" height="2"  fill="#5A3010"/>
+  <rect x="96" y="119" width="24" height="24" fill="#A8D0E0"/>
+  <rect x="107" y="119" width="2" height="24" fill="#5A3010"/>
+  <rect x="96" y="131" width="24" height="2"  fill="#5A3010"/>
+
+  <!-- BALCONY RAIL -->
+  <rect x="0"  y="148" width="128" height="6"  fill="#B89060"/>
+  <rect x="8"  y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="20" y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="32" y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="44" y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="56" y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="68" y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="80" y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="92" y="148" width="4"  height="6"  fill="#D0A870"/>
+  <rect x="104" y="148" width="4" height="6"  fill="#D0A870"/>
+  <rect x="116" y="148" width="4" height="6"  fill="#D0A870"/>
+
+  <!-- LOWER FLOOR -->
+  <rect x="0"  y="154" width="128" height="28" fill="#EAD8A8"/>
+  <!-- side shadow -->
+  <rect x="0"  y="154" width="8"  height="28" fill="#C8B888"/>
+  <rect x="120" y="154" width="8" height="28" fill="#C8B888"/>
+  <!-- grand double door (arched top) -->
+  <rect x="44" y="154" width="40" height="28" fill="#7A4A18"/>
+  <rect x="46" y="155" width="16" height="6"  fill="#9A6838"/>
+  <rect x="66" y="155" width="16" height="6"  fill="#9A6838"/>
+  <rect x="50" y="155" width="8"  height="4"  fill="#B08040"/>
+  <rect x="70" y="155" width="8"  height="4"  fill="#B08040"/>
+  <rect x="46" y="161" width="16" height="16" fill="#9A6030"/>
+  <rect x="66" y="161" width="16" height="16" fill="#9A6030"/>
+  <rect x="58" y="165" width="4"  height="3"  fill="#C08040"/>
+  <!-- side windows lower -->
+  <rect x="10" y="157" width="26" height="18" fill="#A8D0E0"/>
+  <rect x="22" y="157" width="2"  height="18" fill="#5A3010"/>
+  <rect x="10" y="166" width="26" height="2"  fill="#5A3010"/>
+  <rect x="92" y="157" width="26" height="18" fill="#A8D0E0"/>
+  <rect x="104" y="157" width="2" height="18" fill="#5A3010"/>
+  <rect x="92" y="166" width="26" height="2"  fill="#5A3010"/>
+
+  <!-- STONE STEPS -->
+  <rect x="38" y="178" width="52" height="4"  fill="#C8B898"/>
+  <rect x="34" y="180" width="60" height="4"  fill="#D8C8A8"/>
+
+  <!-- FOUNDATION + GROUND -->
+  <rect x="0"  y="184" width="128" height="4"  fill="#9A7840"/>
+  <rect x="0"  y="188" width="128" height="4"  fill="#9EC85A"/>
+</svg>

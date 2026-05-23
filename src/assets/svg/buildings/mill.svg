@@ -1,0 +1,101 @@
+<svg width="96" height="192" viewBox="0 0 96 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- КОЛПАК МЕЛЬНИЦЫ — Dutch windmill style, конусом -->
+  <rect x="42" y="0"  width="12" height="4"  fill="#C8A060"/>
+  <rect x="38" y="4"  width="20" height="5"  fill="#C09050"/>
+  <rect x="32" y="9"  width="32" height="5"  fill="#B08040"/>
+  <rect x="26" y="14" width="44" height="6"  fill="#A07030"/>
+  <rect x="20" y="20" width="56" height="7"  fill="#906020"/>
+  <!-- cap base (скругление) -->
+  <rect x="16" y="27" width="64" height="6"  fill="#7A5018"/>
+
+  <!-- ЛОПАСТИ — только 2, как поймали в движении -->
+  <!-- Лопасть 1 (диагональ вверх-влево, длинная) -->
+  <!-- Основная балка -->
+  <rect x="4"  y="10" width="30" height="8"  fill="#D4A858"/>
+  <rect x="8"  y="6"  width="8"  height="18" fill="#D4A858"/>
+  <!-- Поперечные планки паруса -->
+  <rect x="4"  y="12" width="30" height="2"  fill="#B88838"/>
+  <rect x="4"  y="16" width="30" height="2"  fill="#B88838"/>
+  <!-- Парус (холст между планками) -->
+  <rect x="4"  y="8"  width="28" height="10" fill="#E8D4A0" fill-opacity="0.7"/>
+
+  <!-- Лопасть 2 (диагональ вниз-вправо) -->
+  <rect x="62" y="48" width="30" height="8"  fill="#D4A858"/>
+  <rect x="80" y="44" width="8"  height="18" fill="#D4A858"/>
+  <!-- Поперечные планки -->
+  <rect x="62" y="50" width="30" height="2"  fill="#B88838"/>
+  <rect x="62" y="54" width="30" height="2"  fill="#B88838"/>
+  <!-- Парус -->
+  <rect x="64" y="46" width="28" height="10" fill="#E8D4A0" fill-opacity="0.7"/>
+
+  <!-- ХАБ (центр вращения) -->
+  <rect x="38" y="28" width="20" height="20" fill="#5A3810"/>
+  <rect x="40" y="30" width="16" height="16" fill="#7A4C20"/>
+  <rect x="44" y="34" width="8"  height="8"  fill="#9A6428"/>
+
+  <!-- БАШНЯ — сужается кверху, каменная кладка -->
+  <!-- Верхняя секция (узкая) -->
+  <rect x="22" y="48" width="52" height="36" fill="#C8C0A0"/>
+  <rect x="22" y="54" width="52" height="2"  fill="#A8A080"/>
+  <rect x="22" y="62" width="52" height="2"  fill="#A8A080"/>
+  <rect x="22" y="70" width="52" height="2"  fill="#A8A080"/>
+  <!-- каменные швы -->
+  <rect x="28" y="48" width="2"  height="6"  fill="#909070"/>
+  <rect x="46" y="54" width="2"  height="6"  fill="#909070"/>
+  <rect x="62" y="48" width="2"  height="6"  fill="#909070"/>
+  <rect x="36" y="62" width="2"  height="6"  fill="#909070"/>
+  <rect x="56" y="70" width="2"  height="6"  fill="#909070"/>
+  <!-- окна башни, верх -->
+  <rect x="28" y="57" width="14" height="10" fill="#A0C0D0"/>
+  <rect x="34" y="57" width="2"  height="10" fill="#5A3010"/>
+  <rect x="54" y="57" width="14" height="10" fill="#A0C0D0"/>
+  <rect x="60" y="57" width="2"  height="10" fill="#5A3010"/>
+
+  <!-- Средняя секция -->
+  <rect x="16" y="84" width="64" height="42" fill="#C4B898"/>
+  <rect x="16" y="90"  width="64" height="2" fill="#A4A078"/>
+  <rect x="16" y="98"  width="64" height="2" fill="#A4A078"/>
+  <rect x="16" y="106" width="64" height="2" fill="#A4A078"/>
+  <rect x="16" y="114" width="64" height="2" fill="#A4A078"/>
+  <!-- швы средней секции -->
+  <rect x="22" y="84"  width="2" height="6"  fill="#888060"/>
+  <rect x="44" y="90"  width="2" height="6"  fill="#888060"/>
+  <rect x="66" y="84"  width="2" height="6"  fill="#888060"/>
+  <rect x="30" y="98"  width="2" height="6"  fill="#888060"/>
+  <rect x="56" y="106" width="2" height="6"  fill="#888060"/>
+  <!-- окна средней секции -->
+  <rect x="22" y="92"  width="16" height="14" fill="#A0C0D0"/>
+  <rect x="29" y="92"  width="2"  height="14" fill="#5A3010"/>
+  <rect x="22" y="99"  width="16" height="2"  fill="#5A3010"/>
+  <rect x="58" y="92"  width="16" height="14" fill="#A0C0D0"/>
+  <rect x="65" y="92"  width="2"  height="14" fill="#5A3010"/>
+  <rect x="58" y="99"  width="16" height="2"  fill="#5A3010"/>
+
+  <!-- Нижняя секция (самая широкая) -->
+  <rect x="8"  y="126" width="80" height="50" fill="#C0B494"/>
+  <rect x="8"  y="132" width="80" height="2"  fill="#A09474"/>
+  <rect x="8"  y="140" width="80" height="2"  fill="#A09474"/>
+  <rect x="8"  y="148" width="80" height="2"  fill="#A09474"/>
+  <rect x="8"  y="156" width="80" height="2"  fill="#A09474"/>
+  <rect x="8"  y="164" width="80" height="2"  fill="#A09474"/>
+  <!-- швы нижней секции -->
+  <rect x="16" y="126" width="2" height="6"  fill="#847460"/>
+  <rect x="40" y="132" width="2" height="6"  fill="#847460"/>
+  <rect x="64" y="126" width="2" height="6"  fill="#847460"/>
+  <rect x="28" y="140" width="2" height="6"  fill="#847460"/>
+  <rect x="56" y="148" width="2" height="6"  fill="#847460"/>
+  <rect x="76" y="132" width="2" height="6"  fill="#847460"/>
+  <!-- дверь -->
+  <rect x="32" y="148" width="32" height="28" fill="#7A4A18"/>
+  <!-- арка двери (ступеньками) -->
+  <rect x="36" y="144" width="24" height="6"  fill="#7A4A18"/>
+  <rect x="38" y="141" width="20" height="5"  fill="#7A4A18"/>
+  <rect x="40" y="138" width="16" height="5"  fill="#7A4A18"/>
+  <rect x="33" y="149" width="14" height="16" fill="#9A6030"/>
+  <rect x="49" y="149" width="14" height="16" fill="#9A6030"/>
+  <rect x="44" y="158" width="4"  height="3"  fill="#C08040"/>
+
+  <!-- FOUNDATION + GROUND -->
+  <rect x="0"  y="176" width="96" height="6"  fill="#9A7840"/>
+  <rect x="0"  y="182" width="96" height="10" fill="#9EC85A"/>
+</svg>

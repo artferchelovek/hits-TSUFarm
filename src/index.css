@@ -1,4 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
+
+:root {
+  
+  --z-map: 0;
+  --z-ui-panels: 100;
+  --z-popups: 500;
+  --z-overlays: 1000;
+  --z-loading: 9999;
+
+  
+  --color-bg-panel: #e2c0a0;
+  --color-bg-item: #fbf0e5;
+  --color-text-main: #2e2c2c;
+  --color-border: rgba(46, 44, 44, 0.12);
+}
+
 * {
   padding: 0;
   margin: 0;
+  font-family: "Ubuntu Mono", monospace;
 }
